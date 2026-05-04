@@ -1,9 +1,12 @@
 import { getInvoices } from "../actions/invoice";
 import Link from "next/link";
 import ImportInvoices from "../components/ImportInvoices";
+import SearchBox from "../components/SearchBox";
 
-export default async function InvoicePage() {
-  const data = await getInvoices();
+export default async function InvoicePage({ searchParams }) {
+  const resolvedParams = await searchParams;
+  const query = resolvedParams?.q || "";
+  const data = await getInvoices(query);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -21,6 +24,7 @@ export default async function InvoicePage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <SearchBox />
           <ImportInvoices />
 
           <Link
@@ -32,15 +36,15 @@ export default async function InvoicePage() {
 
           <Link
             href="/clients"
-            className="h-[40px] px-4 flex items-center rounded-lg text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 border border-zinc-300 text-white hover:bg-zinc-100 transition"
+            className="h-[40px] px-4 flex items-center rounded-lg text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 border border-zinc-300 text-white hover:bg-zinc-100 hover:scale-[1.03] transition"
           >
-            Clients
+            Client List
           </Link>
         </div>
       </div>
 
       <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-md border border-zinc-200 overflow-hidden">
-        <div className="grid grid-cols-6 px-5 py-3 text-sm font-semibold text-zinc-600 border-b">
+        <div className="grid grid-cols-6 px-5 py-3 text-sm font-semibold text-zinc-600 border-gray-300 border-b-2">
           <div>Company</div>
           <div>Amount</div>
           <div>Paid</div>
@@ -70,7 +74,7 @@ export default async function InvoicePage() {
               <Link
                 key={inv.id}
                 href={`/invoices/${inv.id}`}
-                className="grid grid-cols-6 px-5 py-3 text-sm border-b hover:bg-gradient-to-r hover:from-blue-50 hover:to-pink-50"
+                className="grid grid-cols-6 px-5 py-3 text-sm border-b border-gray-200 last:border-none hover:bg-gradient-to-r hover:from-blue-50 hover:to-pink-50"
               >
                 <div className="font-medium text-zinc-800">
                   {inv.companyName ?? "Unknown"}
