@@ -1,6 +1,7 @@
 import { getInvoiceDetail } from "@/app/actions/invoiceDetail";
 import AddPayment from "@/app/components/AddPayment";
 import AddFollowup from "@/app/components/AddFollowup";
+import Link from "next/link";
 
 export default async function InvoiceDetailPage({ params }) {
   const resolvedParams = await params;
@@ -37,12 +38,20 @@ export default async function InvoiceDetailPage({ params }) {
           <h1 className="text-3xl font-semibold text-zinc-800">
             {invoice.companyName}
           </h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Code: {invoice.companyCode}
-          </p>
+          <div className="flex items-center text-sm text-zinc-500 gap-4 mt-1">
+            <p>Code: {invoice.companyCode}</p>
+            <p>Invoice #{invoice.id}</p>
+          </div>
         </div>
 
-        <div className="text-sm text-zinc-500">Invoice #{invoice.id}</div>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/clients"
+            className="h-[40px] px-4 flex items-center rounded-lg text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 border border-zinc-300 text-white hover:bg-zinc-100 hover:scale-[1.03] transition"
+          >
+            Client List
+          </Link>
+        </div>
       </div>
 
       {/* Summary Cards */}
