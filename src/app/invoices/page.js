@@ -2,11 +2,13 @@ import { getInvoices } from "../actions/invoice";
 import Link from "next/link";
 import ImportInvoices from "../components/ImportInvoices";
 import SearchBox from "../components/SearchBox";
+import FilterDropdown from "../components/FilterDropdown";
 
 export default async function InvoicePage({ searchParams }) {
   const resolvedParams = await searchParams;
   const query = resolvedParams?.q || "";
-  const data = await getInvoices(query);
+  const status = resolvedParams?.status || "";
+  const data = await getInvoices(query, status);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -25,6 +27,7 @@ export default async function InvoicePage({ searchParams }) {
 
         <div className="flex items-center gap-3">
           <SearchBox />
+          <FilterDropdown />
           <ImportInvoices />
 
           <Link
