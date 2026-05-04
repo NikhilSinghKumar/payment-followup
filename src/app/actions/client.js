@@ -2,6 +2,7 @@
 
 import { db } from "@/db";
 import { clients } from "@/db/schema";
+import { ilike, or } from "drizzle-orm";
 
 // ✅ Create client
 export async function createClient(prevState, formData) {
@@ -33,6 +34,17 @@ export async function createClient(prevState, formData) {
 }
 
 // ✅ Get clients
-export async function getClients() {
-  return await db.select().from(clients);
+export async function getClients(search) {
+  if (!search) {
+    return await db.select().from(clients);
+  }
+  return await db
+    .select()
+    .from(clients)
+    .where(
+      or(
+        ilike(clients.companyName, `%${search}%`),
+        ilike(clients.companyCode, `%${search}%`),
+      ),
+    );
 }
