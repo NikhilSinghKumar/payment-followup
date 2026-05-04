@@ -1,9 +1,12 @@
 import { getClients } from "../actions/client";
 import Link from "next/link";
 import ImportBox from "../components/ImportClients";
+import SearchBox from "../components/SearchBox";
 
-export default async function ClientsPage() {
-  const data = await getClients();
+export default async function ClientsPage({ searchParams }) {
+  const resolvedParams = await searchParams;
+  const query = resolvedParams?.q || "";
+  const data = await getClients(query);
 
   return (
     <div className="min-h-screen bg-zinc-50 p-6">
@@ -20,6 +23,7 @@ export default async function ClientsPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <SearchBox />
           <ImportBox />
 
           <Link
@@ -47,7 +51,7 @@ export default async function ClientsPage() {
               hover:scale-[1.03]
             "
           >
-            Invoices
+            Invoice List
           </Link>
         </div>
       </div>
