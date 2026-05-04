@@ -31,7 +31,7 @@ export default function ImportClients() {
   };
 
   return (
-    <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md border border-zinc-200 rounded-xl px-3 py-2 shadow-sm">
+    <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md border border-zinc-200 rounded-lg px-2 py-[1.5] shadow-sm">
       {/* File Picker */}
       <label className="flex items-center gap-2 cursor-pointer text-sm text-zinc-600 hover:text-zinc-800 transition">
         <div className="h-8 w-8 flex items-center justify-center rounded-md bg-zinc-100">
