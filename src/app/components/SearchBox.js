@@ -1,4 +1,5 @@
 "use client";
+
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
@@ -7,26 +8,33 @@ export default function SearchBox() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  const [query, setQuery] = useState(searchParams.get("q") || "");
+  // ✅ initialize once
+  const [query, setQuery] = useState(() => searchParams.get("q") || "");
 
   useEffect(() => {
     const current = searchParams.get("q") || "";
+
     if (query === current) return;
 
     const delay = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+
       if (query) {
-        router.push(`${pathname}?q=${query}`);
+        params.set("q", query);
       } else {
-        router.push(pathname);
+        params.delete("q");
       }
+
+      router.push(`${pathname}?${params.toString()}`);
     }, 400);
+
     return () => clearTimeout(delay);
-  }, [query, router, pathname, searchParams]);
+  }, [query, pathname, router]);
 
   return (
     <input
       type="text"
-      placeholder="Search client..."
+      placeholder="Search..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
       className="h-[40px] px-3 rounded-lg border border-zinc-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
