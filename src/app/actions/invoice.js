@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { invoices, clients, payments } from "@/db/schema";
-import { eq, sql, ilike, or } from "drizzle-orm";
+import { eq, sql, ilike, or, and } from "drizzle-orm";
 
 export async function getInvoices(search, status) {
   let query = db
@@ -66,4 +66,68 @@ export async function getInvoices(search, status) {
 
       return inv.status === status;
     });
+}
+
+export async function createInvoice(formData) {
+  const companyCode = formData.get("companyCode")?.trim();
+
+  const amount = parseFloat(formData.get("amount"));
+
+  const invoiceFromDate = formData.get("invoiceFromDate")
+    ? new Date(formData.get("invoiceFromDate"))
+    : null;
+
+  const invoiceToDate = formData.get("invoiceToDate")
+    ? new Date(formData.get("invoiceToDate"))
+    : null;
+
+  const dueDate = formData.get("dueDate")
+    ? new Date(formData.get("dueDate"))
+    : null;
+
+  if (!companyCode || isNaN(amount)) {
+    return { error: "Invalid input" };
+  }
+
+  // 🔹 find client
+  const client = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.companyCode, companyCode))
+    .limit(1);
+
+  if (!client.length) {
+    return { error: "Client not found" };
+  }
+
+  const clientId = client[0].id;
+
+  // 🔹 duplicate check
+  const existing = await db
+    .select()
+    .from(invoices)
+    .where(
+      and(
+        eq(invoices.clientId, clientId),
+        eq(invoices.amount, amount),
+        eq(invoices.invoiceFromDate, invoiceFromDate),
+        eq(invoices.invoiceToDate, invoiceToDate),
+      ),
+    )
+    .limit(1);
+
+  if (existing.length) {
+    return { error: "Duplicate invoice" };
+  }
+
+  // 🔹 insert
+  await db.insert(invoices).values({
+    clientId,
+    amount,
+    invoiceFromDate,
+    invoiceToDate,
+    dueDate,
+  });
+
+  return { success: true };
 }
