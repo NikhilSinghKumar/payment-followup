@@ -46,6 +46,12 @@ export default async function InvoiceDetailPage({ params }) {
 
         <div className="flex items-center gap-3">
           <Link
+            href="/invoices"
+            className="h-[40px] px-4 flex items-center rounded-lg text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 border border-zinc-300 text-white hover:bg-zinc-100 hover:scale-[1.03] transition"
+          >
+            Invoice List
+          </Link>
+          <Link
             href="/clients"
             className="h-[40px] px-4 flex items-center rounded-lg text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 border border-zinc-300 text-white hover:bg-zinc-100 hover:scale-[1.03] transition"
           >
