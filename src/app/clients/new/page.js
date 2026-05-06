@@ -1,10 +1,10 @@
 "use client";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { createClient } from "../../actions/client";
 import Link from "next/link";
 
 export default function NewClientPage() {
-  const [state, formAction] = useFormState(createClient, {});
+  const [state, formAction] = useActionState(createClient, {});
   return (
     <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
       {/* Card */}
