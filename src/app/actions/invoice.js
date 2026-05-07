@@ -1,8 +1,9 @@
 "use server";
 
 import { db } from "@/db";
-import { invoices, clients, payments } from "@/db/schema";
+import { invoices, clients, payments, followups } from "@/db/schema";
 import { eq, sql, ilike, or, and } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 export async function getInvoices(search, status) {
   let query = db
@@ -130,4 +131,30 @@ export async function createInvoice(formData) {
   });
 
   return { success: true };
+}
+
+// DELETE INVOICE
+export async function deleteInvoice(id) {
+  if (!id) {
+    return { error: "Invalid invoice id" };
+  }
+
+  try {
+    // delete child records first
+    await db.delete(payments).where(eq(payments.invoiceId, id));
+
+    await db.delete(followups).where(eq(followups.invoiceId, id));
+
+    // delete invoice
+    await db.delete(invoices).where(eq(invoices.id, id));
+
+    // refresh invoice list
+    revalidatePath("/invoices");
+
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+
+    return { error: "Failed to delete invoice" };
+  }
 }
