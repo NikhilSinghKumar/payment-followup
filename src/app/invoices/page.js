@@ -3,6 +3,7 @@ import Link from "next/link";
 import ImportInvoices from "../components/ImportInvoices";
 import SearchBox from "../components/SearchBox";
 import FilterDropdown from "../components/FilterDropdown";
+import DeleteInvoiceButton from "../components/DeleteInvoiceButton";
 
 export default async function InvoicePage({ searchParams }) {
   const resolvedParams = await searchParams;
@@ -47,15 +48,18 @@ export default async function InvoicePage({ searchParams }) {
       </div>
 
       <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-md border border-zinc-200 overflow-hidden">
-        <div className="grid grid-cols-6 px-5 py-3 text-sm font-semibold text-zinc-600 border-gray-300 border-b-2">
+        {/* Header */}
+        <div className="grid grid-cols-7 px-5 py-3 text-sm font-semibold text-zinc-600 border-gray-300 border-b-2">
           <div>Company</div>
           <div>Amount</div>
           <div>Paid</div>
           <div>Due</div>
           <div>Due Date</div>
           <div>Status</div>
+          <div>Actions</div>
         </div>
 
+        {/* Rows */}
         {data.length > 0 ? (
           data.map((inv) => {
             let isOverdue = false;
@@ -69,34 +73,40 @@ export default async function InvoicePage({ searchParams }) {
               formattedDate = due.toLocaleDateString("en-IN");
             }
 
-            const formattedAmount = new Intl.NumberFormat("en-IN").format(
-              inv.amount,
-            );
-
             return (
-              <Link
+              <div
                 key={inv.id}
-                href={`/invoices/${inv.id}`}
-                className="grid grid-cols-6 px-5 py-3 text-sm border-b border-gray-200 last:border-none hover:bg-gradient-to-r hover:from-blue-50 hover:to-pink-50"
+                className="
+            grid grid-cols-7 px-5 py-3 text-sm
+            border-b border-gray-200 last:border-none
+            hover:bg-gradient-to-r hover:from-blue-50 hover:to-pink-50
+            transition-all duration-150
+          "
               >
+                {/* Company */}
                 <div className="font-medium text-zinc-800">
                   {inv.companyName ?? "Unknown"}
                 </div>
 
+                {/* Amount */}
                 <div className="font-medium text-zinc-800">
                   ₹{Number(inv.amount).toLocaleString("en-IN")}
                 </div>
 
-                <div className="text-green-600">
-                  ₹{inv.paid.toLocaleString("en-IN")}
+                {/* Paid */}
+                <div className="text-green-600 font-medium">
+                  ₹{Number(inv.paid).toLocaleString("en-IN")}
                 </div>
 
+                {/* Due */}
                 <div className="text-red-600 font-medium">
-                  ₹{inv.due.toLocaleString("en-IN")}
+                  ₹{Number(inv.due).toLocaleString("en-IN")}
                 </div>
 
+                {/* Due Date */}
                 <div className="font-medium text-zinc-800">{formattedDate}</div>
 
+                {/* Status */}
                 <div>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -112,7 +122,26 @@ export default async function InvoicePage({ searchParams }) {
                     {inv.status}
                   </span>
                 </div>
-              </Link>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  {/* View */}
+                  <Link
+                    href={`/invoices/${inv.id}`}
+                    className="
+                px-3 py-1 rounded-lg
+                bg-blue-500 text-white text-xs font-medium
+                hover:bg-blue-600
+                transition
+              "
+                  >
+                    View
+                  </Link>
+
+                  {/* Delete */}
+                  <DeleteInvoiceButton invoiceId={inv.id} />
+                </div>
+              </div>
             );
           })
         ) : (
