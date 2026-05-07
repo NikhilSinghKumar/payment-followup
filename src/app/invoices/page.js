@@ -83,7 +83,9 @@ export default async function InvoicePage({ searchParams }) {
                   {inv.companyName ?? "Unknown"}
                 </div>
 
-                <div>₹{Number(inv.amount).toLocaleString("en-IN")}</div>
+                <div className="font-medium text-zinc-800">
+                  ₹{Number(inv.amount).toLocaleString("en-IN")}
+                </div>
 
                 <div className="text-green-600">
                   ₹{inv.paid.toLocaleString("en-IN")}
@@ -93,7 +95,7 @@ export default async function InvoicePage({ searchParams }) {
                   ₹{inv.due.toLocaleString("en-IN")}
                 </div>
 
-                <div>{formattedDate}</div>
+                <div className="font-medium text-zinc-800">{formattedDate}</div>
 
                 <div>
                   <span
