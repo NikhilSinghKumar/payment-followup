@@ -30,11 +30,7 @@ export default function NewInvoicePage() {
                 name="companyCode"
                 placeholder="e.g. OTIS"
                 required
-                className="
-                  w-full h-[40px] px-3 rounded-lg border border-zinc-300 
-                  text-sm outline-none
-                  focus:ring-2 focus:ring-purple-400 focus:border-transparent
-                "
+                className="input-primary focus:ring-blue-500 caret-blue-500"
               />
             </div>
 
@@ -47,11 +43,7 @@ export default function NewInvoicePage() {
                 step="0.01"
                 placeholder="Enter amount"
                 required
-                className="
-                  w-full h-[40px] px-3 rounded-lg border border-zinc-300 
-                  text-sm outline-none
-                  focus:ring-2 focus:ring-purple-400 focus:border-transparent
-                "
+                className="input-primary focus:ring-blue-500 caret-blue-500"
               />
             </div>
 
@@ -62,11 +54,7 @@ export default function NewInvoicePage() {
                 <input
                   name="invoiceFromDate"
                   type="date"
-                  className="
-                    w-full h-[40px] px-3 rounded-lg border border-zinc-300 
-                    text-sm outline-none
-                    focus:ring-2 focus:ring-purple-400 focus:border-transparent
-                  "
+                  className="input-primary focus:ring-blue-500 caret-blue-500"
                 />
               </div>
 
@@ -75,11 +63,7 @@ export default function NewInvoicePage() {
                 <input
                   name="invoiceToDate"
                   type="date"
-                  className="
-                    w-full h-[40px] px-3 rounded-lg border border-zinc-300 
-                    text-sm outline-none
-                    focus:ring-2 focus:ring-purple-400 focus:border-transparent
-                  "
+                  className="input-primary focus:ring-blue-500 caret-blue-500"
                 />
               </div>
             </div>
@@ -90,11 +74,7 @@ export default function NewInvoicePage() {
               <input
                 name="dueDate"
                 type="date"
-                className="
-                  w-full h-[40px] px-3 rounded-lg border border-zinc-300 
-                  text-sm outline-none
-                  focus:ring-2 focus:ring-purple-400 focus:border-transparent
-                "
+                className="input-primary focus:ring-blue-500 caret-blue-500"
               />
             </div>
 
