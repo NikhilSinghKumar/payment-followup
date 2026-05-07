@@ -42,7 +42,7 @@ export default function NewClientPage() {
               name="companyName"
               placeholder="e.g. ABC Pvt Ltd"
               required
-              className="w-full h-[42px] px-3 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="input-primary focus:ring-blue-500 caret-blue-500"
             />
           </div>
 
@@ -55,7 +55,7 @@ export default function NewClientPage() {
               name="companyCode"
               placeholder="e.g. ABC123"
               required
-              className="w-full h-[42px] px-3 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+              className="input-primary focus:ring-blue-500 caret-blue-500"
             />
           </div>
 
@@ -66,7 +66,7 @@ export default function NewClientPage() {
               name="email"
               type="email"
               placeholder="e.g. contact@company.com"
-              className="w-full h-[42px] px-3 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"
+              className="input-primary focus:ring-blue-500 caret-blue-500"
             />
           </div>
 
@@ -76,7 +76,7 @@ export default function NewClientPage() {
             <input
               name="phone"
               placeholder="e.g. +91 9876543210"
-              className="w-full h-[42px] px-3 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              className="input-primary focus:ring-blue-500 caret-blue-500"
             />
           </div>
 

@@ -86,12 +86,7 @@ export default function AddPayment({ invoiceId, due }) {
           onChange={(e) => setAmount(e.target.value)}
           min="1"
           max={due}
-          className="
-            w-full h-[40px] px-3 rounded-lg border border-zinc-300 
-            text-sm outline-none
-            focus:ring-2 focus:ring-purple-400 focus:border-transparent
-            transition
-          "
+          className="input-primary focus:ring-blue-500 caret-blue-500"
         />
       </div>
 
@@ -103,12 +98,7 @@ export default function AddPayment({ invoiceId, due }) {
           placeholder="UPI / Cash / Bank"
           value={method}
           onChange={(e) => setMethod(e.target.value)}
-          className="
-            w-full h-[40px] px-3 rounded-lg border border-zinc-300 
-            text-sm outline-none
-            focus:ring-2 focus:ring-purple-400 focus:border-transparent
-            transition
-          "
+          className="input-primary focus:ring-blue-500 caret-blue-500"
         />
       </div>
 
@@ -119,12 +109,7 @@ export default function AddPayment({ invoiceId, due }) {
           type="date"
           value={paymentDate}
           onChange={(e) => setPaymentDate(e.target.value)}
-          className="
-            w-full h-[40px] px-3 rounded-lg border border-zinc-300 
-            text-sm outline-none
-            focus:ring-2 focus:ring-purple-400 focus:border-transparent
-            transition
-          "
+          className="input-primary focus:ring-blue-500 caret-blue-500"
         />
       </div>
 

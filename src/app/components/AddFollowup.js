@@ -60,7 +60,7 @@ export default function AddFollowup({ invoiceId, onSuccess }) {
         rows={4}
         className="
           w-full px-3 py-2 rounded-lg border border-zinc-300 
-          text-sm resize-none outline-none
+          text-sm resize-none outline-none dark:text-zinc-800
           focus:ring-2 focus:ring-purple-400 focus:border-transparent
         "
       />
