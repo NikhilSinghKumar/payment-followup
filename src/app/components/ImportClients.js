@@ -31,7 +31,7 @@ export default function ImportClients() {
   };
 
   return (
-    <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md border border-zinc-200 rounded-lg px-2 py-[1.5] shadow-sm">
+    <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md border border-zinc-200 rounded-lg px-2 py- shadow-sm">
       {/* File Picker */}
       <label className="flex items-center gap-2 cursor-pointer text-sm text-zinc-600 hover:text-zinc-800 transition">
         <div className="h-8 w-8 flex items-center justify-center rounded-md bg-zinc-100">
@@ -56,15 +56,7 @@ export default function ImportClients() {
       <button
         onClick={handleUpload}
         disabled={loading}
-        className="
-          h-[34px] px-4 flex items-center rounded-lg 
-          text-white text-sm font-medium
-          bg-gradient-to-r from-blue-500 to-purple-500
-          shadow-sm hover:shadow-md
-          transition-all duration-200
-          hover:scale-[1.03] cursor-pointer
-          disabled:opacity-50 disabled:cursor-not-allowed
-        "
+        className="h-[34px] px-4 flex items-center rounded-lg text-white text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.03] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? (
           <span className="flex items-center gap-2">
