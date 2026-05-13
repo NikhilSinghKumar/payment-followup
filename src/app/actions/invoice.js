@@ -133,6 +133,60 @@ export async function createInvoice(formData) {
   return { success: true };
 }
 
+// Get Invoice by ID
+export async function getInvoiceById(id) {
+  const data = await db
+    .select({
+      id: invoices.id,
+      amount: invoices.amount,
+      dueDate: invoices.dueDate,
+      invoiceFromDate: invoices.invoiceFromDate,
+      invoiceToDate: invoices.invoiceToDate,
+      companyCode: clients.companyCode,
+      notes: invoices.notes,
+    })
+    .from(invoices)
+    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .where(eq(invoices.id, id))
+    .limit(1);
+
+  return data[0];
+}
+
+// Update/Edit
+export async function updateInvoice(id, formData) {
+  const amount = parseFloat(formData.get("amount"));
+  const notes = formData.get("notes");
+
+  const invoiceFromDate = formData.get("invoiceFromDate")
+    ? new Date(formData.get("invoiceFromDate"))
+    : null;
+
+  const invoiceToDate = formData.get("invoiceToDate")
+    ? new Date(formData.get("invoiceToDate"))
+    : null;
+
+  const dueDate = formData.get("dueDate")
+    ? new Date(formData.get("dueDate"))
+    : null;
+
+  await db
+    .update(invoices)
+    .set({
+      amount,
+      invoiceFromDate,
+      invoiceToDate,
+      dueDate,
+      notes,
+    })
+    .where(eq(invoices.id, id));
+
+  revalidatePath("/invoices");
+  revalidatePath(`/invoices/${id}`);
+
+  return { success: true };
+}
+
 // DELETE INVOICE
 export async function deleteInvoice(id) {
   if (!id) {
