@@ -3,10 +3,15 @@ import Link from "next/link";
 import ImportBox from "../components/ImportClients";
 import SearchBox from "../components/SearchBox";
 
+const ALPHABETS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
 export default async function ClientsPage({ searchParams }) {
   const resolvedParams = await searchParams;
+
   const query = resolvedParams?.q || "";
-  const data = await getClients(query);
+  const letter = resolvedParams?.letter || "ALL";
+
+  const data = await getClients(query, letter);
 
   return (
     <div className="min-h-screen bg-zinc-50 p-6">
@@ -17,6 +22,7 @@ export default async function ClientsPage({ searchParams }) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-semibold text-zinc-800">Clients</h1>
+
           <p className="text-sm text-zinc-500 mt-1">
             Manage and view all your clients
           </p>
@@ -29,10 +35,10 @@ export default async function ClientsPage({ searchParams }) {
           <Link
             href="/clients/new"
             className="
-              h-[40px] px-4 flex items-center rounded-lg 
+              h-[40px] px-4 flex items-center rounded-lg
               text-white text-sm font-medium
               bg-gradient-to-r from-blue-500 to-purple-500
-              shadow-md hover:shadow-lg 
+              shadow-md hover:shadow-lg
               transition-all duration-200
               hover:scale-[1.03]
             "
@@ -43,10 +49,10 @@ export default async function ClientsPage({ searchParams }) {
           <Link
             href="/invoices"
             className="
-              h-[40px] px-4 flex items-center rounded-lg 
+              h-[40px] px-4 flex items-center rounded-lg
               text-white text-sm font-medium
               bg-gradient-to-r from-blue-500 to-purple-500
-              shadow-md hover:shadow-lg 
+              shadow-md hover:shadow-lg
               transition-all duration-200
               hover:scale-[1.03]
             "
@@ -54,6 +60,41 @@ export default async function ClientsPage({ searchParams }) {
             Invoice List
           </Link>
         </div>
+      </div>
+
+      {/* Alphabet Navigation */}
+      <div className="flex flex-wrap justify-center gap-1 mb-5">
+        <Link
+          href={`/clients?q=${query}`}
+          className={`
+            px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+            ${
+              letter === "ALL"
+                ? "bg-blue-500 text-white shadow"
+                : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
+            }
+          `}
+        >
+          All
+        </Link>
+
+        {ALPHABETS.map((char) => (
+          <Link
+            key={char}
+            href={`/clients?letter=${char}&q=${query}`}
+            className={`
+              w-9 h-9 flex items-center justify-center
+              rounded-lg text-sm font-medium transition-all
+              ${
+                letter === char
+                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md"
+                  : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
+              }
+            `}
+          >
+            {char}
+          </Link>
+        ))}
       </div>
 
       {/* Card Container */}
@@ -78,7 +119,9 @@ export default async function ClientsPage({ searchParams }) {
               "
             >
               <div className="font-medium text-zinc-800">{index + 1}</div>
+
               <div className="font-medium text-zinc-800">{c.companyName}</div>
+
               <div className="text-zinc-500">{c.companyCode}</div>
             </div>
           ))
