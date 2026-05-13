@@ -128,14 +128,17 @@ export default async function InvoicePage({ searchParams }) {
                   {/* View */}
                   <Link
                     href={`/invoices/${inv.id}`}
-                    className="
-                px-3 py-1 rounded-lg
-                bg-blue-500 text-white text-xs font-medium
-                hover:bg-blue-600
-                transition
-              "
+                    className="px-3 py-1 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition"
                   >
                     View
+                  </Link>
+
+                  {/* Edit */}
+                  <Link
+                    href={`/invoices/${inv.id}/edit`}
+                    className="px-3 py-1 rounded-lg bg-yellow-500 text-white font-medium hover:bg-yellow-600 transition"
+                  >
+                    Edit
                   </Link>
 
                   {/* Delete */}
