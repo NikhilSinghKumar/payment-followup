@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { clients } from "@/db/schema";
-import { ilike, or } from "drizzle-orm";
+import { ilike, or, and, sql } from "drizzle-orm";
 
 // ✅ Create client
 export async function createClient(prevState, formData) {
@@ -34,17 +34,26 @@ export async function createClient(prevState, formData) {
 }
 
 // ✅ Get clients
-export async function getClients(search) {
-  if (!search) {
-    return await db.select().from(clients);
-  }
-  return await db
-    .select()
-    .from(clients)
-    .where(
+export async function getClients(search = "", letter = "") {
+  const conditions = [];
+
+  /* SEARCH CONDITION */
+  if (search) {
+    conditions.push(
       or(
         ilike(clients.companyName, `%${search}%`),
         ilike(clients.companyCode, `%${search}%`),
       ),
     );
+  }
+
+  /* ALPHABET CONDITION */
+  if (letter && letter !== "ALL") {
+    conditions.push(sql`UPPER(${clients.companyName}) LIKE ${letter + "%"}`);
+  }
+
+  return await db
+    .select()
+    .from(clients)
+    .where(conditions.length ? and(...conditions) : undefined);
 }
