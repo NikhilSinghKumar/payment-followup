@@ -1,6 +1,8 @@
 import { getInvoiceDetail } from "@/app/actions/invoiceDetail";
 import AddPayment from "@/app/components/AddPayment";
 import AddFollowup from "@/app/components/AddFollowup";
+import EditPayment from "@/app/components/EditPayment";
+import { updatePayment } from "@/app/actions/payment";
 import Link from "next/link";
 
 export default async function InvoiceDetailPage({ params }) {
@@ -97,22 +99,54 @@ export default async function InvoiceDetailPage({ params }) {
                   {item.type === "payment" ? "💰" : "📝"}
                 </div>
 
-                <div className="flex-1">
-                  {item.type === "payment" ? (
-                    <>
+                {item.type === "payment" ? (
+                  <div className="flex items-start justify-between gap-4">
+                    {/* LEFT */}
+                    <div>
                       <div className="text-sm text-zinc-800 font-medium">
                         ₹{Number(item.amount).toLocaleString("en-IN")} received
                       </div>
-                      <div className="text-xs text-zinc-500">
+
+                      <div className="text-xs text-zinc-500 mt-1">
                         via {item.method || "—"}
                       </div>
-                    </>
-                  ) : (
-                    <div className="text-sm text-zinc-800">{item.note}</div>
-                  )}
 
-                  <div className="text-xs text-zinc-400 mt-1">{date}</div>
-                </div>
+                      {/* Reference */}
+                      {item.reference && (
+                        <div className="text-xs text-zinc-400 mt-1">
+                          Ref: {item.reference}
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {item.notes && (
+                        <div className="text-xs text-zinc-500 mt-2 italic">
+                          {item.notes}
+                        </div>
+                      )}
+
+                      <div className="text-xs text-zinc-400 mt-2">{date}</div>
+                    </div>
+
+                    {/* RIGHT */}
+                    <div>
+                      <EditPayment
+                        payment={item}
+                        updateAction={async (formData) => {
+                          "use server";
+
+                          return updatePayment(item.id, invoice.id, formData);
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-zinc-800">
+                    {item.note}
+
+                    <div className="text-xs text-zinc-400 mt-1">{date}</div>
+                  </div>
+                )}
               </div>
             );
           })
