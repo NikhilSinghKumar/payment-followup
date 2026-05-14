@@ -8,6 +8,13 @@
       "when": 1777710886840,
       "tag": "0000_luxuriant_pyro",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778670762022,
+      "tag": "0001_amazing_nick_fury",
+      "breakpoints": true
     }
   ]
 }
