@@ -10,6 +10,7 @@ export async function getInvoiceDetail(id) {
     .select({
       id: invoices.id,
       amount: invoices.amount,
+      invoiceNumber: invoices.invoiceNumber,
       dueDate: invoices.dueDate,
 
       companyName: clients.companyName,
