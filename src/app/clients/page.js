@@ -148,7 +148,7 @@ export default async function ClientsPage({ searchParams }) {
               <div className="flex items-center justify-center gap-2">
                 {/* View */}
                 <Link
-                  href=""
+                  href={`/clients/${c.id}`}
                   className="
                 h-8 px-3 inline-flex items-center justify-center
                 rounded-lg text-xs font-medium
@@ -175,7 +175,7 @@ export default async function ClientsPage({ searchParams }) {
                 </Link>
 
                 {/* Delete */}
-                <DeleteInvoiceButton />
+                {/* <DeleteInvoiceButton /> */}
               </div>
             </div>
           ))
