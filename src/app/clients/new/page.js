@@ -85,14 +85,7 @@ export default function NewClientPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="
-              w-full h-[44px] rounded-lg 
-              text-white text-sm font-medium
-              bg-gradient-to-r from-blue-500 to-purple-500
-              shadow-md hover:shadow-lg
-              transition-all duration-200 cursor-pointer
-              hover:scale-[1.02]
-            "
+              className=" w-full h-[40px] px-4 py-2 rounded-lg text-white text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.02]"
             >
               Save Client
             </button>
