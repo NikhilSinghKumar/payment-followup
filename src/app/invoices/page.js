@@ -47,21 +47,33 @@ export default async function InvoicePage({ searchParams }) {
         </div>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-md border border-zinc-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
         {/* Header */}
-        <div className="grid grid-cols-7 px-5 py-3 text-sm font-semibold text-zinc-600 border-gray-300 border-b-2">
+        <div
+          className="
+            grid
+            grid-cols-[80px_2fr_1fr_1fr_1fr_1.2fr_1fr_260px]
+            items-center
+            px-5 py-3
+            bg-zinc-50
+            border-b border-zinc-200
+            text-sm font-semibold text-zinc-600
+          "
+        >
+          <div>S.N.</div>
           <div>Company</div>
           <div>Amount</div>
           <div>Paid</div>
           <div>Due</div>
           <div>Due Date</div>
           <div>Status</div>
-          <div>Actions</div>
+
+          <div className="text-center">Actions</div>
         </div>
 
         {/* Rows */}
         {data.length > 0 ? (
-          data.map((inv) => {
+          data.map((inv, index) => {
             let isOverdue = false;
             let formattedDate = "—";
 
@@ -77,58 +89,84 @@ export default async function InvoicePage({ searchParams }) {
               <div
                 key={inv.id}
                 className="
-            grid grid-cols-7 px-5 py-3 text-sm
-            border-b border-gray-200 last:border-none
-            hover:bg-gradient-to-r hover:from-blue-50 hover:to-pink-50
-            transition-all duration-150
+            grid
+            grid-cols-[80px_2.2fr_0.9fr_0.9fr_0.9fr_1.1fr_1fr_260px]
+            items-center
+            px-5 py-3
+            text-sm
+            border-b border-zinc-100
+            hover:bg-zinc-50
+            transition-colors
           "
               >
+                <div className="font-medium text-zinc-800 truncate pr-4">
+                  {index + 1}
+                </div>
                 {/* Company */}
-                <div className="font-medium text-zinc-800">
+                <div className="font-medium text-zinc-800 truncate pr-4">
                   {inv.companyName ?? "Unknown"}
                 </div>
 
                 {/* Amount */}
-                <div className="font-medium text-zinc-800">
+                <div className="font-medium text-zinc-800 whitespace-nowrap">
                   ₹{Number(inv.amount).toLocaleString("en-IN")}
                 </div>
 
                 {/* Paid */}
-                <div className="text-green-600 font-medium">
+                <div className="font-medium text-emerald-600 whitespace-nowrap">
                   ₹{Number(inv.paid).toLocaleString("en-IN")}
                 </div>
 
                 {/* Due */}
-                <div className="text-red-600 font-medium">
+                <div className="font-medium text-red-600 whitespace-nowrap">
                   ₹{Number(inv.due).toLocaleString("en-IN")}
                 </div>
 
                 {/* Due Date */}
-                <div className="font-medium text-zinc-800">{formattedDate}</div>
+                <div className="text-zinc-700 whitespace-nowrap">
+                  {formattedDate}
+                </div>
 
                 {/* Status */}
                 <div>
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      inv.status === "paid"
-                        ? "bg-green-100 text-green-600"
-                        : inv.status === "partial"
-                          ? "bg-yellow-100 text-yellow-600"
-                          : isOverdue
-                            ? "bg-red-100 text-red-600"
-                            : "bg-gray-100 text-gray-600"
-                    }`}
+                    className={`
+                inline-flex items-center justify-center
+                min-w-[90px]
+                px-3 py-1
+                rounded-full
+                text-xs font-semibold capitalize
+                ${
+                  inv.status === "paid"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : inv.status === "partial"
+                      ? "bg-amber-100 text-amber-700"
+                      : inv.status === "pending" && isOverdue
+                        ? "bg-red-100 text-red-700"
+                        : "bg-blue-100 text-blue-700"
+                }
+              `}
                   >
-                    {inv.status}
+                    {inv.status === "pending" && isOverdue
+                      ? "Overdue"
+                      : inv.status}
                   </span>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   {/* View */}
                   <Link
                     href={`/invoices/${inv.id}`}
-                    className="px-3 py-1 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition"
+                    className="
+                h-8 px-3
+                inline-flex items-center justify-center
+                rounded-lg
+                text-xs font-medium
+                bg-blue-50 text-blue-700
+                hover:bg-blue-100
+                transition
+              "
                   >
                     View
                   </Link>
@@ -136,7 +174,15 @@ export default async function InvoicePage({ searchParams }) {
                   {/* Edit */}
                   <Link
                     href={`/invoices/${inv.id}/edit`}
-                    className="px-3 py-1 rounded-lg bg-yellow-500 text-white font-medium hover:bg-yellow-600 transition"
+                    className="
+                h-8 px-3
+                inline-flex items-center justify-center
+                rounded-lg
+                text-xs font-medium
+                bg-amber-50 text-amber-700
+                hover:bg-amber-100
+                transition
+              "
                   >
                     Edit
                   </Link>
@@ -148,7 +194,7 @@ export default async function InvoicePage({ searchParams }) {
             );
           })
         ) : (
-          <div className="p-8 text-center text-zinc-400">
+          <div className="p-10 text-center text-zinc-400">
             No invoices found.
           </div>
         )}
