@@ -2,6 +2,7 @@ import { getClients } from "../actions/client";
 import Link from "next/link";
 import ImportBox from "../components/ImportClients";
 import SearchBox from "../components/SearchBox";
+import DeleteInvoiceButton from "../components/DeleteInvoiceButton";
 
 const ALPHABETS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -35,13 +36,13 @@ export default async function ClientsPage({ searchParams }) {
           <Link
             href="/clients/new"
             className="
-              h-[40px] px-4 flex items-center rounded-lg
-              text-white text-sm font-medium
-              bg-gradient-to-r from-blue-500 to-purple-500
-              shadow-md hover:shadow-lg
-              transition-all duration-200
-              hover:scale-[1.03]
-            "
+          h-10 px-4 inline-flex items-center justify-center
+          rounded-xl text-white text-sm font-medium
+          bg-gradient-to-r from-blue-500 to-purple-500
+          shadow-md hover:shadow-lg
+          transition-all duration-200
+          hover:scale-[1.02]
+        "
           >
             + Add Client
           </Link>
@@ -49,13 +50,13 @@ export default async function ClientsPage({ searchParams }) {
           <Link
             href="/invoices"
             className="
-              h-[40px] px-4 flex items-center rounded-lg
-              text-white text-sm font-medium
-              bg-gradient-to-r from-blue-500 to-purple-500
-              shadow-md hover:shadow-lg
-              transition-all duration-200
-              hover:scale-[1.03]
-            "
+          h-10 px-4 inline-flex items-center justify-center
+          rounded-xl text-white text-sm font-medium
+          bg-gradient-to-r from-blue-500 to-purple-500
+          shadow-md hover:shadow-lg
+          transition-all duration-200
+          hover:scale-[1.02]
+        "
           >
             Invoice List
           </Link>
@@ -67,13 +68,13 @@ export default async function ClientsPage({ searchParams }) {
         <Link
           href={`/clients?q=${query}`}
           className={`
-            px-3 py-1.5 rounded-lg text-sm font-medium transition-all
-            ${
-              letter === "ALL"
-                ? "bg-blue-500 text-white shadow"
-                : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
-            }
-          `}
+        px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+        ${
+          letter === "ALL"
+            ? "bg-blue-500 text-white shadow"
+            : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
+        }
+      `}
         >
           All
         </Link>
@@ -83,27 +84,38 @@ export default async function ClientsPage({ searchParams }) {
             key={char}
             href={`/clients?letter=${char}&q=${query}`}
             className={`
-              w-9 h-9 flex items-center justify-center
-              rounded-lg text-sm font-medium transition-all
-              ${
-                letter === char
-                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md"
-                  : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
-              }
-            `}
+          w-9 h-9 flex items-center justify-center
+          rounded-lg text-sm font-medium transition-all
+          ${
+            letter === char
+              ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md"
+              : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
+          }
+        `}
           >
             {char}
           </Link>
         ))}
       </div>
 
-      {/* Card Container */}
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-md border border-zinc-200 overflow-hidden">
-        {/* Table Header */}
-        <div className="grid grid-cols-4 px-5 py-3 text-sm font-semibold text-zinc-600 border-b-2 border-gray-300">
+      {/* Table Container */}
+      <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
+        {/* Header */}
+        <div
+          className="
+        grid grid-cols-[80px_1.5fr_180px_260px]
+        items-center
+        px-5 py-3
+        bg-zinc-50
+        border-b border-zinc-200
+        text-sm font-semibold text-zinc-600
+      "
+        >
           <div>S.N.</div>
           <div>Company</div>
           <div>Code</div>
+
+          <div className="text-center">Actions</div>
         </div>
 
         {/* Rows */}
@@ -112,21 +124,65 @@ export default async function ClientsPage({ searchParams }) {
             <div
               key={c.id}
               className="
-                grid grid-cols-4 px-5 py-3 text-sm
-                border-b border-gray-200 last:border-none
-                hover:bg-gradient-to-r hover:from-blue-50 hover:to-pink-50
-                transition-all duration-150
-              "
+            grid grid-cols-[80px_1.5fr_180px_260px]
+            items-center
+            px-5 py-3
+            text-sm
+            border-b border-zinc-100
+            hover:bg-zinc-50
+            transition-colors
+          "
             >
-              <div className="font-medium text-zinc-800">{index + 1}</div>
+              {/* S.N */}
+              <div className="font-medium text-zinc-700">{index + 1}</div>
 
-              <div className="font-medium text-zinc-800">{c.companyName}</div>
+              {/* Company */}
+              <div className="font-medium text-zinc-800 truncate">
+                {c.companyName}
+              </div>
 
-              <div className="text-zinc-500">{c.companyCode}</div>
+              {/* Code */}
+              <div className="text-zinc-500 font-mono">{c.companyCode}</div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-center gap-2">
+                {/* View */}
+                <Link
+                  href=""
+                  className="
+                h-8 px-3 inline-flex items-center justify-center
+                rounded-lg text-xs font-medium
+                bg-blue-50 text-blue-700
+                hover:bg-blue-100
+                transition
+              "
+                >
+                  View
+                </Link>
+
+                {/* Edit */}
+                <Link
+                  href=""
+                  className="
+                h-8 px-3 inline-flex items-center justify-center
+                rounded-lg text-xs font-medium
+                bg-amber-50 text-amber-700
+                hover:bg-amber-100
+                transition
+              "
+                >
+                  Edit
+                </Link>
+
+                {/* Delete */}
+                <DeleteInvoiceButton />
+              </div>
             </div>
           ))
         ) : (
-          <div className="p-8 text-center text-zinc-400">No clients found.</div>
+          <div className="p-10 text-center text-zinc-400">
+            No clients found.
+          </div>
         )}
       </div>
     </div>
