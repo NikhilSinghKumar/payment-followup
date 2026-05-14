@@ -120,6 +120,7 @@ export default async function ClientDetailPage({ params }) {
 
   return (
     <div className="min-h-screen p-4 md:p-6">
+      <div className="h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400 mb-6"></div>
       {/* ===================================== */}
       {/* PAGE WRAPPER */}
       {/* ===================================== */}
