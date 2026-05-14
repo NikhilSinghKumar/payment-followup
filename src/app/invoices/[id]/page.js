@@ -42,7 +42,7 @@ export default async function InvoiceDetailPage({ params }) {
           </h1>
           <div className="flex items-center text-sm text-zinc-500 gap-4 mt-1">
             <p>Code: {invoice.companyCode}</p>
-            <p>Invoice #{invoice.id}</p>
+            <p>Invoice No. #{invoice.invoiceNumber}</p>
           </div>
         </div>
 
@@ -174,10 +174,14 @@ function Card({ title, value }) {
 function StatusCard({ status }) {
   const color =
     status === "Paid"
-      ? "bg-green-100 text-green-600"
-      : status === "Overdue"
-        ? "bg-red-100 text-red-600"
-        : "bg-yellow-100 text-yellow-600";
+      ? "bg-green-100 text-green-700"
+      : status === "Partial"
+        ? "bg-amber-100 text-amber-700"
+        : status === "Overdue"
+          ? "bg-red-100 text-red-700"
+          : status === "Disputed"
+            ? "bg-zinc-200 text-zinc-700"
+            : "bg-blue-100 text-blue-700";
 
   return (
     <div className="bg-white/80 backdrop-blur-md border border-zinc-200 rounded-2xl shadow-md p-4">
