@@ -19,7 +19,7 @@ export async function getInvoices(search, status) {
     .leftJoin(clients, eq(invoices.clientId, clients.id))
     .leftJoin(payments, eq(payments.invoiceId, invoices.id));
 
-  // 🔍 SEARCH
+  // SEARCH
   if (search) {
     query = query.where(
       or(
@@ -70,27 +70,39 @@ export async function getInvoices(search, status) {
 }
 
 export async function createInvoice(formData) {
+  // =====================================
+  // FORM VALUES
+  // =====================================
+
   const companyCode = formData.get("companyCode")?.trim();
-
+  const invoiceNumber = formData.get("invoiceNumber")?.trim();
+  const financialYear = formData.get("financialYear")?.trim();
+  const notes = formData.get("notes")?.trim();
   const amount = parseFloat(formData.get("amount"));
-
   const invoiceFromDate = formData.get("invoiceFromDate")
     ? new Date(formData.get("invoiceFromDate"))
     : null;
-
   const invoiceToDate = formData.get("invoiceToDate")
     ? new Date(formData.get("invoiceToDate"))
     : null;
-
   const dueDate = formData.get("dueDate")
     ? new Date(formData.get("dueDate"))
     : null;
 
-  if (!companyCode || isNaN(amount)) {
-    return { error: "Invalid input" };
+  // =====================================
+  // VALIDATION
+  // =====================================
+
+  if (!companyCode || !invoiceNumber || !financialYear || isNaN(amount)) {
+    return {
+      error: "Invalid input",
+    };
   }
 
-  // 🔹 find client
+  // =====================================
+  // FIND CLIENT
+  // =====================================
+
   const client = await db
     .select()
     .from(clients)
@@ -98,39 +110,54 @@ export async function createInvoice(formData) {
     .limit(1);
 
   if (!client.length) {
-    return { error: "Client not found" };
+    return {
+      error: "Client not found",
+    };
   }
 
   const clientId = client[0].id;
 
-  // 🔹 duplicate check
+  // =====================================
+  // DUPLICATE CHECK
+  // =====================================
+
   const existing = await db
     .select()
     .from(invoices)
     .where(
       and(
         eq(invoices.clientId, clientId),
-        eq(invoices.amount, amount),
-        eq(invoices.invoiceFromDate, invoiceFromDate),
-        eq(invoices.invoiceToDate, invoiceToDate),
+        eq(invoices.financialYear, financialYear),
+        eq(invoices.invoiceNumber, invoiceNumber),
       ),
     )
     .limit(1);
 
   if (existing.length) {
-    return { error: "Duplicate invoice" };
+    return {
+      error: "Invoice number already exists",
+    };
   }
 
-  // 🔹 insert
+  // =====================================
+  // INSERT
+  // =====================================
+
   await db.insert(invoices).values({
     clientId,
+    financialYear,
+    invoiceNumber,
     amount,
+    status: "pending",
     invoiceFromDate,
     invoiceToDate,
     dueDate,
+    notes,
   });
 
-  return { success: true };
+  return {
+    success: true,
+  };
 }
 
 // Get Invoice by ID
@@ -140,6 +167,7 @@ export async function getInvoiceById(id) {
       id: invoices.id,
       amount: invoices.amount,
       dueDate: invoices.dueDate,
+      invoiceNumber: invoices.invoiceNumber,
       invoiceFromDate: invoices.invoiceFromDate,
       invoiceToDate: invoices.invoiceToDate,
       companyCode: clients.companyCode,
