@@ -2,9 +2,9 @@
 
 import { db } from "@/db";
 import { clients } from "@/db/schema";
-import { ilike, or, and, sql } from "drizzle-orm";
+import { ilike, or, and, sql, eq, isNull } from "drizzle-orm";
 
-// ✅ Create client
+// Create client
 export async function createClient(prevState, formData) {
   const companyName = formData.get("companyName");
   const companyCode = formData.get("companyCode");
@@ -33,7 +33,7 @@ export async function createClient(prevState, formData) {
   }
 }
 
-// ✅ Get clients
+// Get clients
 export async function getClients(search = "", letter = "") {
   const conditions = [];
 
@@ -56,4 +56,14 @@ export async function getClients(search = "", letter = "") {
     .select()
     .from(clients)
     .where(conditions.length ? and(...conditions) : undefined);
+}
+
+export async function getClientById(id) {
+  const client = await db
+    .select()
+    .from(clients)
+    .where(and(eq(clients.id, id), isNull(clients.deletedAt)))
+    .limit(1);
+
+  return client[0] || null;
 }
