@@ -30,7 +30,7 @@ export default function DeleteInvoiceButton({ invoiceId }) {
     <button
       onClick={handleDelete}
       disabled={pending}
-      className="px-3 py-1 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600 disabled:opacity-50 cursor-pointer"
+      className="h-8 px-3 rounded-lg bg-red-500 text-white text-xs hover:bg-red-600 disabled:opacity-50 cursor-pointer"
     >
       {pending ? "Deleting..." : "Delete"}
     </button>
