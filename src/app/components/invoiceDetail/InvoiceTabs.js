@@ -43,7 +43,7 @@ export default function InvoiceTabs({
           <button
             key={item.key}
             onClick={() => setTab(item.key)}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+            className={`rounded-lg px-4 py-2 text-sm font-medium cursor-pointer transition ${
               tab === item.key
                 ? "bg-blue-500 text-white"
                 : "text-zinc-600 hover:bg-zinc-100"
