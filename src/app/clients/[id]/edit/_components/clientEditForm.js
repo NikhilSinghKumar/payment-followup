@@ -1,27 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useActionState } from "react";
 import { updateClient } from "@/app/actions/client";
 
 export default function ClientEditForm({ client }) {
   const updateClientWithId = updateClient.bind(null, client.id);
 
   const [state, formAction, pending] = useActionState(updateClientWithId, null);
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  useEffect(() => {
-    if (state?.success) {
-      setShowSuccess(true);
-
-      const timer = setTimeout(() => {
-        setShowSuccess(false);
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [state]);
 
   return (
     <>
@@ -47,7 +33,7 @@ export default function ClientEditForm({ client }) {
         )}
 
         {/* Success */}
-        {showSuccess && (
+        {state?.success && (
           <div className="mb-4 p-3 bg-green-100 text-green-600 rounded-lg text-sm">
             Client updated successfully
           </div>
