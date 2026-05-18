@@ -175,14 +175,14 @@ export default async function InvoicePage({ searchParams }) {
                   <Link
                     href={`/invoices/${inv.id}/edit`}
                     className="
-                h-8 px-3
-                inline-flex items-center justify-center
-                rounded-lg
-                text-xs font-medium
-                bg-amber-50 text-amber-700
-                hover:bg-amber-100
-                transition
-              "
+                    h-8 px-3
+                    inline-flex items-center justify-center
+                    rounded-lg
+                    text-xs font-medium
+                    bg-amber-50 text-amber-700
+                    hover:bg-amber-100
+                    transition
+                  "
                   >
                     Edit
                   </Link>

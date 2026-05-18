@@ -36,13 +36,13 @@ export default async function ClientsPage({ searchParams }) {
           <Link
             href="/clients/new"
             className="
-          h-10 px-4 inline-flex items-center justify-center
-          rounded-xl text-white text-sm font-medium
-          bg-gradient-to-r from-blue-500 to-purple-500
-          shadow-md hover:shadow-lg
-          transition-all duration-200
-          hover:scale-[1.02]
-        "
+            h-10 px-4 inline-flex items-center justify-center
+            rounded-xl text-white text-sm font-medium
+            bg-gradient-to-r from-blue-500 to-purple-500
+            shadow-md hover:shadow-lg
+            transition-all duration-200
+            hover:scale-[1.02]
+          "
           >
             + Add Client
           </Link>

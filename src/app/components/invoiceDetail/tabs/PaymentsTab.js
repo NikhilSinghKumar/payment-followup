@@ -1,10 +1,12 @@
-"use state";
+"use client";
 import { useState } from "react";
 
 import AddPaymentForm from "../forms/AddPaymentForm";
+import EditPaymentForm from "../forms/EditPaymentForm";
 
 export default function PaymentsTab({ invoiceId, payments }) {
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -36,23 +38,55 @@ export default function PaymentsTab({ invoiceId, payments }) {
         </div>
 
         {payments.map((payment) => (
-          <div
-            key={payment.id}
-            className="grid grid-cols-[140px_140px_120px_140px_120px_1fr] gap-3 border-t border-zinc-100 px-4 py-3 text-sm"
-          >
-            <div>{payment.receiptNumber || "-"}</div>
+          <div key={payment.id}>
+            {/* Row */}
+            <div
+              className="
+        grid grid-cols-[140px_140px_120px_140px_120px_1fr_100px]
+        gap-3 border-t border-zinc-100
+        px-4 py-3 text-sm items-center
+      "
+            >
+              <div>{payment.receiptNumber || "-"}</div>
 
-            <div>
-              {new Date(payment.paymentDate).toLocaleDateString("en-IN")}
+              <div>
+                {new Date(payment.paymentDate).toLocaleDateString("en-IN")}
+              </div>
+
+              <div>{payment.method || "-"}</div>
+
+              <div>{payment.reference || "-"}</div>
+
+              <div>₹{Number(payment.amount).toLocaleString("en-IN")}</div>
+
+              <div>{payment.notes || "-"}</div>
+
+              {/* Actions */}
+              <div>
+                <button
+                  onClick={() =>
+                    setEditingId(editingId === payment.id ? null : payment.id)
+                  }
+                  className="
+            rounded-lg bg-amber-100
+            px-3 py-1.5 text-xs font-medium
+            text-amber-700 hover:bg-amber-200
+          "
+                >
+                  {editingId === payment.id ? "Close" : "Edit"}
+                </button>
+              </div>
             </div>
 
-            <div>{payment.method || "-"}</div>
-
-            <div>{payment.reference || "-"}</div>
-
-            <div>₹{Number(payment.amount).toLocaleString("en-IN")}</div>
-
-            <div>{payment.notes || "-"}</div>
+            {/* Edit Form */}
+            {editingId === payment.id && (
+              <EditPaymentForm
+                payment={payment}
+                invoiceId={invoiceId}
+                onCancel={() => setEditingId(null)}
+                onSuccess={() => setEditingId(null)}
+              />
+            )}
           </div>
         ))}
       </div>

@@ -5,7 +5,7 @@ import { payments } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-export async function updatePayment(paymentId, invoiceId, formData) {
+export async function updatePayment(paymentId, invoiceId, prevState, formData) {
   try {
     const amount = parseFloat(formData.get("amount"));
 
@@ -34,10 +34,7 @@ export async function updatePayment(paymentId, invoiceId, formData) {
       })
       .where(eq(payments.id, paymentId));
 
-    // refresh invoice detail page
     revalidatePath(`/invoices/${invoiceId}`);
-
-    // refresh invoice list
     revalidatePath("/invoices");
 
     return { success: true };
