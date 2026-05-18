@@ -67,3 +67,34 @@ export async function getClientById(id) {
 
   return client[0] || null;
 }
+
+// Update client
+export async function updateClient(id, prevState, formData) {
+  const companyName = formData.get("companyName");
+  const companyCode = formData.get("companyCode");
+
+  if (!companyName) {
+    return { error: "Company name is required" };
+  }
+
+  if (!companyCode) {
+    return { error: "Company code is required" };
+  }
+
+  try {
+    await db
+      .update(clients)
+      .set({
+        companyName,
+        companyCode,
+        email: formData.get("email"),
+        phone: formData.get("phone"),
+        updatedAt: new Date(),
+      })
+      .where(eq(clients.id, id));
+
+    return { success: true };
+  } catch (err) {
+    return { error: "Failed to update client" };
+  }
+}
