@@ -37,58 +37,64 @@ export default function PaymentsTab({ invoiceId, payments }) {
           <div>Notes</div>
         </div>
 
-        {payments.map((payment) => (
-          <div key={payment.id}>
-            {/* Row */}
-            <div
-              className="
+        {payments.length === 0 ? (
+          <div className="p-10 text-center text-sm text-zinc-500">
+            No paymentss added yet.
+          </div>
+        ) : (
+          payments.map((payment) => (
+            <div key={payment.id}>
+              {/* Row */}
+              <div
+                className="
         grid grid-cols-[140px_140px_120px_140px_120px_1fr_100px]
         gap-3 border-t border-zinc-100
         px-4 py-3 text-sm items-center
       "
-            >
-              <div>{payment.receiptNumber || "-"}</div>
+              >
+                <div>{payment.receiptNumber || "-"}</div>
 
-              <div>
-                {new Date(payment.paymentDate).toLocaleDateString("en-IN")}
-              </div>
+                <div>
+                  {new Date(payment.paymentDate).toLocaleDateString("en-IN")}
+                </div>
 
-              <div>{payment.method || "-"}</div>
+                <div>{payment.method || "-"}</div>
 
-              <div>{payment.reference || "-"}</div>
+                <div>{payment.reference || "-"}</div>
 
-              <div>₹{Number(payment.amount).toLocaleString("en-IN")}</div>
+                <div>₹{Number(payment.amount).toLocaleString("en-IN")}</div>
 
-              <div>{payment.notes || "-"}</div>
+                <div>{payment.notes || "-"}</div>
 
-              {/* Actions */}
-              <div>
-                <button
-                  onClick={() =>
-                    setEditingId(editingId === payment.id ? null : payment.id)
-                  }
-                  className="
+                {/* Actions */}
+                <div>
+                  <button
+                    onClick={() =>
+                      setEditingId(editingId === payment.id ? null : payment.id)
+                    }
+                    className="
             rounded-lg bg-amber-100
             px-3 py-1.5 text-xs font-medium
             text-amber-700 hover:bg-amber-200
           "
-                >
-                  {editingId === payment.id ? "Close" : "Edit"}
-                </button>
+                  >
+                    {editingId === payment.id ? "Close" : "Edit"}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Edit Form */}
-            {editingId === payment.id && (
-              <EditPaymentForm
-                payment={payment}
-                invoiceId={invoiceId}
-                onCancel={() => setEditingId(null)}
-                onSuccess={() => setEditingId(null)}
-              />
-            )}
-          </div>
-        ))}
+              {/* Edit Form */}
+              {editingId === payment.id && (
+                <EditPaymentForm
+                  payment={payment}
+                  invoiceId={invoiceId}
+                  onCancel={() => setEditingId(null)}
+                  onSuccess={() => setEditingId(null)}
+                />
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
