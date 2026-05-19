@@ -44,3 +44,38 @@ export async function POST(req) {
     return Response.json({ error: "Failed to add followup" }, { status: 500 });
   }
 }
+
+export async function PATCH(req) {
+  try {
+    const body = await req.json();
+
+    const { id, note, followupDate } = body;
+
+    if (!id || !note) {
+      return Response.json(
+        { error: "id and note are required" },
+        { status: 400 },
+      );
+    }
+
+    await db
+      .update(followups)
+      .set({
+        note,
+        followupDate: followupDate ? new Date(followupDate) : null,
+      })
+      .where(eq(followups.id, id));
+
+    return Response.json({
+      success: true,
+      message: "Followup updated successfully",
+    });
+  } catch (err) {
+    console.error("Followup Update Error:", err);
+
+    return Response.json(
+      { error: "Failed to update followup" },
+      { status: 500 },
+    );
+  }
+}
