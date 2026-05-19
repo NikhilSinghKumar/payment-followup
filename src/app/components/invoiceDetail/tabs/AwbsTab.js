@@ -16,7 +16,7 @@ export default function AwbsTab({ invoiceId, awbs }) {
 
         {/* ACTIONS */}
         <div className="flex gap-2">
-          <button className="rounded-lg border border-zinc-400 dark:text-zinc-500 px-4 py-2 text-sm">
+          <button className="rounded-lg border border-zinc-400 dark:text-zinc-500 px-4 py-2 text-sm cursor-pointer">
             Import CSV
           </button>
 
