@@ -47,10 +47,12 @@ export default function PaymentsTab({ invoiceId, payments }) {
               {/* Row */}
               <div
                 className="
-        grid grid-cols-[140px_140px_120px_140px_120px_1fr_100px]
-        gap-3 border-t border-zinc-100
-        px-4 py-3 text-sm items-center
-      "
+                grid grid-cols-[140px_140px_120px_140px_120px_1fr_100px]
+                gap-3 border-t border-zinc-100
+                px-4 py-3 text-sm items-center
+                text-xs font-semibold uppercase tracking-wide
+                text-zinc-600 dark:text-zinc-600
+                "
               >
                 <div>{payment.receiptNumber || "-"}</div>
 
