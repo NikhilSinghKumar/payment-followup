@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
-
+import { useRouter } from "next/navigation";
 import AddFollowupForm from "../forms/AddFollowupForm";
+import EditFollowupForm from "../forms/EditFollowupForm";
 
 export default function FollowupsTab({ invoiceId, followups }) {
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+
+  const router = useRouter();
 
   return (
     <div className="space-y-4">
@@ -44,35 +48,59 @@ export default function FollowupsTab({ invoiceId, followups }) {
             <div
               key={followup.id}
               className="
-                rounded-xl border border-zinc-200
-                bg-zinc-50 p-4
-              "
+              rounded-xl border border-zinc-200
+              bg-zinc-50 p-4
+            "
             >
               {/* TOP */}
               <div className="flex items-start justify-between gap-4">
                 <div className="text-sm text-zinc-800">{followup.note}</div>
-
-                <div className="rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700">
-                  Followup
-                </div>
               </div>
 
               {/* FOOTER */}
-              <div className="mt-4 flex flex-wrap gap-4 text-xs text-zinc-500">
-                <div>
-                  Created:{" "}
-                  {new Date(followup.createdAt).toLocaleDateString("en-IN")}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex flex-wrap gap-4 text-xs text-zinc-500">
+                  <div>
+                    Created:{" "}
+                    {new Date(followup.createdAt).toLocaleDateString("en-IN")}
+                  </div>
+
+                  {followup.followupDate && (
+                    <div>
+                      Followup:{" "}
+                      {new Date(followup.followupDate).toLocaleDateString(
+                        "en-IN",
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {followup.followupDate && (
-                  <div>
-                    Followup:{" "}
-                    {new Date(followup.followupDate).toLocaleDateString(
-                      "en-IN",
-                    )}
-                  </div>
-                )}
+                {/* Edit */}
+                <button
+                  onClick={() =>
+                    setEditingId(editingId === followup.id ? null : followup.id)
+                  }
+                  className="
+                  rounded-lg bg-orange-100
+                  px-3 py-1.5 text-xs font-medium
+                  text-orange-700 hover:bg-orange-200 cursor-pointer
+                "
+                >
+                  {editingId === followup.id ? "Close" : "Edit"}
+                </button>
               </div>
+
+              {/* EDIT FORM */}
+              {editingId === followup.id && (
+                <EditFollowupForm
+                  followup={followup}
+                  onCancel={() => setEditingId(null)}
+                  onSuccess={() => {
+                    setEditingId(null);
+                    router.refresh();
+                  }}
+                />
+              )}
             </div>
           ))
         )}
