@@ -61,18 +61,7 @@ export default function AddFollowupForm({ invoiceId, onSuccess }) {
             rows={4}
             required
             placeholder="Enter followup details..."
-            className="
-            w-full rounded-xl border border-zinc-200
-            bg-white px-3 py-3 text-sm text-zinc-900
-            outline-none transition-all
-            placeholder:text-zinc-400
-            focus:ring-2 focus:ring-orange-500
-
-            dark:border-zinc-100
-            dark:bg-zinc-50
-            dark:text-black
-            dark:placeholder:text-zinc-500
-            "
+            className="w-full rounded-xl px-3 py-3 border border-zinc-200/80 dark:border-zinc-700/50 bg-white text-zinc-800 dark:text-zinc-800 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 shadow-sm dark:shadow-black/10 transition-all duration-200 focus:outline-none focus:ring-2 focus:border-transparent text-sm"
           />
         </div>
 
