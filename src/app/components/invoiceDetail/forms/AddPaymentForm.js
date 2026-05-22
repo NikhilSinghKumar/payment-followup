@@ -30,7 +30,7 @@ export default function AddPaymentForm({ invoiceId, onSuccess }) {
           {/* RECEIPT NUMBER */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-zinc-600">
-              Receipt Number
+              Receipt Number *
             </label>
 
             <input
