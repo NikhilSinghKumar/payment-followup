@@ -32,6 +32,42 @@ export default async function ClientDetailPage({ params }) {
   // =====================================
   // INVOICE SUMMARY
   // =====================================
+  // =====================================
+  // AGGREGATE SUBQUERIES
+  // =====================================
+
+  const awbCounts = db
+    .select({
+      invoiceId: invoiceAwbs.invoiceId,
+
+      awbCount: count(invoiceAwbs.id).as("awb_count"),
+    })
+    .from(invoiceAwbs)
+    .where(isNull(invoiceAwbs.deletedAt))
+    .groupBy(invoiceAwbs.invoiceId)
+    .as("awb_counts");
+
+  const paymentTotals = db
+    .select({
+      invoiceId: paymentAllocations.invoiceId,
+
+      paidAmount: sql`
+    COALESCE(
+      SUM(${paymentAllocations.allocatedAmount}),
+      0
+    )
+  `
+        .mapWith(Number)
+        .as("paid_amount"),
+    })
+    .from(paymentAllocations)
+    .where(isNull(paymentAllocations.deletedAt))
+    .groupBy(paymentAllocations.invoiceId)
+    .as("payment_totals");
+
+  // =====================================
+  // INVOICE SUMMARY
+  // =====================================
 
   const invoiceData = await db
     .select({
@@ -51,65 +87,55 @@ export default async function ClientDetailPage({ params }) {
 
       invoiceToDate: invoices.invoiceToDate,
 
-      awbCount: count(invoiceAwbs.id),
+      awbCount: sql`
+      COALESCE(${awbCounts.awbCount}, 0)
+    `.mapWith(Number),
 
       paidAmount: sql`
-        COALESCE(
-          SUM(${paymentAllocations.allocatedAmount}),
-          0
-        )
-      `,
-
-      outstandingAmount: sql`
-        ${invoices.amount}
-        -
-        COALESCE(
-          SUM(${paymentAllocations.allocatedAmount}),
-          0
-        )
-      `,
+      COALESCE(${paymentTotals.paidAmount}, 0)
+    `.mapWith(Number),
     })
+
     .from(invoices)
 
-    .leftJoin(
-      invoiceAwbs,
-      and(
-        eq(invoiceAwbs.invoiceId, invoices.id),
-        isNull(invoiceAwbs.deletedAt),
-      ),
-    )
+    .leftJoin(awbCounts, eq(awbCounts.invoiceId, invoices.id))
 
-    .leftJoin(
-      paymentAllocations,
-      and(
-        eq(paymentAllocations.invoiceId, invoices.id),
-        isNull(paymentAllocations.deletedAt),
-      ),
-    )
+    .leftJoin(paymentTotals, eq(paymentTotals.invoiceId, invoices.id))
 
     .where(and(eq(invoices.clientId, clientId), isNull(invoices.deletedAt)))
 
-    .groupBy(invoices.id)
-
     .orderBy(desc(invoices.id));
+
+  // NORMALIZED INVOIVE DATA
+  const normalizedInvoiceData = invoiceData.map((invoice) => {
+    const amount = Number(invoice.amount || 0);
+
+    const paidAmount = Number(invoice.paidAmount || 0);
+
+    return {
+      ...invoice,
+
+      outstandingAmount: amount - paidAmount,
+    };
+  });
 
   // =====================================
   // SUMMARY TOTALS
   // =====================================
 
-  const totalInvoices = invoiceData.length;
+  const totalInvoices = normalizedInvoiceData.length;
 
-  const totalAmount = invoiceData.reduce(
+  const totalAmount = normalizedInvoiceData.reduce(
     (sum, item) => sum + Number(item.amount || 0),
     0,
   );
 
-  const totalOutstanding = invoiceData.reduce(
+  const totalOutstanding = normalizedInvoiceData.reduce(
     (sum, item) => sum + Number(item.outstandingAmount || 0),
     0,
   );
 
-  const overdueInvoices = invoiceData.filter((invoice) => {
+  const overdueInvoices = normalizedInvoiceData.filter((invoice) => {
     if (!invoice.dueDate) return false;
 
     return (
@@ -282,12 +308,12 @@ export default async function ClientDetailPage({ params }) {
 
           {/* TABLE BODY */}
           <div>
-            {invoiceData.length === 0 ? (
+            {normalizedInvoiceData.length === 0 ? (
               <div className="p-10 text-center text-sm text-zinc-500">
                 No invoices found.
               </div>
             ) : (
-              invoiceData.map((invoice) => {
+              normalizedInvoiceData.map((invoice) => {
                 const outstanding = Number(invoice.outstandingAmount || 0);
                 const isOverdue =
                   invoice.dueDate &&
