@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect } from "react";
 import { updatePayment } from "@/app/actions/payment";
 import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
 
 export default function EditPaymentForm({
   payment,
@@ -10,20 +11,21 @@ export default function EditPaymentForm({
   onCancel,
   onSuccess,
 }) {
+  const router = useRouter();
+
   const updatePaymentWithIds = updatePayment.bind(null, payment.id, invoiceId);
 
   const [state, formAction] = useActionState(updatePaymentWithIds, null);
 
   useEffect(() => {
     if (state?.success) {
+      router.refresh();
+
       if (onSuccess) {
         onSuccess();
       }
     }
-
-    if (state?.error) {
-    }
-  }, [state?.success, state?.error]);
+  }, [state?.success]);
 
   return (
     <form
