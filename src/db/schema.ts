@@ -46,6 +46,93 @@ export const clients = pgTable("clients", {
 });
 
 // =========================
+// CLIENT CONTACTS
+// =========================
+
+export const clientContacts = pgTable(
+  "client_contacts",
+  {
+    id: serial("id").primaryKey(),
+
+    // =====================================
+    // CLIENT
+    // =====================================
+
+    clientId: integer("client_id")
+      .references(() => clients.id)
+      .notNull(),
+
+    // =====================================
+    // CONTACT INFO
+    // =====================================
+
+    name: text("name").notNull(),
+
+    designation: text("designation"),
+
+    department: text("department"),
+
+    email: text("email"),
+
+    mobile: text("mobile"),
+
+    alternateMobile: text("alternate_mobile"),
+
+    landline: text("landline"),
+
+    whatsappNumber: text("whatsapp_number"),
+
+    // =====================================
+    // FLAGS
+    // =====================================
+
+    isPrimary: boolean("is_primary").default(false),
+
+    isActive: boolean("is_active").default(true),
+
+    // =====================================
+    // NOTES
+    // =====================================
+
+    notes: text("notes"),
+
+    // =====================================
+    // AUDIT
+    // =====================================
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    }).defaultNow(),
+
+    deletedAt: timestamp("deleted_at", {
+      withTimezone: true,
+    }),
+  },
+  (table) => {
+    return {
+      // =====================================
+      // INDEXES
+      // =====================================
+
+      clientIdx: index("client_contact_client_idx").on(table.clientId),
+
+      emailIdx: index("client_contact_email_idx").on(table.email),
+
+      mobileIdx: index("client_contact_mobile_idx").on(table.mobile),
+
+      primaryIdx: index("client_contact_primary_idx").on(
+        table.clientId,
+        table.isPrimary,
+      ),
+    };
+  },
+);
+
+// =========================
 // INVOICES
 // =========================
 export const invoices = pgTable(
