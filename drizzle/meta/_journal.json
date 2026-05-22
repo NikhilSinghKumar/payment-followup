@@ -15,6 +15,13 @@
       "when": 1778670762022,
       "tag": "0001_amazing_nick_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779368779737,
+      "tag": "0002_eminent_stryfe",
+      "breakpoints": true
     }
   ]
 }
