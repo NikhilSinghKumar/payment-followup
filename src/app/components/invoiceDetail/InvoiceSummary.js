@@ -16,13 +16,13 @@ export default function InvoiceSummary({ data }) {
 
               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
                 <span>{data.invoiceNumber}</span>
-                <span>•</span>
+                <span className="text-pink-400 font-extrabold">•</span>
                 <span>{data.financialYear}</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-5">
             <SummaryItem
               label="Invoice Amount"
               value={`₹${Number(data.amount).toLocaleString("en-IN")}`}
@@ -38,20 +38,29 @@ export default function InvoiceSummary({ data }) {
               value={`₹${Number(data.outstanding).toLocaleString("en-IN")}`}
             />
 
-            {/* <SummaryItem label="AWBs" value={data.awbCount} /> */}
-          </div>
-        </div>
+            {/* STATUS */}
+            <div>
+              <div className="text-xs uppercase tracking-wide text-zinc-500">
+                Status
+              </div>
 
-        {/* RIGHT */}
-        <div className="space-y-3">
-          <StatusBadge status={data.status} />
+              <div className="mt-1">
+                <StatusBadge status={data.status} />
+              </div>
+            </div>
 
-          <div className="text-sm text-zinc-500">Due Date</div>
+            {/* DUE DATE */}
+            <div>
+              <div className="text-xs uppercase tracking-wide text-zinc-500">
+                Due Date
+              </div>
 
-          <div className="text-sm font-medium text-zinc-700">
-            {data.dueDate
-              ? new Date(data.dueDate).toLocaleDateString("en-IN")
-              : "-"}
+              <div className="mt-1 text-lg font-semibold text-zinc-800">
+                {data.dueDate
+                  ? new Date(data.dueDate).toLocaleDateString("en-IN")
+                  : "-"}
+              </div>
+            </div>
           </div>
         </div>
       </div>
