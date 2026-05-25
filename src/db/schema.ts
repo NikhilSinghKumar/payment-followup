@@ -45,60 +45,71 @@ export const clients = pgTable("clients", {
   }),
 });
 
-// =========================
-// CLIENT CONTACTS
-// =========================
+// =====================================================
+// CLIENT LOCATIONS
+// =====================================================
 
-export const clientContacts = pgTable(
-  "client_contacts",
+export const clientLocations = pgTable(
+  "client_locations",
   {
     id: serial("id").primaryKey(),
 
-    // =====================================
+    // =====================================================
     // CLIENT
-    // =====================================
+    // =====================================================
 
     clientId: integer("client_id")
-      .references(() => clients.id)
+      .references(() => clients.id, {
+        onDelete: "cascade",
+      })
       .notNull(),
 
-    // =====================================
-    // CONTACT INFO
-    // =====================================
+    // =====================================================
+    // LOCATION INFO
+    // =====================================================
 
     name: text("name").notNull(),
+    // Example:
+    // Delhi HO
+    // Gurgaon Branch
 
-    designation: text("designation"),
+    code: text("code"),
 
-    department: text("department"),
+    type: text("type").$type<
+      "head_office" | "branch" | "warehouse" | "billing"
+    >(),
 
-    email: text("email"),
+    // =====================================================
+    // ADDRESS
+    // =====================================================
 
-    mobile: text("mobile"),
+    address: text("address"),
 
-    alternateMobile: text("alternate_mobile"),
+    city: text("city"),
 
-    landline: text("landline"),
+    state: text("state"),
 
-    whatsappNumber: text("whatsapp_number"),
+    pincode: text("pincode"),
 
-    // =====================================
+    country: text("country").default("India"),
+
+    // =====================================================
+    // TAX
+    // =====================================================
+
+    gstNumber: text("gst_number"),
+
+    // =====================================================
     // FLAGS
-    // =====================================
+    // =====================================================
 
     isPrimary: boolean("is_primary").default(false),
 
     isActive: boolean("is_active").default(true),
 
-    // =====================================
-    // NOTES
-    // =====================================
-
-    notes: text("notes"),
-
-    // =====================================
+    // =====================================================
     // AUDIT
-    // =====================================
+    // =====================================================
 
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -114,19 +125,318 @@ export const clientContacts = pgTable(
   },
   (table) => {
     return {
-      // =====================================
+      // =====================================================
       // INDEXES
-      // =====================================
+      // =====================================================
+
+      clientIdx: index("client_location_client_idx").on(table.clientId),
+
+      cityIdx: index("client_location_city_idx").on(table.city),
+
+      stateIdx: index("client_location_state_idx").on(table.state),
+
+      gstIdx: index("client_location_gst_idx").on(table.gstNumber),
+
+      primaryIdx: index("client_location_primary_idx").on(
+        table.clientId,
+        table.isPrimary,
+      ),
+
+      uniqueLocationCode: uniqueIndex("unique_client_location_code").on(
+        table.clientId,
+        table.code,
+      ),
+    };
+  },
+);
+
+// =====================================================
+// CLIENT CONTACTS
+// =====================================================
+
+export const clientContacts = pgTable(
+  "client_contacts",
+  {
+    id: serial("id").primaryKey(),
+
+    // =====================================================
+    // CLIENT
+    // =====================================================
+
+    clientId: integer("client_id")
+      .references(() => clients.id, {
+        onDelete: "cascade",
+      })
+      .notNull(),
+
+    // =====================================================
+    // CONTACT INFO
+    // =====================================================
+
+    name: text("name").notNull(),
+
+    designation: text("designation"),
+
+    department: text("department"),
+
+    // =====================================================
+    // FLAGS
+    // =====================================================
+
+    isPrimary: boolean("is_primary").default(false),
+
+    isActive: boolean("is_active").default(true),
+
+    // =====================================================
+    // NOTES
+    // =====================================================
+
+    notes: text("notes"),
+
+    // =====================================================
+    // AUDIT
+    // =====================================================
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    }).defaultNow(),
+
+    deletedAt: timestamp("deleted_at", {
+      withTimezone: true,
+    }),
+  },
+  (table) => {
+    return {
+      // =====================================================
+      // INDEXES
+      // =====================================================
 
       clientIdx: index("client_contact_client_idx").on(table.clientId),
 
-      emailIdx: index("client_contact_email_idx").on(table.email),
-
-      mobileIdx: index("client_contact_mobile_idx").on(table.mobile),
+      nameIdx: index("client_contact_name_idx").on(table.name),
 
       primaryIdx: index("client_contact_primary_idx").on(
         table.clientId,
         table.isPrimary,
+      ),
+    };
+  },
+);
+
+// =====================================================
+// CLIENT CONTACT LOCATIONS
+// =====================================================
+
+export const clientContactLocations = pgTable(
+  "client_contact_locations",
+  {
+    id: serial("id").primaryKey(),
+
+    // =====================================================
+    // CONTACT
+    // =====================================================
+
+    contactId: integer("contact_id")
+      .references(() => clientContacts.id, {
+        onDelete: "cascade",
+      })
+      .notNull(),
+
+    // =====================================================
+    // LOCATION
+    // =====================================================
+
+    locationId: integer("location_id")
+      .references(() => clientLocations.id, {
+        onDelete: "cascade",
+      })
+      .notNull(),
+
+    // =====================================================
+    // FLAGS
+    // =====================================================
+
+    isPrimary: boolean("is_primary").default(false),
+
+    // =====================================================
+    // AUDIT
+    // =====================================================
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+  },
+  (table) => {
+    return {
+      // =====================================================
+      // UNIQUENESS
+      // =====================================================
+
+      uniqueContactLocation: uniqueIndex("unique_contact_location").on(
+        table.contactId,
+        table.locationId,
+      ),
+
+      // =====================================================
+      // INDEXES
+      // =====================================================
+
+      contactIdx: index("client_contact_location_contact_idx").on(
+        table.contactId,
+      ),
+
+      locationIdx: index("client_contact_location_location_idx").on(
+        table.locationId,
+      ),
+
+      primaryIdx: index("client_contact_location_primary_idx").on(
+        table.contactId,
+        table.isPrimary,
+      ),
+    };
+  },
+);
+
+// =====================================================
+// CLIENT CONTACT NUMBERS
+// =====================================================
+
+export const clientContactNumbers = pgTable(
+  "client_contact_numbers",
+  {
+    id: serial("id").primaryKey(),
+
+    // =====================================================
+    // CONTACT
+    // =====================================================
+
+    contactId: integer("contact_id")
+      .references(() => clientContacts.id, {
+        onDelete: "cascade",
+      })
+      .notNull(),
+
+    // =====================================================
+    // NUMBER INFO
+    // =====================================================
+
+    number: text("number").notNull(),
+
+    type: text("type").$type<"mobile" | "whatsapp" | "landline" | "office">(),
+
+    countryCode: text("country_code").default("+91"),
+
+    // =====================================================
+    // FLAGS
+    // =====================================================
+
+    isPrimary: boolean("is_primary").default(false),
+
+    isWhatsapp: boolean("is_whatsapp").default(false),
+
+    isActive: boolean("is_active").default(true),
+
+    // =====================================================
+    // AUDIT
+    // =====================================================
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+
+    deletedAt: timestamp("deleted_at", {
+      withTimezone: true,
+    }),
+  },
+  (table) => {
+    return {
+      // =====================================================
+      // INDEXES
+      // =====================================================
+
+      contactIdx: index("client_contact_number_contact_idx").on(
+        table.contactId,
+      ),
+
+      numberIdx: index("client_contact_number_idx").on(table.number),
+
+      primaryIdx: index("client_contact_number_primary_idx").on(
+        table.contactId,
+        table.isPrimary,
+      ),
+    };
+  },
+);
+
+// =====================================================
+// CLIENT CONTACT EMAILS
+// =====================================================
+
+export const clientContactEmails = pgTable(
+  "client_contact_emails",
+  {
+    id: serial("id").primaryKey(),
+
+    // =====================================================
+    // CONTACT
+    // =====================================================
+
+    contactId: integer("contact_id")
+      .references(() => clientContacts.id, {
+        onDelete: "cascade",
+      })
+      .notNull(),
+
+    // =====================================================
+    // EMAIL INFO
+    // =====================================================
+
+    email: text("email").notNull(),
+
+    label: text("label").$type<"work" | "personal" | "billing" | "accounts">(),
+
+    // =====================================================
+    // FLAGS
+    // =====================================================
+
+    isPrimary: boolean("is_primary").default(false),
+
+    isActive: boolean("is_active").default(true),
+
+    // =====================================================
+    // AUDIT
+    // =====================================================
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+
+    deletedAt: timestamp("deleted_at", {
+      withTimezone: true,
+    }),
+  },
+  (table) => {
+    return {
+      // =====================================================
+      // INDEXES
+      // =====================================================
+
+      contactIdx: index("client_contact_email_contact_idx").on(table.contactId),
+
+      emailIdx: index("client_contact_email_idx").on(table.email),
+
+      primaryIdx: index("client_contact_email_primary_idx").on(
+        table.contactId,
+        table.isPrimary,
+      ),
+
+      uniqueEmailPerContact: uniqueIndex("unique_email_per_contact").on(
+        table.contactId,
+        table.email,
       ),
     };
   },
