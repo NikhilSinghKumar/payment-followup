@@ -1,27 +1,23 @@
 "use server";
 
 import { db } from "@/db";
-import { invoices, clients, payments, followups } from "@/db/schema";
-import { eq, sql, ilike, or, and } from "drizzle-orm";
+import {
+  invoices,
+  clients,
+  payments,
+  paymentAllocations,
+  followups,
+  invoiceAwbs,
+} from "@/db/schema";
+import { eq, sql, ilike, isNull, or, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function getInvoices(search, status) {
-  let query = db
-    .select({
-      id: invoices.id,
-      amount: invoices.amount,
-      dueDate: invoices.dueDate,
-      companyName: clients.companyName,
-      companyCode: clients.companyCode,
-      paid: sql`COALESCE(SUM(${payments.amount}), 0)`,
-    })
-    .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
-    .leftJoin(payments, eq(payments.invoiceId, invoices.id));
+  const conditions = [isNull(invoices.deletedAt)];
 
   // SEARCH
   if (search) {
-    query = query.where(
+    conditions.push(
       or(
         ilike(clients.companyName, `%${search}%`),
         ilike(clients.companyCode, `%${search}%`),
@@ -29,11 +25,28 @@ export async function getInvoices(search, status) {
     );
   }
 
+  const query = db
+    .select({
+      id: invoices.id,
+      amount: invoices.amount,
+      dueDate: invoices.dueDate,
+      companyName: clients.companyName,
+      companyCode: clients.companyCode,
+
+      paid: sql`
+        COALESCE(SUM(${payments.amount}), 0)
+      `,
+    })
+    .from(invoices)
+    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(payments, eq(payments.invoiceId, invoices.id))
+    .where(and(...conditions));
+
   const data = await query
     .groupBy(invoices.id, clients.companyName, clients.companyCode)
     .orderBy(invoices.id);
 
-  // 🔥 compute + filter
+  // COMPUTE STATUS
   return data
     .map((inv) => {
       const amount = Number(inv.amount);
@@ -41,6 +54,7 @@ export async function getInvoices(search, status) {
       const due = amount - paid;
 
       let statusValue = "pending";
+
       if (paid === 0) statusValue = "pending";
       else if (paid < amount) statusValue = "partial";
       else statusValue = "paid";
@@ -60,8 +74,10 @@ export async function getInvoices(search, status) {
 
       if (status === "overdue") {
         if (!inv.dueDate) return false;
+
         const due = new Date(inv.dueDate);
         due.setHours(0, 0, 0, 0);
+
         return due < today && inv.status !== "paid";
       }
 
@@ -216,27 +232,67 @@ export async function updateInvoice(id, formData) {
 }
 
 // DELETE INVOICE
+
 export async function deleteInvoice(id) {
-  if (!id) {
-    return { error: "Invalid invoice id" };
-  }
-
   try {
-    // delete child records first
-    await db.delete(payments).where(eq(payments.invoiceId, id));
+    const deletedAt = new Date();
 
-    await db.delete(followups).where(eq(followups.invoiceId, id));
+    // =====================================
+    // PAYMENT ALLOCATIONS
+    // =====================================
 
-    // delete invoice
-    await db.delete(invoices).where(eq(invoices.id, id));
+    await db
+      .update(paymentAllocations)
+      .set({ deletedAt })
+      .where(eq(paymentAllocations.invoiceId, id));
 
-    // refresh invoice list
-    revalidatePath("/invoices");
+    // =====================================
+    // PAYMENTS
+    // =====================================
 
-    return { success: true };
-  } catch (err) {
-    console.error(err);
+    await db
+      .update(payments)
+      .set({ deletedAt })
+      .where(eq(payments.invoiceId, id));
 
-    return { error: "Failed to delete invoice" };
+    // =====================================
+    // FOLLOWUPS
+    // =====================================
+
+    await db
+      .update(followups)
+      .set({ deletedAt })
+      .where(eq(followups.invoiceId, id));
+
+    // =====================================
+    // AWBS
+    // =====================================
+
+    await db
+      .update(invoiceAwbs)
+      .set({ deletedAt })
+      .where(eq(invoiceAwbs.invoiceId, id));
+
+    // =====================================
+    // INVOICE
+    // =====================================
+
+    await db
+      .update(invoices)
+      .set({
+        deletedAt,
+      })
+      .where(eq(invoices.id, id));
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error(error);
+
+    return {
+      success: false,
+      message: "Failed to delete invoice",
+    };
   }
 }
