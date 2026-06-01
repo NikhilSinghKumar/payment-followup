@@ -9,11 +9,25 @@ import {
 import { getClientById } from "@/app/actions/client";
 
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
+import ClientTabs from "@/app/components/client/clientTabs";
+import ClientOverviewTab from "@/app/components/client/tabs/clientOverviewTab";
+import ClientInvoicesTab from "@/app/components/client/tabs/clientInvoicesTab";
+import ClientLocationsTab from "@/app/components/client/tabs/clientLocationsTab";
+import ClientContactsTab from "@/app/components/client/tabs/clientContactsTab";
+import ClientPaymentsTab from "@/app/components/client/tabs/clientPaymentsTab";
+import ClientFollowupsTab from "@/app/components/client/tabs/clientFollowupsTab";
+import { getClientLocations } from "@/app/actions/clientLocations";
 
-export default async function ClientDetailPage({ params }) {
+export default async function ClientDetailPage({ params, searchParams }) {
   const { id } = await params;
 
+  const resolvedSearchParams = await searchParams;
+
   const clientId = Number(id);
+
+  const activeTab = resolvedSearchParams?.tab || "overview";
+
+  const clientLocations = await getClientLocations(clientId);
 
   if (isNaN(clientId)) {
     return <div className="p-6 text-red-500">Invalid client ID</div>;
@@ -259,143 +273,29 @@ export default async function ClientDetailPage({ params }) {
           </div>
         </div>
 
-        {/* ===================================== */}
-        {/* FILTER BAR */}
-        {/* ===================================== */}
-
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-            {/* Search */}
-            <input placeholder="Search invoice..." className="input-primary" />
-
-            {/* FY */}
-            <select className="input-primary">
-              <option>All Financial Years</option>
-              <option>2025-26</option>
-              <option>2024-25</option>
-            </select>
-
-            {/* Status */}
-            <select className="input-primary">
-              <option>All Status</option>
-              <option>Pending</option>
-              <option>Partial</option>
-              <option>Paid</option>
-              <option>Disputed</option>
-            </select>
-
-            {/* Date */}
-            <input type="date" className="input-primary" />
-          </div>
-        </div>
+        <ClientTabs clientId={clientId} activeTab={activeTab} />
 
         {/* ===================================== */}
-        {/* INVOICE TABLE */}
+        {/* TAB CONTENT */}
         {/* ===================================== */}
 
-        <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-          {/* TABLE HEADER */}
-          <div className="grid grid-cols-[1.2fr_120px_90px_120px_120px_120px_120px_100px] gap-3 border-b border-zinc-200 bg-zinc-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-600">
-            <div>Invoice</div>
-            <div>FY</div>
-            <div>AWB Count</div>
-            <div>Amount</div>
-            <div>Paid</div>
-            <div>Outstanding</div>
-            <div>Due Date</div>
-            <div>Status</div>
-          </div>
+        {activeTab === "overview" && (
+          <ClientOverviewTab client={client} invoices={normalizedInvoiceData} />
+        )}
 
-          {/* TABLE BODY */}
-          <div>
-            {normalizedInvoiceData.length === 0 ? (
-              <div className="p-10 text-center text-sm text-zinc-500">
-                No invoices found.
-              </div>
-            ) : (
-              normalizedInvoiceData.map((invoice) => {
-                const outstanding = Number(invoice.outstandingAmount || 0);
-                const isOverdue =
-                  invoice.dueDate &&
-                  new Date(invoice.dueDate) < new Date() &&
-                  outstanding > 0;
-                return (
-                  <Link
-                    key={invoice.id}
-                    href={`/invoices/${invoice.id}`}
-                    className="grid grid-cols-[1.2fr_120px_90px_120px_120px_120px_120px_100px] gap-3 border-b border-zinc-100 px-4 py-3 text-sm transition hover:bg-blue-50/40"
-                  >
-                    {/* Invoice */}
-                    <div>
-                      <div className="font-medium text-zinc-800">
-                        {invoice.invoiceNumber}
-                      </div>
-                    </div>
+        {activeTab === "invoices" && (
+          <ClientInvoicesTab invoices={normalizedInvoiceData} />
+        )}
 
-                    {/* FY */}
-                    <div className="text-zinc-600">{invoice.financialYear}</div>
+        {activeTab === "locations" && (
+          <ClientLocationsTab clientId={clientId} locations={clientLocations} />
+        )}
 
-                    {/* AWBs */}
-                    <div>
-                      <span className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">
-                        {invoice.awbCount}
-                      </span>
-                    </div>
+        {activeTab === "contacts" && <ClientContactsTab contacts={[]} />}
 
-                    {/* Amount */}
-                    <div className="font-medium text-zinc-800">
-                      ₹{Number(invoice.amount).toLocaleString()}
-                    </div>
+        {activeTab === "payments" && <ClientPaymentsTab payments={[]} />}
 
-                    {/* Paid */}
-                    <div className="text-emerald-600">
-                      ₹{Number(invoice.paidAmount).toLocaleString()}
-                    </div>
-
-                    {/* Outstanding */}
-                    <div
-                      className={
-                        outstanding > 0
-                          ? "font-medium text-orange-600"
-                          : "font-medium text-emerald-600"
-                      }
-                    >
-                      ₹{outstanding.toLocaleString()}
-                    </div>
-
-                    {/* Due Date */}
-                    <div className="text-zinc-600">
-                      {invoice.dueDate
-                        ? new Date(invoice.dueDate).toLocaleDateString()
-                        : "-"}
-                    </div>
-
-                    {/* Status */}
-                    <div>
-                      <span
-                        className={`rounded-full px-2 py-1 text-xs font-medium ${
-                          invoice.status === "paid"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : invoice.status === "partial"
-                              ? "bg-orange-100 text-orange-700"
-                              : invoice.status === "disputed"
-                                ? "bg-red-100 text-red-700"
-                                : invoice.status === "pending" && isOverdue
-                                  ? "bg-rose-100 text-rose-700"
-                                  : "bg-blue-100 text-blue-700"
-                        }`}
-                      >
-                        {invoice.status === "pending" && isOverdue
-                          ? "overdue"
-                          : invoice.status}
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })
-            )}
-          </div>
-        </div>
+        {activeTab === "followups" && <ClientFollowupsTab followups={[]} />}
       </div>
     </div>
   );
