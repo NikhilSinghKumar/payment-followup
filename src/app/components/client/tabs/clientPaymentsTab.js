@@ -34,14 +34,6 @@ export default function ClientPaymentsTab({ payments = [] }) {
           <h3 className="mt-4 text-lg font-semibold text-zinc-800">
             No payments found
           </h3>
-
-          <p className="mt-2 text-sm text-zinc-500">
-            Record and manage payments received from this client.
-          </p>
-
-          <button className="mt-5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md">
-            + Add First Payment
-          </button>
         </div>
       ) : (
         /* ===================================== */

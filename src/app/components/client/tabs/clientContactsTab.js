@@ -34,15 +34,6 @@ export default function ClientContactsTab({ contacts = [] }) {
           <h3 className="mt-4 text-lg font-semibold text-zinc-800">
             No contacts added
           </h3>
-
-          <p className="mt-2 text-sm text-zinc-500">
-            Add contact persons for billing, payments, operations, or
-            escalations.
-          </p>
-
-          <button className="mt-5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md">
-            + Add First Contact
-          </button>
         </div>
       ) : (
         /* ===================================== */

@@ -32,15 +32,6 @@ export default function ClientFollowupsTab({ followups = [] }) {
           <h3 className="mt-4 text-lg font-semibold text-zinc-800">
             No followups added
           </h3>
-
-          <p className="mt-2 text-sm text-zinc-500">
-            Record client communication, reminders, payment promises, and
-            collection notes.
-          </p>
-
-          <button className="mt-5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md">
-            + Add First Followup
-          </button>
         </div>
       ) : (
         /* ===================================== */
