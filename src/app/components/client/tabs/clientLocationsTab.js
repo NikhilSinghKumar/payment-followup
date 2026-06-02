@@ -59,18 +59,6 @@ export default function ClientLocationsTab({ clientId, locations = [] }) {
           <h3 className="mt-4 text-lg font-semibold text-zinc-800">
             No locations added
           </h3>
-
-          <p className="mt-2 text-sm text-zinc-500">
-            Add offices, warehouses, branches, or billing locations for this
-            client.
-          </p>
-
-          <button
-            onClick={handleCreate}
-            className="mt-5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
-          >
-            + Add First Location
-          </button>
         </div>
       ) : (
         /* ===================================== */
