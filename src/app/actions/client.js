@@ -55,7 +55,8 @@ export async function getClients(search = "", letter = "") {
   return await db
     .select()
     .from(clients)
-    .where(conditions.length ? and(...conditions) : undefined);
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(sql`LOWER(${clients.companyName})`);
 }
 
 export async function getClientById(id) {
