@@ -185,7 +185,15 @@ export const clientContacts = pgTable(
 
     isPrimary: boolean("is_primary").default(false),
 
-    isActive: boolean("is_active").default(true),
+    status: text("status")
+      .$type<"active" | "inactive" | "left_company" | "do_not_contact">()
+      .default("active"),
+
+    receivesInvoice: boolean("receives_invoice").default(false),
+
+    receivesFollowup: boolean("receives_followup").default(false),
+
+    receivesEscalation: boolean("receives_escalation").default(false),
 
     // =====================================================
     // NOTES
@@ -223,6 +231,8 @@ export const clientContacts = pgTable(
         table.clientId,
         table.isPrimary,
       ),
+
+      statusIdx: index("client_contact_status_idx").on(table.status),
     };
   },
 );
