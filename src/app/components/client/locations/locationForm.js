@@ -452,7 +452,7 @@ export default function LocationForm({ clientId, client, location = null }) {
               <button
                 type="submit"
                 disabled={isPending}
-                className="h-[44px] rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-5 text-sm font-medium text-white shadow-md transition-all duration-200 hover:scale-[1.01] hover:shadow-lg disabled:opacity-50"
+                className="h-[44px] rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-5 text-sm font-medium text-white shadow-md transition-all duration-200 hover:scale-[1.01] hover:shadow-lg disabled:opacity-50 cursor-pointer"
               >
                 {isPending
                   ? "Saving..."
