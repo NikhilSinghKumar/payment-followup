@@ -141,7 +141,7 @@ export default function LocationForm({ clientId, client, location = null }) {
   // =====================================================
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen bg-zinc-50 p-6">
       <div className="mx-auto w-full max-w-3xl">
         {/* TOP BAR */}
         <div className="mb-5 h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400" />
