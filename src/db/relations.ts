@@ -12,11 +12,8 @@ import {
 
 export const clientsRelations = relations(clients, ({ many }) => ({
   locations: many(clientLocations),
-
   contacts: many(clientContacts),
-
   invoices: many(invoices),
-
   payments: many(payments),
 }));
 
@@ -41,9 +38,7 @@ export const clientContactsRelations = relations(
     }),
 
     emails: many(clientContactEmails),
-
     numbers: many(clientContactNumbers),
-
     contactLocations: many(clientContactLocations),
   }),
 );
