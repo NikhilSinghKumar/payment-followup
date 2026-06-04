@@ -18,7 +18,7 @@ export default function Home() {
   return (
     <>
       {/* Main Home Screen */}
-      <div className="flex flex-col flex-1 items-center justify-center min-h-screen">
+      <div className="flex flex-col flex-1 bg-zinc-50 items-center justify-center min-h-screen">
         <button
           className="relative group cursor-pointer border-2 border-zinc-200/80 rounded-2xl px-6 py-4 overflow-hidden"
           onClick={handleNavigate}
