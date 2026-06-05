@@ -12,7 +12,7 @@ export default function ClientContactsTab({ contacts = [] }) {
           </h2>
 
           <p className="mt-1 text-sm text-zinc-500">
-            Manage billing, operational, and payment followup contacts.
+            Manage billing and payment followup contacts.
           </p>
         </div>
 
