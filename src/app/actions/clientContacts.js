@@ -5,17 +5,13 @@ import {
   clientContacts,
   clientContactEmails,
   clientContactNumbers,
-  clientContactLocations,
-  clientLocations,
 } from "@/db/schema";
 
 import { and, eq, isNull } from "drizzle-orm";
 
-import { revalidatePath } from "next/cache";
-
 export async function getClientContactsByClientId(clientId) {
   try {
-    return await db.query.clientContacts.findMany({
+    const contacts = await db.query.clientContacts.findMany({
       where: and(
         eq(clientContacts.clientId, Number(clientId)),
         isNull(clientContacts.deletedAt),
@@ -39,6 +35,14 @@ export async function getClientContactsByClientId(clientId) {
 
       orderBy: (contacts, { asc }) => [asc(contacts.name)],
     });
+
+    return contacts.map(({ contactLocations, ...contact }) => ({
+      ...contact,
+
+      locations:
+        contactLocations?.map((contactLocation) => contactLocation.location) ||
+        [],
+    }));
   } catch (error) {
     console.error("Get client contacts error:", error);
     throw error;
@@ -47,7 +51,7 @@ export async function getClientContactsByClientId(clientId) {
 
 export async function getClientContactById(contactId) {
   try {
-    return await db.query.clientContacts.findFirst({
+    const contact = await db.query.clientContacts.findFirst({
       where: and(
         eq(clientContacts.id, Number(contactId)),
         isNull(clientContacts.deletedAt),
@@ -69,6 +73,18 @@ export async function getClientContactById(contactId) {
         },
       },
     });
+
+    if (!contact) return null;
+
+    const { contactLocations, ...contactData } = contact;
+
+    return {
+      ...contactData,
+
+      locations:
+        contactLocations?.map((contactLocation) => contactLocation.location) ||
+        [],
+    };
   } catch (error) {
     console.error("Get client contact error:", error);
     throw error;
