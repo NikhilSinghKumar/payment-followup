@@ -84,7 +84,7 @@ ${data.errors?.length ? `\nErrors:\n${data.errors.join("\n")}` : ""}
       <button
         onClick={handleUpload}
         disabled={loading}
-        className="flex h-[34px] items-center rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.03] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-[34px] items-center rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.03] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
       >
         {loading ? (
           <span className="flex items-center gap-2">
