@@ -1,4 +1,6 @@
-export default function ClientContactsTab({ contacts = [] }) {
+import Link from "next/link";
+
+export default function ClientContactsTab({ clientId, contacts = [] }) {
   return (
     <div className="space-y-4">
       {/* ===================================== */}
@@ -16,9 +18,12 @@ export default function ClientContactsTab({ contacts = [] }) {
           </p>
         </div>
 
-        <button className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md">
+        <Link
+          href={`/clients/${clientId}/contacts/new`}
+          className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
+        >
           + Add Contact
-        </button>
+        </Link>
       </div>
 
       {/* ===================================== */}
@@ -68,9 +73,9 @@ export default function ClientContactsTab({ contacts = [] }) {
                   >
                     <div className="flex items-start gap-3">
                       {/* AVATAR */}
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 text-sm font-semibold text-white">
+                      {/* <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 text-sm font-semibold text-white">
                         {contact.name?.charAt(0)}
-                      </div>
+                      </div> */}
 
                       {/* INFO */}
                       <div className="min-w-0 flex-1">
@@ -142,15 +147,15 @@ export default function ClientContactsTab({ contacts = [] }) {
 
                   {/* ACTIONS */}
                   <div className="flex gap-2">
-                    <button className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100">
+                    <button className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 cursor-pointer">
                       Call
                     </button>
 
-                    <button className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100">
+                    <button className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 cursor-pointer">
                       WhatsApp
                     </button>
 
-                    <button className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100">
+                    <button className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 cursor-pointer">
                       Email
                     </button>
                   </div>

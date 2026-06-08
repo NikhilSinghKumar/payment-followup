@@ -16,7 +16,8 @@ import ClientLocationsTab from "@/app/components/client/tabs/clientLocationsTab"
 import ClientContactsTab from "@/app/components/client/tabs/clientContactsTab";
 import ClientPaymentsTab from "@/app/components/client/tabs/clientPaymentsTab";
 import ClientFollowupsTab from "@/app/components/client/tabs/clientFollowupsTab";
-import { getClientLocations } from "@/app/actions/clientLocations";
+import { getClientLocationsByClientId } from "@/app/actions/clientLocations";
+import { getClientContactsByClientId } from "@/app/actions/clientContacts";
 
 export default async function ClientDetailPage({ params, searchParams }) {
   const { id } = await params;
@@ -24,10 +25,11 @@ export default async function ClientDetailPage({ params, searchParams }) {
   const resolvedSearchParams = await searchParams;
 
   const clientId = Number(id);
+  const contacts = await getClientContactsByClientId(clientId);
 
   const activeTab = resolvedSearchParams?.tab || "overview";
 
-  const clientLocations = await getClientLocations(clientId);
+  const clientLocations = await getClientLocationsByClientId(clientId);
 
   if (isNaN(clientId)) {
     return <div className="p-6 text-red-500">Invalid client ID</div>;
@@ -291,7 +293,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
           <ClientLocationsTab clientId={clientId} locations={clientLocations} />
         )}
 
-        {activeTab === "contacts" && <ClientContactsTab contacts={[]} />}
+        {activeTab === "contacts" && (
+          <ClientContactsTab clientId={clientId} contacts={contacts} />
+        )}
 
         {activeTab === "payments" && <ClientPaymentsTab payments={[]} />}
 

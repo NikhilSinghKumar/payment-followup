@@ -1,10 +1,12 @@
-import ClientContactForm from "../_components/client-contact-form";
-
-import { getClientById } from "@/app/actions/clients";
+import { getClientById } from "@/app/actions/client";
 import { getClientLocationsByClientId } from "@/app/actions/clientLocations";
 
-export default async function NewContactPage({ params }) {
-  const clientId = Number(params.id);
+import ClientContactForm from "../_components/client-contact-form";
+
+export default async function NewClientContactPage({ params }) {
+  const resolvedParams = await params;
+
+  const clientId = Number(resolvedParams.id);
 
   const client = await getClientById(clientId);
 
@@ -15,6 +17,7 @@ export default async function NewContactPage({ params }) {
       clientId={clientId}
       client={client}
       locations={locations}
+      contact={null}
     />
   );
 }

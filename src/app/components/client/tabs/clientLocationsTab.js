@@ -18,7 +18,7 @@ export default function ClientLocationsTab({ clientId, locations = [] }) {
 
     setOpen(true);
   }
-
+  console.log("contact:", locations);
   return (
     <div className="space-y-4">
       {/* ===================================== */}

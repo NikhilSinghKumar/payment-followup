@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
-import { clientLocations } from "@/db/schema";
+import { clientLocations, clientContactLocations } from "@/db/schema";
 
 // =====================================================
 // CREATE CLIENT LOCATION
@@ -272,7 +272,7 @@ export async function deleteClientLocation(id, clientId) {
 // GET CLIENT LOCATIONS
 // =====================================================
 
-export async function getClientLocations(clientId) {
+export async function getClientLocationsByClientId(clientId) {
   try {
     if (!clientId) {
       return [];
