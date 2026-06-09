@@ -1,6 +1,20 @@
+"use client";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 
 export default function ClientContactsTab({ clientId, contacts = [] }) {
+  const [selectedContact, setSelectedContact] = useState(null);
+
+  const sortedContacts = [...contacts].sort(
+    (a, b) => Number(b.isPrimary) - Number(a.isPrimary),
+  );
+
+  useEffect(() => {
+    if (sortedContacts.length > 0) {
+      setSelectedContact(sortedContacts[0]);
+    }
+  }, [contacts]);
+
   return (
     <div className="space-y-4">
       {/* ===================================== */}
@@ -61,12 +75,13 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
 
             {/* CONTACT LIST */}
             <div className="divide-y divide-zinc-100">
-              {contacts.map((contact, index) => {
-                const isActive = index === 0;
+              {sortedContacts.map((contact, index) => {
+                const isActive = selectedContact?.id === contact.id;
 
                 return (
                   <button
                     key={contact.id}
+                    onClick={() => setSelectedContact(contact)}
                     className={`w-full cursor-pointer p-4 text-left transition ${
                       isActive ? "bg-blue-50" : "hover:bg-zinc-50"
                     }`}
@@ -117,29 +132,29 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
             {/* TEMPORARY */}
             {/* Later we will connect selected contact */}
 
-            {contacts[0] && (
+            {selectedContact && (
               <>
                 {/* TOP */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
                     {/* AVATAR */}
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-lg font-semibold text-white">
-                      {contacts[0].name?.charAt(0)}
+                      {selectedContact.name?.charAt(0)}
                     </div>
 
                     {/* INFO */}
                     <div>
                       <h2 className="text-xl font-semibold text-zinc-800">
-                        {contacts[0].name}
+                        {selectedContact.name}
                       </h2>
 
                       <p className="mt-1 text-sm text-zinc-500">
-                        {contacts[0].designation || "Contact"}
+                        {selectedContact.designation || "Contact"}
                       </p>
 
-                      {contacts[0].department && (
+                      {selectedContact.department && (
                         <p className="mt-1 text-sm text-zinc-500">
-                          {contacts[0].department}
+                          {selectedContact.department}
                         </p>
                       )}
                     </div>
@@ -170,8 +185,8 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
                     </h3>
 
                     <div className="mt-3 space-y-2">
-                      {contacts[0].emails?.length > 0 ? (
-                        contacts[0].emails.map((email) => (
+                      {selectedContact.emails?.length > 0 ? (
+                        selectedContact.emails.map((email) => (
                           <div
                             key={email.id}
                             className="rounded-lg bg-zinc-50 px-3 py-2 text-sm text-zinc-700"
@@ -192,8 +207,8 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
                     </h3>
 
                     <div className="mt-3 space-y-2">
-                      {contacts[0].numbers?.length > 0 ? (
-                        contacts[0].numbers.map((number) => (
+                      {selectedContact.numbers?.length > 0 ? (
+                        selectedContact.numbers.map((number) => (
                           <div
                             key={number.id}
                             className="rounded-lg bg-zinc-50 px-3 py-2 text-sm text-zinc-700"
@@ -215,8 +230,8 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
                   </h3>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {contacts[0].locations?.length > 0 ? (
-                      contacts[0].locations.map((location) => (
+                    {selectedContact.locations?.length > 0 ? (
+                      selectedContact.locations.map((location) => (
                         <span
                           key={location.id}
                           className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700"
@@ -239,7 +254,7 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
                   </h3>
 
                   <p className="mt-3 text-sm text-zinc-700">
-                    {contacts[0].notes || "No notes added."}
+                    {selectedContact.notes || "No notes added."}
                   </p>
                 </div>
               </>
