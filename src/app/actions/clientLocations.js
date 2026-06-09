@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { sql, and, desc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { clientLocations, clientContactLocations } from "@/db/schema";
@@ -279,14 +279,45 @@ export async function getClientLocationsByClientId(clientId) {
     }
 
     const locations = await db
-      .select()
+      .select({
+        id: clientLocations.id,
+        clientId: clientLocations.clientId,
+
+        name: clientLocations.name,
+        code: clientLocations.code,
+        type: clientLocations.type,
+
+        address: clientLocations.address,
+        city: clientLocations.city,
+        state: clientLocations.state,
+        pincode: clientLocations.pincode,
+        country: clientLocations.country,
+
+        gstNumber: clientLocations.gstNumber,
+
+        isPrimary: clientLocations.isPrimary,
+        isActive: clientLocations.isActive,
+
+        createdAt: clientLocations.createdAt,
+        updatedAt: clientLocations.updatedAt,
+        deletedAt: clientLocations.deletedAt,
+
+        contactCount: sql`
+  count(${clientContactLocations.contactId})
+`.as("contactCount"),
+      })
       .from(clientLocations)
+      .leftJoin(
+        clientContactLocations,
+        eq(clientContactLocations.locationId, clientLocations.id),
+      )
       .where(
         and(
           eq(clientLocations.clientId, clientId),
           isNull(clientLocations.deletedAt),
         ),
       )
+      .groupBy(clientLocations.id)
       .orderBy(
         desc(clientLocations.isPrimary),
         desc(clientLocations.createdAt),
