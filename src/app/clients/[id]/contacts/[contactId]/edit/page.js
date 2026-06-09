@@ -1,10 +1,10 @@
 "use client";
 import { useActionState } from "react";
-import { createClient } from "../../actions/client";
+// import { createClient } from "../../actions/client";
 import Link from "next/link";
 
 export default function NewClientPage() {
-  const [state, formAction] = useActionState(createClient, {});
+  // const [state, formAction] = useActionState(createClient, {});
   return (
     <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
       <div className="w-full max-w-lg">
