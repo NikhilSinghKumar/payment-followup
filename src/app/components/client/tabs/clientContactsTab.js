@@ -10,7 +10,7 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
   );
 
   useEffect(() => {
-    if (sortedContacts.length > 0) {
+    if (!selectedContact && sortedContacts.length > 0) {
       setSelectedContact(sortedContacts[0]);
     }
   }, [contacts]);
