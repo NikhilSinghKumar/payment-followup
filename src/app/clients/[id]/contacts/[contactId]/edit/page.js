@@ -62,7 +62,7 @@ export default function NewClientPage() {
             </div>
 
             {/* Email */}
-            <div>
+            {/* <div>
               <label className="text-sm text-zinc-600 mb-1 block">Email</label>
               <input
                 name="email"
@@ -70,17 +70,17 @@ export default function NewClientPage() {
                 placeholder="e.g. contact@company.com"
                 className="input-primary focus:ring-blue-500 caret-blue-500"
               />
-            </div>
+            </div> */}
 
             {/* Phone */}
-            <div>
+            {/* <div>
               <label className="text-sm text-zinc-600 mb-1 block">Phone</label>
               <input
                 name="phone"
                 placeholder="e.g. +91 9876543210"
                 className="input-primary focus:ring-blue-500 caret-blue-500"
               />
-            </div>
+            </div> */}
 
             {/* Submit Button */}
             <button
