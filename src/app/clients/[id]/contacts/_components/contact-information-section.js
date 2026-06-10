@@ -8,10 +8,6 @@ export default function ContactInformationSection({ form, handleChange }) {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
           Contact Information
         </h2>
-
-        <p className="mt-1 text-sm text-zinc-500">
-          Basic information about this contact.
-        </p>
       </div>
 
       {/* ===================================== */}

@@ -240,7 +240,7 @@ export default function ClientContactForm({
             </h1>
 
             <p className="mt-2 text-sm text-zinc-500">
-              Manage billing and payment follow-up contacts.
+              Manage payment follow-up contacts.
             </p>
           </div>
 
@@ -287,11 +287,11 @@ export default function ClientContactForm({
 
             <ContactNumbersSection numbers={numbers} setNumbers={setNumbers} />
 
-            <ContactLocationsSection
+            {/* <ContactLocationsSection
               locations={locations}
               selectedLocations={selectedLocations}
               setSelectedLocations={setSelectedLocations}
-            />
+            /> */}
 
             {/* ===================================== */}
             {/* ACTIONS */}
