@@ -78,12 +78,15 @@ export default function ClientLocationsTab({ clientId, locations = [] }) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-semibold text-zinc-800">
-                      {location.name}
+                      {location.city}, {location.state}
                     </h3>
 
                     <p className="mt-1 text-sm text-zinc-500">
-                      {location.type || "Location"}
+                      {location.pincode}
                     </p>
+                    {/* <p className="mt-1 text-sm text-zinc-500">
+                      {location.type || "Location"}
+                    </p> */}
                   </div>
 
                   {location.isPrimary && (
@@ -95,9 +98,9 @@ export default function ClientLocationsTab({ clientId, locations = [] }) {
 
                 {/* ADDRESS */}
                 <div className="mt-4 space-y-2 text-sm text-zinc-600">
-                  <p>
+                  {/* <p>
                     {location.city || "-"}, {location.state || "-"}
-                  </p>
+                  </p> */}
 
                   <p>{location.address || "-"}</p>
 
