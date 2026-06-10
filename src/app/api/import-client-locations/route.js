@@ -70,7 +70,7 @@ export async function POST(req) {
     // HEADER VALIDATION
     // =====================================
 
-    const requiredHeaders = ["client_code", "name"];
+    const requiredHeaders = ["client_code", "code"];
     const headers = Object.keys(records[0]);
 
     for (const header of requiredHeaders) {
@@ -120,20 +120,20 @@ export async function POST(req) {
     const existingLocations = await db
       .select({
         clientId: clientLocations.clientId,
-        name: clientLocations.name,
+        city: clientLocations.city,
         locationCode: clientLocations.code,
       })
       .from(clientLocations)
       .where(isNull(clientLocations.deletedAt));
 
     const existingLocationSet = new Set(
-      existingLocations.map((l) => `${l.clientId}-${l.name.toLowerCase()}`),
+      existingLocations.map((l) => `${l.clientId}-${l.code}`),
     );
 
     const existingLocationCodeSet = new Set(
       existingLocations
         .filter((l) => l.locationCode)
-        .map((l) => `${l.clientId}-${l.locationCode.toLowerCase()}`),
+        .map((l) => `${l.clientId}-${l.locationCode}`),
     );
 
     // =====================================
@@ -158,7 +158,6 @@ export async function POST(req) {
       const row = records[i];
       const rowNum = i + 2;
       const clientCode = row.client_code?.trim();
-      const locationName = row.name?.trim();
       const locationCode = row.code?.trim() || null;
       const type = row.type?.trim() || "branch";
       const city = row.city?.trim() || null;
@@ -174,12 +173,10 @@ export async function POST(req) {
       // REQUIRED
       // ==========================
 
-      if (!clientCode || !locationName) {
+      if (!clientCode) {
         skipped++;
 
-        errors.push(
-          `Row ${rowNum}: Client Code and Location Name are required`,
-        );
+        errors.push(`Row ${rowNum}: Client Code is required`);
         continue;
       }
 
@@ -261,7 +258,7 @@ export async function POST(req) {
       // DUPLICATE IN CSV
       // ==========================
 
-      const csvKey = `${client.id}-${locationName.toLowerCase()}`;
+      const csvKey = `${client.id}-${locationCode}`;
       if (csvLocationSet.has(csvKey)) {
         skipped++;
         errors.push(`Row ${rowNum}: Duplicate location in CSV`);
@@ -282,7 +279,6 @@ export async function POST(req) {
 
       toInsert.push({
         clientId: client.id,
-        name: locationName,
         code: locationCode,
         type,
         address,
