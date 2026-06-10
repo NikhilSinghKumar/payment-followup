@@ -28,7 +28,7 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
           </h2>
 
           <p className="mt-1 text-sm text-zinc-500">
-            Manage billing and payment followup contacts.
+            Manage payment followup contacts.
           </p>
         </div>
 
@@ -224,7 +224,7 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
                 </div>
 
                 {/* LOCATIONS */}
-                <div className="mt-4 rounded-xl border border-zinc-200 p-4">
+                {/* <div className="mt-4 rounded-xl border border-zinc-200 p-4">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
                     Assigned Locations
                   </h3>
@@ -245,10 +245,10 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
                       </p>
                     )}
                   </div>
-                </div>
+                </div> */}
 
                 {/* NOTES */}
-                <div className="mt-4 rounded-xl border border-zinc-200 p-4">
+                {/* <div className="mt-4 rounded-xl border border-zinc-200 p-4">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
                     Notes
                   </h3>
@@ -256,7 +256,7 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
                   <p className="mt-3 text-sm text-zinc-700">
                     {selectedContact.notes || "No notes added."}
                   </p>
-                </div>
+                </div> */}
               </>
             )}
           </div>
