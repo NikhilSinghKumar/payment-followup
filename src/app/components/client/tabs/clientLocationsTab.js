@@ -32,18 +32,20 @@ export default function ClientLocationsTab({ clientId, locations = [] }) {
           </h2>
 
           <p className="mt-1 text-sm text-zinc-500">
-            Manage offices, branches, warehouses, and billing locations.
+            Manage different locations of your client.
           </p>
         </div>
 
-        <Link
-          href={`/clients/${clientId}/locations/new`}
-          className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
-        >
-          + Add Location
-        </Link>
+        <div className="flex items-center justify-end gap-4">
+          <Link
+            href={`/clients/${clientId}/locations/new`}
+            className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
+          >
+            + Add Location
+          </Link>
 
-        <ImportLocations />
+          <ImportLocations />
+        </div>
       </div>
 
       {/* ===================================== */}
@@ -108,9 +110,9 @@ export default function ClientLocationsTab({ clientId, locations = [] }) {
 
                 {/* FOOTER */}
                 <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-4">
-                  <div className="text-xs text-zinc-500">
+                  {/* <div className="text-xs text-zinc-500">
                     Contacts: {location.contactCount || 0}
-                  </div>
+                  </div> */}
 
                   <Link
                     href={`/clients/${clientId}/locations/${location.id}/edit`}
