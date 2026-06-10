@@ -259,7 +259,6 @@ export async function getClientLocationsByClientId(clientId) {
         id: clientLocations.id,
         clientId: clientLocations.clientId,
 
-        name: clientLocations.name,
         code: clientLocations.code,
         type: clientLocations.type,
 
