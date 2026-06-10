@@ -14,7 +14,6 @@ export async function createClientLocation(data) {
   try {
     const {
       clientId,
-      name,
       code,
       type,
       address,
@@ -34,13 +33,6 @@ export async function createClientLocation(data) {
       return {
         success: false,
         error: "Client ID is required",
-      };
-    }
-
-    if (!name?.trim()) {
-      return {
-        success: false,
-        error: "Location name is required",
       };
     }
 
@@ -70,8 +62,6 @@ export async function createClientLocation(data) {
       .insert(clientLocations)
       .values({
         clientId,
-
-        name: name.trim(),
 
         code: code?.trim() || null,
 
@@ -128,7 +118,6 @@ export async function updateClientLocation(id, data) {
 
     const {
       clientId,
-      name,
       code,
       type,
       address,
@@ -140,17 +129,6 @@ export async function updateClientLocation(id, data) {
       isPrimary,
       isActive,
     } = data;
-
-    // =====================================
-    // VALIDATION
-    // =====================================
-
-    if (!name?.trim()) {
-      return {
-        success: false,
-        error: "Location name is required",
-      };
-    }
 
     // =====================================
     // HANDLE PRIMARY LOCATION
@@ -177,8 +155,6 @@ export async function updateClientLocation(id, data) {
     const [location] = await db
       .update(clientLocations)
       .set({
-        name: name.trim(),
-
         code: code?.trim() || null,
 
         type: type || null,

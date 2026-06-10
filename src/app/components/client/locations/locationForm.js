@@ -256,7 +256,7 @@ export default function LocationForm({ clientId, client, location = null }) {
                   value={form.address}
                   onChange={handleChange}
                   rows={4}
-                  placeholder="Enter  Building No. / Street / Locality .."
+                  placeholder="A-81, DDA Shed, Okhla Phase 2"
                   className="input-primary focus:ring-blue-500 caret-blue-500"
                 />
               </div>
@@ -264,7 +264,7 @@ export default function LocationForm({ clientId, client, location = null }) {
               {/* GRID */}
               <div className="grid gap-4 md:grid-cols-3">
                 {/* NAME */}
-                <div>
+                {/* <div>
                   <label className="mb-1 block text-sm text-zinc-600">
                     Location Name *
                   </label>
@@ -277,7 +277,7 @@ export default function LocationForm({ clientId, client, location = null }) {
                     required
                     className="input-primary focus:ring-blue-500 caret-blue-500"
                   />
-                </div>
+                </div> */}
                 {/* CODE */}
                 <div>
                   <label className="mb-1 block text-sm text-zinc-600">
@@ -312,24 +312,26 @@ export default function LocationForm({ clientId, client, location = null }) {
                     ))}
                   </select>
                 </div>
+
+                {/* CITY */}
+                <div>
+                  <label className="mb-1 block text-sm text-zinc-600">
+                    City
+                  </label>
+
+                  <input
+                    name="city"
+                    value={form.city}
+                    onChange={handleChange}
+                    placeholder="Delhi"
+                    className="input-primary focus:ring-blue-500 caret-blue-500"
+                  />
+                </div>
               </div>
             </div>
 
             {/* GRID */}
-            <div className="grid gap-4 md:grid-cols-4">
-              {/* CITY */}
-              <div>
-                <label className="mb-1 block text-sm text-zinc-600">City</label>
-
-                <input
-                  name="city"
-                  value={form.city}
-                  onChange={handleChange}
-                  placeholder="Delhi"
-                  className="input-primary focus:ring-blue-500 caret-blue-500"
-                />
-              </div>
-
+            <div className="grid gap-4 md:grid-cols-3">
               {/* STATE */}
               <div>
                 <label className="mb-1 block text-sm text-zinc-600">
@@ -355,7 +357,7 @@ export default function LocationForm({ clientId, client, location = null }) {
                   name="pincode"
                   value={form.pincode}
                   onChange={handleChange}
-                  placeholder="110001"
+                  placeholder="110020"
                   className="input-primary focus:ring-blue-500 caret-blue-500"
                 />
               </div>
