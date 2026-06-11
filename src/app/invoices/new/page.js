@@ -1,7 +1,23 @@
-import { createInvoice } from "@/app/actions/invoice";
 import Link from "next/link";
+import { createInvoice } from "@/app/actions/invoice";
+import { getClientById } from "@/app/actions/client";
 
-export default function NewInvoicePage() {
+export default async function NewInvoicePage({ searchParams }) {
+  const params = await searchParams;
+
+  const clientId = Number(params.clientId);
+
+  let companyCode = "";
+  let companyName = "";
+
+  if (!isNaN(clientId)) {
+    const client = await getClientById(clientId);
+
+    if (client) {
+      companyCode = client.companyCode;
+      companyName = client.companyName;
+    }
+  }
   const currentFY = "2025-26";
 
   return (
@@ -16,7 +32,7 @@ export default function NewInvoicePage() {
           {/* Header */}
           <div className="mb-4">
             <h1 className="text-xl font-semibold text-zinc-800">
-              Create Invoice
+              Create Invoice - {companyName}
             </h1>
 
             <p className="text-sm text-zinc-500 mt-1">
@@ -39,8 +55,8 @@ export default function NewInvoicePage() {
 
                 <input
                   name="companyCode"
-                  placeholder="OTIS"
-                  required
+                  defaultValue={companyCode}
+                  readOnly
                   className="input-primary focus:ring-blue-500 caret-blue-500"
                 />
               </div>
