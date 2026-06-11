@@ -197,8 +197,7 @@ export default function LocationForm({ clientId, client, location = null }) {
                 </h1>
 
                 <p className="mt-2 text-sm text-zinc-500">
-                  Create and manage office, branch, warehouse, or billing
-                  locations.
+                  Manage different locations.
                 </p>
               </div>
             </div>
