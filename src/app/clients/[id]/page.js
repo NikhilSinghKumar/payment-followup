@@ -209,13 +209,6 @@ export default async function ClientDetailPage({ params, searchParams }) {
             {/* ACTIONS */}
             <div className="flex items-center gap-2">
               <Link
-                href="/invoices/new"
-                className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
-              >
-                + New Invoice
-              </Link>
-
-              <Link
                 href="/clients"
                 className="rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-600 transition hover:bg-zinc-100"
               >
@@ -286,7 +279,10 @@ export default async function ClientDetailPage({ params, searchParams }) {
         )}
 
         {activeTab === "invoices" && (
-          <ClientInvoicesTab invoices={normalizedInvoiceData} />
+          <ClientInvoicesTab
+            clientId={clientId}
+            invoices={normalizedInvoiceData}
+          />
         )}
 
         {activeTab === "locations" && (
