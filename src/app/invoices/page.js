@@ -31,12 +31,12 @@ export default async function InvoicePage({ searchParams }) {
           <FilterDropdown />
           <ImportInvoices />
 
-          <Link
+          {/* <Link
             href="/invoices/new"
             className="h-[40px] px-4 flex items-center rounded-lg text-white text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.03]"
           >
             + Add Invoice
-          </Link>
+          </Link> */}
 
           <Link
             href="/clients"
