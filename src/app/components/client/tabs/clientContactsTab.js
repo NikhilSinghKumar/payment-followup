@@ -151,17 +151,17 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
                       <p className="mt-1 text-sm text-zinc-500">
                         {selectedContact.designation || "Contact"}
                       </p>
-
-                      {selectedContact.department && (
-                        <p className="mt-1 text-sm text-zinc-500">
-                          {selectedContact.department}
-                        </p>
-                      )}
                     </div>
                   </div>
 
                   {/* ACTIONS */}
                   <div className="flex gap-2">
+                    <Link
+                      href={`/clients/${clientId}/contacts/${selectedContact.id}/edit`}
+                      className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100"
+                    >
+                      Edit
+                    </Link>
                     <button className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 cursor-pointer">
                       Call
                     </button>
@@ -222,41 +222,6 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
                     </div>
                   </div>
                 </div>
-
-                {/* LOCATIONS */}
-                {/* <div className="mt-4 rounded-xl border border-zinc-200 p-4">
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-                    Assigned Locations
-                  </h3>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {selectedContact.locations?.length > 0 ? (
-                      selectedContact.locations.map((location) => (
-                        <span
-                          key={location.id}
-                          className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700"
-                        >
-                          {location.name}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-sm text-zinc-500">
-                        No locations assigned
-                      </p>
-                    )}
-                  </div>
-                </div> */}
-
-                {/* NOTES */}
-                {/* <div className="mt-4 rounded-xl border border-zinc-200 p-4">
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-                    Notes
-                  </h3>
-
-                  <p className="mt-3 text-sm text-zinc-700">
-                    {selectedContact.notes || "No notes added."}
-                  </p>
-                </div> */}
               </>
             )}
           </div>
