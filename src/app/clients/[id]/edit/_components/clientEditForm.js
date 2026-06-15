@@ -71,31 +71,6 @@ export default function ClientEditForm({ client }) {
             />
           </div>
 
-          {/* Email */}
-          <div>
-            <label className="text-sm text-zinc-600 mb-1 block">Email</label>
-
-            <input
-              name="email"
-              type="email"
-              defaultValue={client.email || ""}
-              placeholder="e.g. contact@company.com"
-              className="input-primary focus:ring-blue-500 caret-blue-500"
-            />
-          </div>
-
-          {/* Phone */}
-          <div>
-            <label className="text-sm text-zinc-600 mb-1 block">Phone</label>
-
-            <input
-              name="phone"
-              defaultValue={client.phone || ""}
-              placeholder="e.g. +91 9876543210"
-              className="input-primary focus:ring-blue-500 caret-blue-500"
-            />
-          </div>
-
           {/* Submit */}
           <button
             type="submit"
