@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import ImportContacts from "@/app/clients/_components/import-contacts";
+import ExportContacts from "@/app/clients/_components/export-contacts";
 
 export default function ClientContactsTab({ clientId, contacts = [] }) {
   const [selectedContact, setSelectedContact] = useState(null);
@@ -32,12 +34,27 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
           </p>
         </div>
 
-        <Link
-          href={`/clients/${clientId}/contacts/new`}
-          className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
-        >
-          + Add Contact
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href={`/clients/${clientId}/contacts/new`}
+            className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
+          >
+            + Add Contact
+          </Link>
+
+          <ImportContacts clientId={clientId} />
+
+          {/* IMPORT BUTTON */}
+
+          <a
+            href="/api/client-contacts-sample"
+            className="text-xs text-blue-600 hover:underline"
+          >
+            Sample CSV
+          </a>
+
+          <ExportContacts clientId={clientId} />
+        </div>
       </div>
 
       {/* ===================================== */}
@@ -138,9 +155,9 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
                     {/* AVATAR */}
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-lg font-semibold text-white">
+                    {/* <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-lg font-semibold text-white">
                       {selectedContact.name?.charAt(0)}
-                    </div>
+                    </div> */}
 
                     {/* INFO */}
                     <div>
