@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { parse } from "csv-parse/sync";
 
+import { revalidatePath } from "next/cache";
+
 import { createClientContact } from "@/app/actions/clientContacts";
 
 // =====================================================
@@ -109,7 +111,6 @@ export async function POST(request) {
           locationIds: [],
         });
 
-        revalidatePath(`/clients/${clientId}`);
         if (response.success) {
           successCount++;
         } else {
@@ -125,6 +126,8 @@ export async function POST(request) {
         });
       }
     }
+
+    revalidatePath(`/clients/${clientId}`);
 
     // =====================================
     // RESPONSE
