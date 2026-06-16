@@ -44,11 +44,9 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
 
           <ImportContacts clientId={clientId} />
 
-          {/* IMPORT BUTTON */}
-
           <a
             href="/api/client-contacts-sample"
-            className="text-xs text-blue-600 hover:underline"
+            className="px-3 py-2 text-sm text-blue-600 hover:underline"
           >
             Sample CSV
           </a>
@@ -146,9 +144,6 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
           {/* ===================================== */}
 
           <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-            {/* TEMPORARY */}
-            {/* Later we will connect selected contact */}
-
             {selectedContact && (
               <>
                 {/* TOP */}
