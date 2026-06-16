@@ -34,6 +34,24 @@ export default function ImportContacts({ clientId }) {
 
       setResult(data);
 
+      const message = [
+        "Import completed.",
+        "",
+        `Inserted: ${data.imported || 0}`,
+        `Failed: ${data.failed || 0}`,
+        "",
+      ];
+
+      if (data.errors?.length) {
+        message.push("Errors:");
+
+        data.errors.forEach((err) => {
+          message.push(`Row ${err.row}: ${err.error}`);
+        });
+      }
+
+      alert(message.join("\n"));
+
       if (data.success) {
         router.refresh();
       }
@@ -66,12 +84,6 @@ export default function ImportContacts({ clientId }) {
       >
         {isImporting ? "Importing..." : "Import Contacts"}
       </button>
-
-      {result && (
-        <div className="text-sm text-zinc-600">
-          Imported {result.imported}/{result.totalRows}
-        </div>
-      )}
     </div>
   );
 }
