@@ -37,14 +37,14 @@ export default function ImportLocations() {
       }
 
       alert(`
-Import Completed
+        Import Completed
 
-Inserted: ${data.summary.inserted}
-Skipped: ${data.summary.skipped}
-Total: ${data.summary.total}
+        Inserted: ${data.summary.inserted}
+        Skipped: ${data.summary.skipped}
+        Total: ${data.summary.total}
 
-${data.errors?.length ? `\nErrors:\n${data.errors.join("\n")}` : ""}
-`);
+        ${data.errors?.length ? `\nErrors:\n${data.errors.join("\n")}` : ""}
+        `);
 
       router.refresh();
 
