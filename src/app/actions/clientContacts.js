@@ -25,10 +25,33 @@ export async function createClientContact(data) {
       }
 
       if (!data.name?.trim()) {
-        return {
-          success: false,
-          error: "Contact name is required",
-        };
+        throw new Error("Contact name is required");
+      }
+
+      for (const item of data.emails || []) {
+        const existingEmail = await tx.query.clientContactEmails.findFirst({
+          where: and(
+            eq(clientContactEmails.email, item.email),
+            isNull(clientContactEmails.deletedAt),
+          ),
+        });
+
+        if (existingEmail) {
+          throw new Error(`Email '${item.email}' already exists`);
+        }
+      }
+
+      for (const item of data.numbers || []) {
+        const existingNumber = await tx.query.clientContactNumbers.findFirst({
+          where: and(
+            eq(clientContactNumbers.number, item.number),
+            isNull(clientContactNumbers.deletedAt),
+          ),
+        });
+
+        if (existingNumber) {
+          throw new Error(`Mobile No. '${item.number}' already exists`);
+        }
       }
 
       const [contact] = await tx
@@ -86,11 +109,9 @@ export async function createClientContact(data) {
       success: true,
     };
   } catch (error) {
-    console.error("Create contact error:", error);
-
     return {
       success: false,
-      error: "Failed to create contact",
+      error: error.message,
     };
   }
 }
@@ -199,6 +220,50 @@ export async function updateClientContact(contactId, data) {
           .where(eq(clientContacts.clientId, data.clientId));
       }
 
+      for (const item of data.emails || []) {
+        const existingEmail = await tx.query.clientContactEmails.findFirst({
+          where: and(
+            eq(clientContactEmails.email, item.email),
+            isNull(clientContactEmails.deletedAt),
+          ),
+          with: {
+            contact: true,
+          },
+        });
+
+        if (
+          existingEmail &&
+          existingEmail.contactId !== contactId &&
+          existingEmail.contact.clientId === data.clientId
+        ) {
+          throw new Error(
+            `Email '${item.email}' already exists for this client`,
+          );
+        }
+      }
+
+      for (const item of data.numbers || []) {
+        const existingNumber = await tx.query.clientContactNumbers.findFirst({
+          where: and(
+            eq(clientContactNumbers.number, item.number),
+            isNull(clientContactNumbers.deletedAt),
+          ),
+          with: {
+            contact: true,
+          },
+        });
+
+        if (
+          existingNumber &&
+          existingNumber.contactId !== contactId &&
+          existingNumber.contact.clientId === data.clientId
+        ) {
+          throw new Error(
+            `Mobile No. '${item.number}' already exists for this client`,
+          );
+        }
+      }
+
       // =====================================
       // UPDATE CONTACT
       // =====================================
@@ -229,16 +294,8 @@ export async function updateClientContact(contactId, data) {
       // =====================================
 
       await tx
-        .update(clientContactEmails)
-        .set({
-          deletedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(clientContactEmails.contactId, contactId),
-            isNull(clientContactEmails.deletedAt),
-          ),
-        );
+        .delete(clientContactEmails)
+        .where(eq(clientContactEmails.contactId, contactId));
 
       if (data.emails?.length) {
         await tx.insert(clientContactEmails).values(
@@ -259,16 +316,8 @@ export async function updateClientContact(contactId, data) {
       // =====================================
 
       await tx
-        .update(clientContactNumbers)
-        .set({
-          deletedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(clientContactNumbers.contactId, contactId),
-            isNull(clientContactNumbers.deletedAt),
-          ),
-        );
+        .delete(clientContactNumbers)
+        .where(eq(clientContactNumbers.contactId, contactId));
 
       if (data.numbers?.length) {
         await tx.insert(clientContactNumbers).values(

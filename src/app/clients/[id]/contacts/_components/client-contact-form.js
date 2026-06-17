@@ -15,10 +15,6 @@ import {
   updateClientContact,
 } from "@/app/actions/clientContacts";
 
-// =====================================================
-// INITIAL FORM
-// =====================================================
-
 const initialForm = {
   name: "",
   designation: "",
@@ -51,10 +47,6 @@ export default function ClientContactForm({
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState(initialForm);
 
-  // =====================================================
-  // EMAILS
-  // =====================================================
-
   const [emails, setEmails] = useState([
     {
       email: "",
@@ -62,10 +54,6 @@ export default function ClientContactForm({
       isPrimary: true,
     },
   ]);
-
-  // =====================================================
-  // NUMBERS
-  // =====================================================
 
   const [numbers, setNumbers] = useState([
     {
@@ -76,10 +64,6 @@ export default function ClientContactForm({
       isWhatsapp: false,
     },
   ]);
-
-  // =====================================================
-  // LOCATIONS
-  // =====================================================
 
   const [selectedLocations, setSelectedLocations] = useState([]);
 
