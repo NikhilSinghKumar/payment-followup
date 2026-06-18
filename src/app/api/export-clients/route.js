@@ -23,7 +23,7 @@ export async function GET() {
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv",
-      "Content-Disposition": 'attachment; filename="clients.csv"',
+      "Content-Disposition": 'attachment; filename="client-list.csv"',
     },
   });
 }
