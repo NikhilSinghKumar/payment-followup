@@ -6,11 +6,15 @@ export async function GET() {
   const data = await db.select().from(clients).where(isNull(clients.deletedAt));
 
   // Header row
-  const rows = [["company_name", "company_code"]];
+  const rows = [["company_name", "company_code", "is_active"]];
 
   // Data rows
   data.forEach((client) => {
-    rows.push([client.companyName ?? "", client.companyCode ?? ""]);
+    rows.push([
+      client.companyName ?? "",
+      client.companyCode ?? "",
+      client.isActive ?? "",
+    ]);
   });
 
   // Convert to CSV
