@@ -64,7 +64,7 @@ export default function ImportClients() {
             Importing
           </span>
         ) : (
-          "Import"
+          "Import Clients"
         )}
       </button>
     </div>
