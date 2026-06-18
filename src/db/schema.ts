@@ -38,6 +38,9 @@ export const clients = pgTable("clients", {
 
   address: text("address"),
 
+  // Status
+  isActive: boolean("is_active").notNull().default(true),
+
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   deletedAt: timestamp("deleted_at", {
@@ -67,11 +70,6 @@ export const clientLocations = pgTable(
     // =====================================================
     // LOCATION INFO
     // =====================================================
-
-    name: text("name").notNull(),
-    // Example:
-    // Delhi HO
-    // Gurgaon Branch
 
     code: text("code"),
 
