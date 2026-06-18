@@ -12,7 +12,7 @@ import {
 import { eq, sql, ilike, isNull, or, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-export async function getInvoices(search, status) {
+export async function getInvoices(search, status, sort = "high") {
   const conditions = [isNull(invoices.deletedAt)];
 
   // SEARCH
@@ -59,12 +59,42 @@ export async function getInvoices(search, status) {
       else if (paid < amount) statusValue = "partial";
       else statusValue = "paid";
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let dueDays = 0;
+      let dueDaysText = "";
+
+      if (inv.dueDate) {
+        const dueDate = new Date(inv.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+
+        dueDays = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
+
+        if (dueDays > 0) {
+          dueDaysText = `${dueDays} days overdue`;
+        } else if (dueDays < 0) {
+          dueDaysText = `Due in ${Math.abs(dueDays)} days`;
+        } else {
+          dueDaysText = "Due today";
+        }
+      }
+
       return {
         ...inv,
         paid,
         due,
         status: statusValue,
+        dueDays,
+        dueDaysText,
       };
+    })
+    .sort((a, b) => {
+      if (sort === "low") {
+        return a.due - b.due;
+      }
+
+      return b.due - a.due; // default highest first
     })
     .filter((inv) => {
       if (!status) return true;
