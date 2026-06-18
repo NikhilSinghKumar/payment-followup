@@ -29,10 +29,17 @@ export default async function ClientsPage({ searchParams }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <SearchBox />
           <ImportBox />
-
+          <a
+            href="/api/export-clients"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-500 underline"
+          >
+            Export Clients
+          </a>
           <Link
             href="/clients/new"
             className="
