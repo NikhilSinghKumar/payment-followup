@@ -26,7 +26,7 @@ export default async function InvoicePage({ searchParams }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <SearchBox />
           <FilterDropdown />
           <ImportInvoices />
@@ -37,6 +37,15 @@ export default async function InvoicePage({ searchParams }) {
           >
             + Add Invoice
           </Link> */}
+
+          <a
+            href="/api/import-invoice-sample"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-blue-500 underline hover:bg-zinc-100"
+          >
+            Invoice Sample (CSV)
+          </a>
 
           <Link
             href="/clients"
