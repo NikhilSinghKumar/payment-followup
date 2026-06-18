@@ -2,7 +2,7 @@
 
 import { saveAs } from "file-saver";
 
-import { exportContacts } from "@/app/actions/exportContacts";
+import { exportContacts } from "@/app/api/exportContacts";
 
 export default function ExportContacts({ clientId }) {
   async function handleExport() {
