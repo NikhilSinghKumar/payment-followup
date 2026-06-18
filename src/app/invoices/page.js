@@ -4,12 +4,14 @@ import ImportInvoices from "../components/ImportInvoices";
 import SearchBox from "../components/SearchBox";
 import FilterDropdown from "../components/FilterDropdown";
 import DeleteInvoiceButton from "../components/DeleteInvoiceButton";
+import SortDropdown from "../components/SortDropdown";
 
 export default async function InvoicePage({ searchParams }) {
   const resolvedParams = await searchParams;
   const query = resolvedParams?.q || "";
   const status = resolvedParams?.status || "";
-  const data = await getInvoices(query, status);
+  const sort = resolvedParams?.sort || "high";
+  const data = await getInvoices(query, status, sort);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -29,6 +31,7 @@ export default async function InvoicePage({ searchParams }) {
         <div className="flex items-center gap-2">
           <SearchBox />
           <FilterDropdown />
+          <SortDropdown />
           <ImportInvoices />
 
           {/* <Link
@@ -70,12 +73,12 @@ export default async function InvoicePage({ searchParams }) {
           "
         >
           <div>S.N.</div>
-          <div>Company</div>
-          <div>Amount</div>
-          <div>Paid</div>
-          <div>Due</div>
-          <div>Due Date</div>
-          <div>Status</div>
+          <div className="text-center">Company</div>
+          <div className="text-center">Amount</div>
+          <div className="text-center">Paid</div>
+          <div className="text-center">Due</div>
+          <div className="text-center">Due Date</div>
+          <div className="text-center">Status</div>
 
           <div className="text-center">Actions</div>
         </div>
@@ -137,29 +140,39 @@ export default async function InvoicePage({ searchParams }) {
                 </div>
 
                 {/* Status */}
-                <div>
+                <div className="flex flex-col items-center gap-1">
                   <span
                     className={`
-                inline-flex items-center justify-center
-                min-w-[90px]
-                px-3 py-1
-                rounded-full
-                text-xs font-semibold capitalize
-                ${
-                  inv.status === "paid"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : inv.status === "partial"
-                      ? "bg-amber-100 text-amber-700"
-                      : inv.status === "pending" && isOverdue
-                        ? "bg-red-100 text-red-700"
-                        : "bg-blue-100 text-blue-700"
-                }
-              `}
+                      inline-flex items-center justify-center
+                      min-w-[90px]
+                      px-3 py-1
+                      rounded-full
+                      text-xs font-semibold capitalize
+                      ${
+                        inv.status === "paid"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : inv.status === "partial"
+                            ? "bg-amber-100 text-amber-700"
+                            : inv.status === "pending" && isOverdue
+                              ? "bg-red-100 text-red-700"
+                              : "bg-blue-100 text-blue-700"
+                      }
+                    `}
                   >
                     {inv.status === "pending" && isOverdue
                       ? "Overdue"
                       : inv.status}
                   </span>
+
+                  {inv.status !== "paid" && (
+                    <span className="text-xs text-zinc-500">
+                      {inv.dueDays > 0
+                        ? `${inv.dueDays}d`
+                        : inv.dueDays < 0
+                          ? `Due in ${Math.abs(inv.dueDays)}d`
+                          : "Today"}
+                    </span>
+                  )}
                 </div>
 
                 {/* Actions */}
