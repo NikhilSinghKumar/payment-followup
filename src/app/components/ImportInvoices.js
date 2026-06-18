@@ -96,7 +96,7 @@ Total: ${data.total}
             Importing
           </span>
         ) : (
-          "Import"
+          "Import Invoices"
         )}
       </button>
     </div>
