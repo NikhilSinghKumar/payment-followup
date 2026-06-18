@@ -24,6 +24,9 @@ export async function POST(req) {
   const total = records.length;
 
   for (const row of records) {
+    const invoiceNumber = row.invoice_number?.trim();
+    const financialYear = row.financial_year?.trim();
+    const notes = row.notes?.trim() || "";
     try {
       // 🔹 Extract
       const companyCode = row.company_code?.trim();
@@ -44,7 +47,7 @@ export async function POST(req) {
       const dueDate = row.due_date ? new Date(row.due_date) : null;
 
       // 🔹 Validation
-      if (!companyCode || isNaN(amount)) {
+      if (!companyCode || !invoiceNumber || !financialYear || isNaN(amount)) {
         console.log("❌ Invalid row:", row);
         skipped++;
         continue;
@@ -72,9 +75,8 @@ export async function POST(req) {
         .where(
           and(
             eq(invoices.clientId, clientId),
-            eq(invoices.amount, amount),
-            eq(invoices.invoiceFromDate, invoiceFromDate),
-            eq(invoices.invoiceToDate, invoiceToDate),
+            eq(invoices.financialYear, financialYear),
+            eq(invoices.invoiceNumber, invoiceNumber),
           ),
         )
         .limit(1);
@@ -84,6 +86,7 @@ export async function POST(req) {
           "⚠️ Duplicate skipped:",
           companyCode,
           amount,
+          invoiceNumber,
           invoiceFromDate,
           invoiceToDate,
         );
@@ -94,10 +97,14 @@ export async function POST(req) {
       // 🔹 Insert
       await db.insert(invoices).values({
         clientId,
+        financialYear,
+        invoiceNumber,
         amount,
+        status: "pending",
         invoiceFromDate,
         invoiceToDate,
         dueDate,
+        notes,
       });
 
       inserted++;
