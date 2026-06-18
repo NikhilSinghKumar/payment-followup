@@ -186,7 +186,7 @@ export default async function NewInvoicePage({ searchParams }) {
                   transition-colors
                 "
               >
-                ← Back
+                ← Back to Invoice List
               </Link>
 
               {/* Submit */}
