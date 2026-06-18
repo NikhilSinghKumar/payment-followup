@@ -71,6 +71,20 @@ export default function ClientEditForm({ client }) {
             />
           </div>
 
+          {/* Status */}
+          <div>
+            <label className="text-sm text-zinc-600 mb-1 block">Status</label>
+
+            <select
+              name="isActive"
+              defaultValue={client.isActive ? "true" : "false"}
+              className="input-primary focus:ring-blue-500"
+            >
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+
           {/* Submit */}
           <button
             type="submit"
