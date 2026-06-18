@@ -42,7 +42,7 @@ export default async function InvoicePage({ searchParams }) {
             href="/api/import-invoice-sample"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium text-blue-500 underline hover:bg-zinc-100"
+            className="text-sm font-medium text-zinc-500 border border-zinc-200 underline p-2 rounded-lg"
           >
             Invoice Sample (CSV)
           </a>
