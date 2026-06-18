@@ -90,6 +90,7 @@ export async function updateClient(id, prevState, formData) {
         companyCode,
         email: formData.get("email"),
         phone: formData.get("phone"),
+        isActive: formData.get("isActive") === "true",
         updatedAt: new Date(),
       })
       .where(eq(clients.id, id));
