@@ -12,7 +12,7 @@ import {
 import { eq, sql, ilike, isNull, or, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-export async function getInvoices(search, status, sort = "high") {
+export async function getInvoices(search, status, sort = "high", aging = "") {
   const conditions = [isNull(invoices.deletedAt)];
 
   // SEARCH
@@ -95,6 +95,31 @@ export async function getInvoices(search, status, sort = "high") {
       }
 
       return b.due - a.due; // default highest first
+    })
+    .filter((inv) => {
+      if (!aging) return true;
+
+      if (inv.dueDays <= 0) return false;
+
+      switch (aging) {
+        case "0-30":
+          return inv.dueDays <= 30;
+
+        case "31-60":
+          return inv.dueDays >= 31 && inv.dueDays <= 60;
+
+        case "61-90":
+          return inv.dueDays >= 61 && inv.dueDays <= 90;
+
+        case "91-180":
+          return inv.dueDays >= 91 && inv.dueDays <= 180;
+
+        case "180+":
+          return inv.dueDays > 180;
+
+        default:
+          return true;
+      }
     })
     .filter((inv) => {
       if (!status) return true;

@@ -4,14 +4,16 @@ import ImportInvoices from "../components/ImportInvoices";
 import SearchBox from "../components/SearchBox";
 import FilterDropdown from "../components/FilterDropdown";
 import DeleteInvoiceButton from "../components/DeleteInvoiceButton";
-import SortDropdown from "../components/SortDropdown";
+import SortDropdown from "../components/invoice/SortDropdown";
+import AgingFilterDropdown from "../components/invoice/AgingFilterDropdown";
 
 export default async function InvoicePage({ searchParams }) {
   const resolvedParams = await searchParams;
   const query = resolvedParams?.q || "";
   const status = resolvedParams?.status || "";
   const sort = resolvedParams?.sort || "high";
-  const data = await getInvoices(query, status, sort);
+  const aging = resolvedParams?.aging || "";
+  const data = await getInvoices(query, status, sort, aging);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -32,6 +34,7 @@ export default async function InvoicePage({ searchParams }) {
           <SearchBox />
           <FilterDropdown />
           <SortDropdown />
+          <AgingFilterDropdown />
           <ImportInvoices />
 
           {/* <Link
@@ -47,7 +50,7 @@ export default async function InvoicePage({ searchParams }) {
             rel="noopener noreferrer"
             className="text-sm font-medium text-zinc-500 border border-zinc-200 underline p-2 rounded-lg"
           >
-            Invoice Sample (CSV)
+            Sample CSV
           </a>
 
           <Link
