@@ -118,7 +118,7 @@ export default async function ClientsPage({ searchParams }) {
         {/* Header */}
         <div
           className="
-        grid grid-cols-[80px_1.5fr_180px_120px_260px]
+        grid grid-cols-[80px_2fr_140px_180px_120px_180px]
         items-center
         px-5 py-3
         bg-zinc-50
@@ -129,6 +129,7 @@ export default async function ClientsPage({ searchParams }) {
           <div>S.N.</div>
           <div>Company</div>
           <div>Code</div>
+          <div>GST No.</div>
           <div>Status</div>
 
           <div className="text-center">Actions</div>
@@ -140,7 +141,7 @@ export default async function ClientsPage({ searchParams }) {
             <div
               key={c.id}
               className="
-            grid grid-cols-[80px_1.5fr_180px_120px_260px]
+            grid grid-cols-[80px_2fr_140px_180px_120px_180px]
             items-center
             px-5 py-3
             text-sm
@@ -159,6 +160,8 @@ export default async function ClientsPage({ searchParams }) {
 
               {/* Code */}
               <div className="text-zinc-500 font-mono">{c.companyCode}</div>
+
+              <div className="text-zinc-500 font-mono">{c.gstNumber}</div>
 
               {/* Status */}
               <div>

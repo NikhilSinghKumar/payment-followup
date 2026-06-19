@@ -90,6 +90,7 @@ export async function POST(req) {
       const companyCode = row.company_code?.trim();
       const email = row.email?.trim() || null;
       const phone = row.phone?.trim() || null;
+      const gstNumber = row.gst_number?.trim() || null;
 
       const rowNum = i + 2; // header = row 1
 
@@ -119,6 +120,7 @@ export async function POST(req) {
         email,
         phone,
         companyCode,
+        gstNumber,
       });
 
       existingSet.add(companyCode);

@@ -10,6 +10,7 @@ export async function createClient(prevState, formData) {
   const companyCode = formData.get("companyCode");
   const email = formData.get("email");
   const phone = formData.get("phone");
+  const gstNumber = formData.get("gstNumber");
 
   if (!companyName) {
     throw new Error("Company name is required");
@@ -25,6 +26,7 @@ export async function createClient(prevState, formData) {
       companyCode: formData.get("companyCode"),
       email: formData.get("email"),
       phone: formData.get("phone"),
+      gstNumber: formData.get("gstNumber"),
     });
 
     return { success: true };
@@ -43,6 +45,7 @@ export async function getClients(search = "", letter = "") {
       or(
         ilike(clients.companyName, `%${search}%`),
         ilike(clients.companyCode, `%${search}%`),
+        ilike(clients.gstNumber, `%${search}%`),
       ),
     );
   }
@@ -73,6 +76,7 @@ export async function getClientById(id) {
 export async function updateClient(id, prevState, formData) {
   const companyName = formData.get("companyName");
   const companyCode = formData.get("companyCode");
+  const gstNumber = formData.get("gstNumber");
 
   if (!companyName) {
     return { error: "Company name is required" };
@@ -90,6 +94,7 @@ export async function updateClient(id, prevState, formData) {
         companyCode,
         email: formData.get("email"),
         phone: formData.get("phone"),
+        gstNumber,
         isActive: formData.get("isActive") === "true",
         updatedAt: new Date(),
       })
