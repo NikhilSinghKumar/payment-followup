@@ -27,7 +27,7 @@ export default function FilterDropdown() {
       onChange={handleChange}
       className="h-[40px] px-3 rounded-lg border border-zinc-300 text-sm bg-white dark:text-zinc-500"
     >
-      <option value="">All</option>
+      <option value="">Status</option>
       <option value="pending">Pending</option>
       <option value="partial">Partial</option>
       <option value="paid">Paid</option>
