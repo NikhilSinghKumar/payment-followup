@@ -26,7 +26,7 @@ export default function AgingFilterDropdown() {
       onChange={handleChange}
       className="h-[40px] rounded-lg border border-zinc-200 px-3 text-sm"
     >
-      <option value="">All Aging</option>
+      <option value="">Days</option>
       <option value="0-30">0-30 Days</option>
       <option value="31-60">31-60 Days</option>
       <option value="61-90">61-90 Days</option>
