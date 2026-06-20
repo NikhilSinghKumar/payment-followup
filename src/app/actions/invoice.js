@@ -21,6 +21,7 @@ export async function getInvoices(search, status, sort = "high", aging = "") {
       or(
         ilike(clients.companyName, `%${search}%`),
         ilike(clients.companyCode, `%${search}%`),
+        ilike(invoices.invoiceNumber, `%${search}%`),
       ),
     );
   }
@@ -28,6 +29,7 @@ export async function getInvoices(search, status, sort = "high", aging = "") {
   const query = db
     .select({
       id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
       amount: invoices.amount,
       dueDate: invoices.dueDate,
       companyName: clients.companyName,
@@ -89,13 +91,6 @@ export async function getInvoices(search, status, sort = "high", aging = "") {
         dueDaysText,
       };
     })
-    .sort((a, b) => {
-      if (sort === "low") {
-        return a.due - b.due;
-      }
-
-      return b.due - a.due; // default highest first
-    })
     .filter((inv) => {
       if (!aging) return true;
 
@@ -137,6 +132,19 @@ export async function getInvoices(search, status, sort = "high", aging = "") {
       }
 
       return inv.status === status;
+    })
+    .sort((a, b) => {
+      // If aging filter is selected, sort by overdue days (highest → lowest)
+      if (aging) {
+        return b.dueDays - a.dueDays;
+      }
+
+      // Otherwise sort by due amount
+      if (sort === "low") {
+        return a.due - b.due;
+      }
+
+      return b.due - a.due;
     });
 }
 
