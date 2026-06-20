@@ -129,7 +129,7 @@ export default async function ClientsPage({ searchParams }) {
           <div>S.N.</div>
           <div>Company</div>
           <div>Code</div>
-          <div>GST No.</div>
+          <div className="text-center">GST No.</div>
           <div>Status</div>
 
           <div className="text-center">Actions</div>
@@ -161,7 +161,9 @@ export default async function ClientsPage({ searchParams }) {
               {/* Code */}
               <div className="text-zinc-500 font-mono">{c.companyCode}</div>
 
-              <div className="text-zinc-500 font-mono">{c.gstNumber}</div>
+              <div className="text-zinc-500 text-center font-mono">
+                {c.gstNumber || "---"}
+              </div>
 
               {/* Status */}
               <div>
