@@ -1,4 +1,4 @@
-import { getInvoices } from "../actions/invoice";
+import { getInvoices, getFinancialYears } from "../actions/invoice";
 import Link from "next/link";
 import ImportInvoices from "../components/ImportInvoices";
 import SearchBox from "../components/SearchBox";
@@ -6,6 +6,8 @@ import FilterDropdown from "../components/FilterDropdown";
 import DeleteInvoiceButton from "../components/DeleteInvoiceButton";
 import SortDropdown from "../components/invoice/SortDropdown";
 import AgingFilterDropdown from "../components/invoice/AgingFilterDropdown";
+import FinancialYearFilterDropdown from "../components/invoice/FinancialYearFilterDropdown";
+import MonthFilterDropdown from "../components/invoice/MonthFilterDropdown";
 
 export default async function InvoicePage({ searchParams }) {
   const resolvedParams = await searchParams;
@@ -13,7 +15,19 @@ export default async function InvoicePage({ searchParams }) {
   const status = resolvedParams?.status || "";
   const sort = resolvedParams?.sort || "high";
   const aging = resolvedParams?.aging || "";
-  const data = await getInvoices(query, status, sort, aging);
+  const financialYear = resolvedParams?.financialYear || "";
+  const month = resolvedParams?.month || "";
+
+  const data = await getInvoices(
+    query,
+    status,
+    sort,
+    aging,
+    financialYear,
+    month,
+  );
+
+  const years = await getFinancialYears();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -22,7 +36,7 @@ export default async function InvoicePage({ searchParams }) {
     <div className="min-h-screen bg-zinc-50 p-6">
       <div className="h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400 mb-6" />
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-3xl font-semibold text-zinc-800">Invoices</h1>
           <p className="text-sm text-zinc-500 mt-1">
@@ -32,9 +46,6 @@ export default async function InvoicePage({ searchParams }) {
 
         <div className="flex items-center gap-2">
           <SearchBox />
-          <FilterDropdown />
-          <SortDropdown />
-          <AgingFilterDropdown />
           <ImportInvoices />
 
           {/* <Link
@@ -60,6 +71,14 @@ export default async function InvoicePage({ searchParams }) {
             Client List
           </Link>
         </div>
+      </div>
+
+      <div className="flex justify-end items-center gap-2 mb-6">
+        <FilterDropdown />
+        <SortDropdown />
+        <AgingFilterDropdown />
+        <MonthFilterDropdown />
+        <FinancialYearFilterDropdown years={years} />
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
