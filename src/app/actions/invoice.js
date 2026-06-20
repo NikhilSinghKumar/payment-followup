@@ -12,8 +12,18 @@ import {
 import { eq, sql, ilike, isNull, or, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-export async function getInvoices(search, status, sort = "high", aging = "") {
+export async function getInvoices(
+  search,
+  status,
+  sort = "high",
+  aging = "",
+  financialYear = "",
+  month = "",
+) {
   const conditions = [isNull(invoices.deletedAt)];
+  if (financialYear) {
+    conditions.push(eq(invoices.financialYear, financialYear));
+  }
 
   // SEARCH
   if (search) {
@@ -132,6 +142,13 @@ export async function getInvoices(search, status, sort = "high", aging = "") {
       }
 
       return inv.status === status;
+    })
+    .filter((inv) => {
+      if (!month) return true;
+
+      if (!inv.dueDate) return false;
+
+      return new Date(inv.dueDate).getMonth() + 1 === Number(month);
     })
     .sort((a, b) => {
       // If aging filter is selected, sort by overdue days (highest → lowest)
@@ -358,4 +375,17 @@ export async function deleteInvoice(id) {
       message: "Failed to delete invoice",
     };
   }
+}
+
+export async function getFinancialYears() {
+  const years = await db
+    .selectDistinct({ financialYear: invoices.financialYear })
+    .from(invoices)
+    .where(isNull(invoices.deletedAt));
+
+  return years
+    .map((row) => row.financialYear)
+    .filter(Boolean)
+    .sort()
+    .reverse();
 }
