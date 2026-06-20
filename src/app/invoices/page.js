@@ -67,7 +67,7 @@ export default async function InvoicePage({ searchParams }) {
         <div
           className="
             grid
-            grid-cols-[80px_2fr_1fr_1fr_1fr_1.2fr_1fr_260px]
+            grid-cols-[80px_2fr_1fr_1fr_1fr_1.2fr_1fr_1fr_260px]
             items-center
             px-5 py-3
             bg-zinc-50
@@ -77,6 +77,7 @@ export default async function InvoicePage({ searchParams }) {
         >
           <div>S.N.</div>
           <div className="text-center">Company</div>
+          <div className="text-center">Invoice No.</div>
           <div className="text-center">Amount</div>
           <div className="text-center">Paid</div>
           <div className="text-center">Due</div>
@@ -105,7 +106,7 @@ export default async function InvoicePage({ searchParams }) {
                 key={inv.id}
                 className="
             grid
-            grid-cols-[80px_2.2fr_0.9fr_0.9fr_0.9fr_1.1fr_1fr_260px]
+            grid-cols-[80px_2fr_1fr_1fr_1fr_1.2fr_1fr_1fr_260px]
             items-center
             px-5 py-3
             text-sm
@@ -122,8 +123,13 @@ export default async function InvoicePage({ searchParams }) {
                   {inv.companyName ?? "Unknown"}
                 </div>
 
+                {/* Invoice Number */}
+                <div className="font-medium text-center text-zinc-800 whitespace-nowrap">
+                  {inv.invoiceNumber ?? "—"}
+                </div>
+
                 {/* Amount */}
-                <div className="font-medium text-zinc-800 whitespace-nowrap">
+                <div className="font-medium text-center text-zinc-800 whitespace-nowrap">
                   ₹{Number(inv.amount).toLocaleString("en-IN")}
                 </div>
 
@@ -138,7 +144,7 @@ export default async function InvoicePage({ searchParams }) {
                 </div>
 
                 {/* Due Date */}
-                <div className="text-zinc-700 whitespace-nowrap">
+                <div className="text-center text-zinc-700 whitespace-nowrap">
                   {formattedDate}
                 </div>
 
