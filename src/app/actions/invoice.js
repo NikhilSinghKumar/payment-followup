@@ -19,6 +19,7 @@ export async function getInvoices(
   aging = "",
   financialYear = "",
   month = "",
+  amountRange,
 ) {
   const conditions = [isNull(invoices.deletedAt)];
   if (financialYear) {
@@ -142,6 +143,29 @@ export async function getInvoices(
       }
 
       return inv.status === status;
+    })
+    .filter((inv) => {
+      if (!amountRange) return true;
+
+      switch (amountRange) {
+        case "0-10K":
+          return inv.due >= 0 && inv.due <= 10000;
+
+        case "10K-50K":
+          return inv.due > 10000 && inv.due <= 50000;
+
+        case "50K-1L":
+          return inv.due > 50000 && inv.due <= 100000;
+
+        case "1L-5L":
+          return inv.due > 100000 && inv.due <= 500000;
+
+        case "5L+":
+          return inv.due > 500000;
+
+        default:
+          return true;
+      }
     })
     .filter((inv) => {
       if (!month) return true;

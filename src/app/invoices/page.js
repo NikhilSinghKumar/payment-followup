@@ -8,6 +8,7 @@ import SortDropdown from "../components/invoice/SortDropdown";
 import AgingFilterDropdown from "../components/invoice/AgingFilterDropdown";
 import FinancialYearFilterDropdown from "../components/invoice/FinancialYearFilterDropdown";
 import MonthFilterDropdown from "../components/invoice/MonthFilterDropdown";
+import AmountRangeFilterDropdown from "../components/invoice/AmountRangeFilterDropdown";
 
 export default async function InvoicePage({ searchParams }) {
   const resolvedParams = await searchParams;
@@ -17,6 +18,7 @@ export default async function InvoicePage({ searchParams }) {
   const aging = resolvedParams?.aging || "";
   const financialYear = resolvedParams?.financialYear || "";
   const month = resolvedParams?.month || "";
+  const amountRange = resolvedParams?.amountRange || "";
 
   const data = await getInvoices(
     query,
@@ -25,6 +27,7 @@ export default async function InvoicePage({ searchParams }) {
     aging,
     financialYear,
     month,
+    amountRange,
   );
 
   const years = await getFinancialYears();
@@ -76,6 +79,7 @@ export default async function InvoicePage({ searchParams }) {
       <div className="flex justify-end items-center gap-2 mb-6">
         <FilterDropdown />
         <SortDropdown />
+        <AmountRangeFilterDropdown />
         <AgingFilterDropdown />
         <MonthFilterDropdown />
         <FinancialYearFilterDropdown years={years} />
