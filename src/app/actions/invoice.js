@@ -48,8 +48,10 @@ export async function getInvoices(
       invoiceNumber: invoices.invoiceNumber,
       amount: invoices.amount,
       dueDate: invoices.dueDate,
+      financialYear: invoices.financialYear,
       companyName: clients.companyName,
       companyCode: clients.companyCode,
+      gstNumber: clients.gstNumber,
 
       paid: sql`
         COALESCE(SUM(${payments.amount}), 0)
@@ -61,7 +63,13 @@ export async function getInvoices(
     .where(and(...conditions));
 
   const data = await query
-    .groupBy(invoices.id, clients.companyName, clients.companyCode)
+    .groupBy(
+      invoices.id,
+      clients.companyName,
+      clients.companyCode,
+      clients.gstNumber,
+      invoices.financialYear,
+    )
     .orderBy(invoices.id);
 
   // COMPUTE STATUS

@@ -10,6 +10,7 @@ import FinancialYearFilterDropdown from "../components/invoice/FinancialYearFilt
 import MonthFilterDropdown from "../components/invoice/MonthFilterDropdown";
 import AmountRangeFilterDropdown from "../components/invoice/AmountRangeFilterDropdown";
 import AlphabetDropdown from "../components/invoice/AlphabetDropdown";
+import ExportInvoicesButton from "../components/invoice/ExportInvoicesButton";
 
 export default async function InvoicePage({ searchParams }) {
   const resolvedParams = await searchParams;
@@ -76,6 +77,7 @@ export default async function InvoicePage({ searchParams }) {
           >
             Client List
           </Link>
+          <ExportInvoicesButton />
         </div>
       </div>
 

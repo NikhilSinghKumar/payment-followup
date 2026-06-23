@@ -1,0 +1,72 @@
+import { getInvoices } from "@/app/actions/invoice";
+
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+
+  const query = searchParams.get("q") || "";
+  const status = searchParams.get("status") || "";
+  const sort = searchParams.get("sort") || "high";
+  const aging = searchParams.get("aging") || "";
+  const financialYear = searchParams.get("financialYear") || "";
+  const month = searchParams.get("month") || "";
+  const amountRange = searchParams.get("amountRange") || "";
+  const alphabet = searchParams.get("alphabet") || "";
+
+  const invoices = await getInvoices(
+    query,
+    status,
+    sort,
+    aging,
+    financialYear,
+    month,
+    amountRange,
+    alphabet,
+  );
+
+  // =========================
+  // CSV HEADER
+  // =========================
+
+  const headers = [
+    "Company Name",
+    "GST No.",
+    "Invoice Number",
+    "Amount",
+    "Paid",
+    "Due",
+    "Status",
+    "Financial Year",
+    "Due Date",
+  ];
+
+  // =========================
+  // CSV ROWS
+  // =========================
+
+  const rows = invoices.map((inv) => [
+    inv.companyName,
+    inv.gstNumber,
+    inv.invoiceNumber,
+    inv.amount,
+    inv.paid,
+    inv.due,
+    inv.status,
+    inv.financialYear,
+    inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("en-IN") : "",
+  ]);
+
+  // =========================
+  // CSV CONTENT
+  // =========================
+
+  const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join(
+    "\n",
+  );
+
+  return new Response(csv, {
+    headers: {
+      "Content-Type": "text/csv",
+      "Content-Disposition": 'attachment; filename="invoices.csv"',
+    },
+  });
+}
