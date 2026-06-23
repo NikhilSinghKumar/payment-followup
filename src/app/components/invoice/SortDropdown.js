@@ -20,7 +20,7 @@ export default function SortDropdown() {
     <select
       value={currentSort}
       onChange={handleChange}
-      className="h-[40px] rounded-lg border border-zinc-200 px-3 text-sm"
+      className="h-[40px] px-3 rounded-lg border border-zinc-300 text-sm bg-white dark:text-zinc-500"
     >
       <option value="high">Highest</option>
       <option value="low">Lowest</option>

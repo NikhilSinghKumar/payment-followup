@@ -26,7 +26,7 @@ export default function AlphabetDropdown() {
     <select
       value={currentLetter}
       onChange={handleChange}
-      className="h-[40px] rounded-lg border border-zinc-200 px-3 text-sm"
+      className="h-[40px] px-3 rounded-lg border border-zinc-300 text-sm bg-white dark:text-zinc-500"
     >
       <option value="">A-Z</option>
 
