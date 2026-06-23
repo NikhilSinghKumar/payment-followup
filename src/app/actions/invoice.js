@@ -20,6 +20,7 @@ export async function getInvoices(
   financialYear = "",
   month = "",
   amountRange,
+  alphabet = "",
 ) {
   const conditions = [isNull(invoices.deletedAt)];
   if (financialYear) {
@@ -35,6 +36,10 @@ export async function getInvoices(
         ilike(invoices.invoiceNumber, `%${search}%`),
       ),
     );
+  }
+
+  if (alphabet) {
+    conditions.push(ilike(clients.companyName, `${alphabet}%`));
   }
 
   const query = db
