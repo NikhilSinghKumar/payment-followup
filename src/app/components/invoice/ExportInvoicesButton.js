@@ -10,7 +10,7 @@ export default function ExportInvoicesButton() {
   return (
     <a
       href={href}
-      className="h-[40px] px-4 flex items-center rounded-lg text-sm font-medium border border-zinc-200 bg-white hover:bg-zinc-50 transition"
+      className="h-[40px] px-4 flex items-center rounded-lg text-sm font-medium border border-zinc-300 bg-white dark:text-zinc-500 hover:bg-zinc-50 transition"
     >
       Export CSV
     </a>
