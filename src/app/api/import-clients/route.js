@@ -91,6 +91,8 @@ export async function POST(req) {
       const email = row.email?.trim() || null;
       const phone = row.phone?.trim() || null;
       const gstNumber = row.gst_number?.trim() || null;
+      const tdsApplicable =
+        row.tds_applicable?.toString().trim().toLowerCase() === "true";
 
       const rowNum = i + 2; // header = row 1
 
@@ -121,6 +123,7 @@ export async function POST(req) {
         phone,
         companyCode,
         gstNumber,
+        tdsApplicable,
       });
 
       existingSet.add(companyCode);

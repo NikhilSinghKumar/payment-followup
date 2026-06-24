@@ -86,6 +86,23 @@ export default function ClientEditForm({ client }) {
             />
           </div>
 
+          <div className="flex items-center gap-3">
+            <input
+              id="tdsApplicable"
+              name="tdsApplicable"
+              type="checkbox"
+              defaultChecked={client.tdsApplicable}
+              className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+            />
+
+            <label
+              htmlFor="tdsApplicable"
+              className="text-sm text-zinc-600 cursor-pointer"
+            >
+              TDS Applicable
+            </label>
+          </div>
+
           {/* Status */}
           <div>
             <label className="text-sm text-zinc-600 mb-1 block">Status</label>

@@ -41,6 +41,8 @@ export const clients = pgTable("clients", {
   // Status
   isActive: boolean("is_active").notNull().default(true),
 
+  tdsApplicable: boolean("tds_applicable").notNull().default(false),
+
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   deletedAt: timestamp("deleted_at", {

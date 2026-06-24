@@ -12,6 +12,8 @@ export async function createClient(prevState, formData) {
   const phone = formData.get("phone");
   const gstNumber = formData.get("gstNumber");
 
+  const tdsApplicable = formData.get("tdsApplicable") === "on";
+
   if (!companyName) {
     throw new Error("Company name is required");
   }
@@ -20,13 +22,18 @@ export async function createClient(prevState, formData) {
     throw new Error("Company code is required");
   }
 
+  if (!gstNumber) {
+    throw new Error("GST No. is required");
+  }
+
   try {
     await db.insert(clients).values({
-      companyName: formData.get("companyName"),
-      companyCode: formData.get("companyCode"),
-      email: formData.get("email"),
-      phone: formData.get("phone"),
-      gstNumber: formData.get("gstNumber"),
+      companyName,
+      companyCode,
+      email,
+      phone,
+      gstNumber,
+      tdsApplicable,
     });
 
     return { success: true };
@@ -77,6 +84,7 @@ export async function updateClient(id, prevState, formData) {
   const companyName = formData.get("companyName");
   const companyCode = formData.get("companyCode");
   const gstNumber = formData.get("gstNumber");
+  const tdsApplicable = formData.get("tdsApplicable") === "on";
 
   if (!companyName) {
     return { error: "Company name is required" };
@@ -95,6 +103,7 @@ export async function updateClient(id, prevState, formData) {
         email: formData.get("email"),
         phone: formData.get("phone"),
         gstNumber,
+        tdsApplicable,
         isActive: formData.get("isActive") === "true",
         updatedAt: new Date(),
       })
