@@ -29,6 +29,7 @@ export default function ClientSubClientsTab({ client, subClients = [] }) {
             <tr>
               <th className="px-4 py-3 text-left">S.N.</th>
               <th className="px-4 py-3 text-left">Company</th>
+              <th className="px-4 py-3 text-left">Company Code</th>
               <th className="px-4 py-3 text-left">GST Number</th>
               <th className="px-4 py-3 text-center">TDS</th>
               <th className="px-4 py-3 text-center">Status</th>
@@ -52,6 +53,9 @@ export default function ClientSubClientsTab({ client, subClients = [] }) {
                   <td className="px-4 py-3 font-medium">{index + 1}</td>
                   <td className="px-4 py-3 font-medium">
                     {subClient.companyName}
+                  </td>
+                  <td className="px-4 py-3 font-medium">
+                    {subClient.companyCode}
                   </td>
 
                   <td className="px-4 py-3">{subClient.gstNumber || "-"}</td>

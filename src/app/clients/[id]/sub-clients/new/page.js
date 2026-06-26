@@ -1,7 +1,7 @@
-import NewSubClientForm from "./NewSubclientForm";
+import SubClientForm from "./SubclientForm";
 
 export default async function NewSubClientPage({ params }) {
   const { id } = await params;
 
-  return <NewSubClientForm clientId={Number(id)} />;
+  return <SubClientForm clientId={Number(id)} />;
 }

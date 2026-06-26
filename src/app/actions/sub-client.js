@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/db";
+import { revalidatePath } from "next/cache";
 import { clientSubClients } from "@/db/schema";
 import { ilike, or, and, sql, eq, isNull } from "drizzle-orm";
 
@@ -89,62 +90,61 @@ export async function getSubClientsByClientId(
 // =====================================================
 
 export async function getSubClientById(id) {
-  const subClient = await db
-    .select()
-    .from(clientSubClients)
-    .where(and(eq(clientSubClients.id, id), isNull(clientSubClients.deletedAt)))
-    .limit(1);
-
-  return subClient[0] || null;
+  return await db.query.clientSubClients.findFirst({
+    where: (clientSubClients, { eq, and, isNull }) =>
+      and(eq(clientSubClients.id, id), isNull(clientSubClients.deletedAt)),
+  });
 }
 
 // =====================================================
 // UPDATE SUB CLIENT
 // =====================================================
 
-export async function updateSubClient(id, prevState, formData) {
+export async function updateSubClient(prevState, formData) {
+  const id = formData.get("id");
+  const clientId = formData.get("clientId");
+
   const companyName = formData.get("companyName");
   const companyCode = formData.get("companyCode");
   const gstNumber = formData.get("gstNumber");
-
+  const email = formData.get("email");
+  const phone = formData.get("phone");
+  const address = formData.get("address");
+  const city = formData.get("city");
+  const state = formData.get("state");
+  const pincode = formData.get("pincode");
   const tdsApplicable = formData.get("tdsApplicable") === "on";
 
   if (!companyName) {
-    return { error: "Company name is required" };
-  }
-
-  if (!gstNumber) {
-    return { error: "GST Number is required" };
-  }
-
-  try {
-    await db
-      .update(clientSubClients)
-      .set({
-        companyName,
-        companyCode,
-        gstNumber,
-
-        address: formData.get("address"),
-        city: formData.get("city"),
-        state: formData.get("state"),
-        pincode: formData.get("pincode"),
-
-        tdsApplicable,
-        isActive: formData.get("isActive") === "true",
-
-        updatedAt: new Date(),
-      })
-      .where(eq(clientSubClients.id, id));
-
     return {
-      success: true,
-    };
-  } catch (err) {
-    return {
-      error: "Failed to update sub client",
+      success: false,
+      message: "Company name is required.",
     };
   }
+
+  await db
+    .update(clientSubClients)
+    .set({
+      companyName,
+      companyCode,
+      gstNumber,
+      email,
+      phone,
+      address,
+      city,
+      state,
+      pincode,
+      tdsApplicable,
+      updatedAt: new Date(),
+    })
+    .where(eq(clientSubClients.id, id));
+
+  revalidatePath(`/clients/${clientId}`);
+
+  return {
+    success: true,
+    message: "Sub client updated successfully.",
+  };
 }
 
 // =====================================================
