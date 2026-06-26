@@ -6,6 +6,10 @@ const tabs = [
     label: "Overview",
   },
   {
+    key: "sub-clients",
+    label: "Sub Clients",
+  },
+  {
     key: "locations",
     label: "Locations",
   },

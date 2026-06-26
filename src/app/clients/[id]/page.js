@@ -11,6 +11,7 @@ import { getClientById } from "@/app/actions/client";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import ClientTabs from "@/app/components/client/clientTabs";
 import ClientOverviewTab from "@/app/components/client/tabs/clientOverviewTab";
+import ClientSubClientsTab from "@/app/components/client/tabs/clientSubClientsTab";
 import ClientInvoicesTab from "@/app/components/client/tabs/clientInvoicesTab";
 import ClientLocationsTab from "@/app/components/client/tabs/clientLocationsTab";
 import ClientContactsTab from "@/app/components/client/tabs/clientContactsTab";
@@ -18,6 +19,7 @@ import ClientPaymentsTab from "@/app/components/client/tabs/clientPaymentsTab";
 import ClientFollowupsTab from "@/app/components/client/tabs/clientFollowupsTab";
 import { getClientLocationsByClientId } from "@/app/actions/clientLocations";
 import { getClientContactsByClientId } from "@/app/actions/clientContacts";
+import { getSubClientsByClientId } from "@/app/actions/sub-client";
 
 export default async function ClientDetailPage({ params, searchParams }) {
   const { id } = await params;
@@ -30,6 +32,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
   const activeTab = resolvedSearchParams?.tab || "overview";
 
   const clientLocations = await getClientLocationsByClientId(clientId);
+  const subClients = await getSubClientsByClientId(clientId);
 
   if (isNaN(clientId)) {
     return <div className="p-6 text-red-500">Invalid client ID</div>;
@@ -276,6 +279,10 @@ export default async function ClientDetailPage({ params, searchParams }) {
 
         {activeTab === "overview" && (
           <ClientOverviewTab client={client} invoices={normalizedInvoiceData} />
+        )}
+
+        {activeTab === "sub-clients" && (
+          <ClientSubClientsTab client={client} subClients={subClients} />
         )}
 
         {activeTab === "invoices" && (

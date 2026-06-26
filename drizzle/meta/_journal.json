@@ -29,6 +29,13 @@
       "when": 1779700166462,
       "tag": "0003_wealthy_bug",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782380554165,
+      "tag": "0004_smiling_felicia_hardy",
+      "breakpoints": true
     }
   ]
 }

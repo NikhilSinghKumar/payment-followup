@@ -8,6 +8,9 @@ import {
   clientContactLocations,
   invoices,
   payments,
+  clientSubClients,
+  followups,
+  invoiceAwbs,
 } from "./schema";
 
 export const clientsRelations = relations(clients, ({ many }) => ({
@@ -15,6 +18,7 @@ export const clientsRelations = relations(clients, ({ many }) => ({
   contacts: many(clientContacts),
   invoices: many(invoices),
   payments: many(payments),
+  subClients: many(clientSubClients),
 }));
 
 export const clientLocationsRelations = relations(
@@ -77,3 +81,31 @@ export const clientContactLocationsRelations = relations(
     }),
   }),
 );
+
+export const clientSubClientsRelations = relations(
+  clientSubClients,
+  ({ one, many }) => ({
+    client: one(clients, {
+      fields: [clientSubClients.clientId],
+      references: [clients.id],
+    }),
+
+    invoices: many(invoices),
+  }),
+);
+
+export const invoicesRelations = relations(invoices, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [invoices.clientId],
+    references: [clients.id],
+  }),
+
+  subClient: one(clientSubClients, {
+    fields: [invoices.subClientId],
+    references: [clientSubClients.id],
+  }),
+
+  payments: many(payments),
+  followups: many(followups),
+  awbs: many(invoiceAwbs),
+}));

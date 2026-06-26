@@ -51,6 +51,74 @@ export const clients = pgTable("clients", {
 });
 
 // =====================================================
+// SUB CLIENTS
+// =====================================================
+
+export const clientSubClients = pgTable(
+  "client_sub_clients",
+  {
+    id: serial("id").primaryKey(),
+
+    // Parent Client
+    clientId: integer("client_id")
+      .references(() => clients.id, {
+        onDelete: "cascade",
+      })
+      .notNull(),
+
+    // Business Unit / GST Entity
+    companyName: text("company_name").notNull(),
+
+    companyCode: text("company_code"),
+
+    gstNumber: text("gst_number"),
+
+    address: text("address"),
+
+    city: text("city"),
+
+    state: text("state"),
+
+    pincode: text("pincode"),
+
+    country: text("country").default("India"),
+
+    tdsApplicable: boolean("tds_applicable").notNull().default(false),
+
+    isActive: boolean("is_active").notNull().default(true),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    }).defaultNow(),
+
+    deletedAt: timestamp("deleted_at", {
+      withTimezone: true,
+    }),
+  },
+  (table) => ({
+    clientIdx: index("sub_client_client_idx").on(table.clientId),
+
+    gstIdx: index("sub_client_gst_idx").on(table.gstNumber),
+
+    companyIdx: index("sub_client_company_idx").on(table.companyName),
+
+    uniqueCompanyPerClient: uniqueIndex("unique_sub_client_company").on(
+      table.clientId,
+      table.companyName,
+    ),
+
+    uniqueCodePerClient: uniqueIndex("unique_sub_client_code").on(
+      table.clientId,
+      table.companyCode,
+    ),
+  }),
+);
+
+// =====================================================
 // CLIENT LOCATIONS
 // =====================================================
 
@@ -463,6 +531,8 @@ export const invoices = pgTable(
     clientId: integer("client_id")
       .references(() => clients.id)
       .notNull(),
+
+    subClientId: integer("sub_client_id").references(() => clientSubClients.id),
 
     // Example: 2025-26
     financialYear: text("financial_year").notNull(),
