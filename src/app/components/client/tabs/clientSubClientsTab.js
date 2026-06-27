@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import DeleteSubClientButton from "../../DeleteSubClientButton";
 
-export default function ClientSubClientsTab({ client, subClients = [] }) {
+export default function ClientSubClientsTab({
+  clientId,
+  client,
+  subClients = [],
+}) {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -81,21 +86,18 @@ export default function ClientSubClientsTab({ client, subClients = [] }) {
                   </td>
 
                   <td className="px-4 py-3">
-                    <div className="flex justify-end gap-3">
+                    <div className="flex justify-end gap-2">
                       <Link
                         href={`/clients/${client.id}/sub-clients/${subClient.id}/edit`}
-                        className="text-blue-600 hover:underline"
+                        className="rounded-md border border-blue-200 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50"
                       >
                         Edit
                       </Link>
 
-                      <button
-                        className="text-red-600 hover:underline"
-                        disabled
-                        title="Coming soon"
-                      >
-                        Delete
-                      </button>
+                      <DeleteSubClientButton
+                        clientId={clientId}
+                        subClientId={subClient.id}
+                      />
                     </div>
                   </td>
                 </tr>

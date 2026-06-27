@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { revalidatePath } from "next/cache";
 import { clientSubClients } from "@/db/schema";
 import { ilike, or, and, sql, eq, isNull } from "drizzle-orm";
+import { redirect } from "next/navigation";
 
 // =====================================================
 // CREATE SUB CLIENT
@@ -151,21 +152,22 @@ export async function updateSubClient(prevState, formData) {
 // DELETE SUB CLIENT (SOFT DELETE)
 // =====================================================
 
-export async function deleteSubClient(id) {
+export async function deleteSubClient(clientId, subClientId) {
   try {
     await db
       .update(clientSubClients)
       .set({
         deletedAt: new Date(),
+        updatedAt: new Date(),
       })
-      .where(eq(clientSubClients.id, id));
+      .where(eq(clientSubClients.id, subClientId));
 
+    revalidatePath(`/clients/${clientId}`);
+
+    redirect(`/clients/${clientId}?tab=sub-clients`);
+  } catch (error) {
     return {
-      success: true,
-    };
-  } catch (err) {
-    return {
-      error: "Failed to delete sub client",
+      error: "Failed to delete sub client.",
     };
   }
 }
