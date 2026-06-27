@@ -282,7 +282,11 @@ export default async function ClientDetailPage({ params, searchParams }) {
         )}
 
         {activeTab === "sub-clients" && (
-          <ClientSubClientsTab client={client} subClients={subClients} />
+          <ClientSubClientsTab
+            client={client}
+            clientId={clientId}
+            subClients={subClients}
+          />
         )}
 
         {activeTab === "invoices" && (
