@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { createSubClient } from "@/app/actions/sub-client";
 
 export default function SubClientForm({
+  client,
   clientId,
   subClient = null,
   action,
@@ -50,11 +51,12 @@ export default function SubClientForm({
         <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-md border border-zinc-200 p-6">
           {/* Header */}
           <div className="mb-6">
-            <h2>{isEdit ? "Edit Sub Client" : "Add New Sub Client"}</h2>
-
-            {isEdit
-              ? "Update Sub Client details"
-              : "Create Sub Client under Parent Client"}
+            <h2 className="text-2xl font-semibold text-zinc-800">
+              {isEdit ? "Edit Sub Client" : "Add Sub Client"}
+            </h2>
+            <p className="text-sm text-zinc-500 mt-1">
+              {isEdit ? "Update Sub Client details" : "Create Sub Client"}
+            </p>
           </div>
 
           {state?.error && (
@@ -70,6 +72,18 @@ export default function SubClientForm({
                 : "Sub Client created successfully."}
             </div>
           )}
+
+          <div className="mb-4 rounded-xl">
+            <p className="mt-1 text-base font-semibold text-zinc-600">
+              {client.companyName}
+            </p>
+
+            {client.companyCode && (
+              <p className="mt-1 text-sm text-zinc-400">
+                {client.companyCode} - {client.gstNumber}
+              </p>
+            )}
+          </div>
 
           <form action={formAction} className="space-y-4">
             {/* Company Name */}
