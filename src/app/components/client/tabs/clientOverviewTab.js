@@ -12,7 +12,7 @@ export default function ClientOverviewTab({ client, invoices = [] }) {
   // =====================================
 
   const totalOutstanding = invoices.reduce(
-    (sum, item) => sum + Number(item.outstandingAmount || 0),
+    (sum, item) => sum + Number(item.due || 0),
     0,
   );
 
@@ -20,14 +20,7 @@ export default function ClientOverviewTab({ client, invoices = [] }) {
   // OVERDUE
   // =====================================
 
-  const overdueInvoices = invoices.filter((invoice) => {
-    if (!invoice.dueDate) return false;
-
-    return (
-      new Date(invoice.dueDate) < new Date() &&
-      Number(invoice.outstandingAmount) > 0
-    );
-  });
+  const overdueInvoices = invoices.filter((invoice) => invoice.isOverdue);
 
   return (
     <div className="space-y-4">
@@ -177,7 +170,7 @@ export default function ClientOverviewTab({ client, invoices = [] }) {
             </div>
           ) : (
             recentInvoices.map((invoice) => {
-              const outstanding = Number(invoice.outstandingAmount || 0);
+              const outstanding = Number(invoice.due || 0);
 
               return (
                 <Link
@@ -198,23 +191,36 @@ export default function ClientOverviewTab({ client, invoices = [] }) {
 
                   {/* Amount */}
                   <div className="font-medium text-zinc-800">
-                    ₹{Number(invoice.amount).toLocaleString()}
+                    ₹{Number(invoice.invoiceAmount).toLocaleString()}
                   </div>
 
                   {/* Paid */}
                   <div className="text-emerald-600">
-                    ₹{Number(invoice.paidAmount).toLocaleString()}
+                    ₹{Number(invoice.paid).toLocaleString()}
                   </div>
 
                   {/* Outstanding */}
                   <div className="font-medium text-orange-600">
-                    ₹{outstanding.toLocaleString()}
+                    ₹{Number(invoice.due).toLocaleString("en-IN")}
                   </div>
 
                   {/* Status */}
                   <div>
-                    <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
-                      {invoice.status}
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs font-medium ${
+                        invoice.status === "paid"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : invoice.status === "partial"
+                            ? "bg-orange-100 text-orange-700"
+                            : invoice.status === "overdue"
+                              ? "bg-red-100 text-red-700"
+                              : invoice.status === "disputed"
+                                ? "bg-pink-100 text-pink-700"
+                                : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {invoice.status.charAt(0).toUpperCase() +
+                        invoice.status.slice(1)}
                     </span>
                   </div>
                 </Link>

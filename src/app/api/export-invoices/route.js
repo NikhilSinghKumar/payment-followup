@@ -47,7 +47,7 @@ export async function GET(request) {
     inv.companyName,
     inv.gstNumber,
     inv.invoiceNumber,
-    inv.amount,
+    inv.invoiceAmount,
     inv.paid,
     inv.due,
     inv.status,

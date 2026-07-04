@@ -1,4 +1,5 @@
 export default function InvoiceSummary({ data }) {
+  console.log(data);
   return (
     <div>
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -22,20 +23,25 @@ export default function InvoiceSummary({ data }) {
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-5">
+          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-6">
             <SummaryItem
               label="Invoice Amount"
-              value={`₹${Number(data.amount).toLocaleString("en-IN")}`}
+              value={`₹${Number(data.invoiceAmount).toLocaleString("en-IN")}`}
+            />
+
+            <SummaryItem
+              label="Net Payable"
+              value={`₹${Number(data.netPayableAmount).toLocaleString("en-IN")}`}
             />
 
             <SummaryItem
               label="Paid"
-              value={`₹${Number(data.totalPaid).toLocaleString("en-IN")}`}
+              value={`₹${Number(data.paid).toLocaleString("en-IN")}`}
             />
 
             <SummaryItem
-              label="Outstanding"
-              value={`₹${Number(data.outstanding).toLocaleString("en-IN")}`}
+              label="Balance Due"
+              value={`₹${Number(data.due).toLocaleString("en-IN")}`}
             />
 
             {/* STATUS */}
@@ -86,9 +92,13 @@ function StatusBadge({ status }) {
       ? "bg-emerald-100 text-emerald-700"
       : status === "partial"
         ? "bg-orange-100 text-orange-700"
-        : status === "disputed"
+        : status === "overdue"
           ? "bg-red-100 text-red-700"
-          : "bg-zinc-100 text-zinc-700";
+          : status === "disputed"
+            ? "bg-pink-100 text-pink-700"
+            : status === "cancelled"
+              ? "bg-zinc-300 text-zinc-700"
+              : "bg-blue-100 text-blue-700";
 
   return (
     <span

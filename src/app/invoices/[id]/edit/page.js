@@ -110,58 +110,6 @@ export default async function EditInvoicePage({ params }) {
 
             {/* Date Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Invoice From */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-zinc-700">
-                  Invoice From
-                </label>
-
-                <input
-                  name="invoiceFromDate"
-                  type="date"
-                  defaultValue={
-                    invoice.invoiceFromDate
-                      ? new Date(invoice.invoiceFromDate)
-                          .toISOString()
-                          .split("T")[0]
-                      : ""
-                  }
-                  className="
-                w-full h-[40px] px-3 rounded-lg
-                border border-zinc-200
-                bg-white text-zinc-800
-                focus:outline-none
-                focus:ring-2 focus:ring-blue-400
-              "
-                />
-              </div>
-
-              {/* Invoice To */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-zinc-700">
-                  Invoice To
-                </label>
-
-                <input
-                  name="invoiceToDate"
-                  type="date"
-                  defaultValue={
-                    invoice.invoiceToDate
-                      ? new Date(invoice.invoiceToDate)
-                          .toISOString()
-                          .split("T")[0]
-                      : ""
-                  }
-                  className="
-                w-full h-[40px] px-3 rounded-lg
-                border border-zinc-200
-                bg-white text-zinc-800
-                focus:outline-none
-                focus:ring-2 focus:ring-blue-400
-              "
-                />
-              </div>
-
               {/* Due Date */}
               <div className="space-y-1">
                 <label className="text-sm font-medium text-zinc-700">

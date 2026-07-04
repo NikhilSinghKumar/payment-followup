@@ -36,13 +36,6 @@ export async function POST(req) {
       const amount = parseFloat(cleanedAmount);
 
       // ✅ NEW DATE FIELDS
-      const invoiceFromDate = row.invoice_from_date
-        ? new Date(row.invoice_from_date)
-        : null;
-
-      const invoiceToDate = row.invoice_to_date
-        ? new Date(row.invoice_to_date)
-        : null;
 
       const dueDate = row.due_date ? new Date(row.due_date) : null;
 
@@ -85,10 +78,8 @@ export async function POST(req) {
         console.log(
           "⚠️ Duplicate skipped:",
           companyCode,
-          amount,
+          invoiceAmount,
           invoiceNumber,
-          invoiceFromDate,
-          invoiceToDate,
         );
         skipped++;
         continue;
@@ -99,10 +90,8 @@ export async function POST(req) {
         clientId,
         financialYear,
         invoiceNumber,
-        amount,
+        invoiceAmount,
         status: "pending",
-        invoiceFromDate,
-        invoiceToDate,
         dueDate,
         notes,
       });

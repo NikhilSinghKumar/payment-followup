@@ -528,34 +528,115 @@ export const invoices = pgTable(
   {
     id: serial("id").primaryKey(),
 
+    // =====================================
+    // CLIENT
+    // =====================================
+
     clientId: integer("client_id")
       .references(() => clients.id)
       .notNull(),
 
     subClientId: integer("sub_client_id").references(() => clientSubClients.id),
 
-    // Example: 2025-26
+    // =====================================
+    // INVOICE INFO
+    // =====================================
+
+    // Example: 2026-27
     financialYear: text("financial_year").notNull(),
 
-    // Example: INV-001
+    // Example: INV-0001
     invoiceNumber: text("invoice_number").notNull(),
 
-    amount: numeric("amount", {
+    invoiceDate: date("invoice_date").notNull(),
+
+    dueDate: date("due_date").notNull(),
+
+    // Optional (15 / 30 / 45 / 60 / 90)
+    paymentTerms: integer("payment_terms"),
+
+    // =====================================
+    // AMOUNTS
+    // =====================================
+
+    // Entered by user
+    invoiceAmount: numeric("invoice_amount", {
       precision: 12,
       scale: 2,
     }).notNull(),
 
+    // Calculated
+    basicAmount: numeric("basic_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+
+    cgstAmount: numeric("cgst_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+
+    sgstAmount: numeric("sgst_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+
+    igstAmount: numeric("igst_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+
+    tdsAmount: numeric("tds_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+
+    // User entered
+    deductionAmount: numeric("deduction_amount", {
+      precision: 12,
+      scale: 2,
+    }).default("0"),
+
+    otherCharges: numeric("other_charges", {
+      precision: 12,
+      scale: 2,
+    }).default("0"),
+
+    // Final payable amount
+    netPayableAmount: numeric("net_payable_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+
+    // =====================================
+    // TAX SNAPSHOT
+    // =====================================
+
+    // GST used while creating invoice
+    gstNumberUsed: text("gst_number_used"),
+
+    // TDS setting used while creating invoice
+    tdsApplicableUsed: boolean("tds_applicable_used").notNull().default(false),
+
+    // =====================================
+    // STATUS
+    // =====================================
+
     status: text("status")
-      .$type<"pending" | "partial" | "paid" | "disputed">()
+      .$type<
+        "pending" | "partial" | "paid" | "overdue" | "disputed" | "cancelled"
+      >()
       .default("pending"),
 
-    invoiceFromDate: date("invoice_from_date"),
-
-    invoiceToDate: date("invoice_to_date"),
-
-    dueDate: date("due_date"),
+    // =====================================
+    // NOTES
+    // =====================================
 
     notes: text("notes"),
+
+    // =====================================
+    // AUDIT
+    // =====================================
 
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -571,9 +652,9 @@ export const invoices = pgTable(
   },
   (table) => {
     return {
-      // =========================
+      // =====================================
       // UNIQUENESS
-      // =========================
+      // =====================================
 
       uniqueInvoiceNumber: uniqueIndex("unique_invoice_number").on(
         table.clientId,
@@ -581,13 +662,15 @@ export const invoices = pgTable(
         table.invoiceNumber,
       ),
 
-      // =========================
+      // =====================================
       // INDEXES
-      // =========================
+      // =====================================
 
       clientIdx: index("invoice_client_idx").on(table.clientId),
 
       statusIdx: index("invoice_status_idx").on(table.status),
+
+      invoiceDateIdx: index("invoice_date_idx").on(table.invoiceDate),
 
       dueDateIdx: index("invoice_due_date_idx").on(table.dueDate),
 
@@ -595,6 +678,10 @@ export const invoices = pgTable(
 
       financialYearIdx: index("invoice_financial_year_idx").on(
         table.financialYear,
+      ),
+
+      netPayableIdx: index("invoice_net_payable_idx").on(
+        table.netPayableAmount,
       ),
     };
   },

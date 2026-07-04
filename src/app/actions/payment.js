@@ -64,7 +64,7 @@ export async function updatePayment(paymentId, invoiceId, prevState, formData) {
 
     const invoiceResult = await db
       .select({
-        amount: invoices.amount,
+        invoiceAmount: invoices.invoiceAmount,
       })
       .from(invoices)
       .where(eq(invoices.id, invoiceId))

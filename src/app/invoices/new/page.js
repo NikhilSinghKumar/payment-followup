@@ -1,24 +1,19 @@
 import Link from "next/link";
 import { createInvoice } from "@/app/actions/invoice";
 import { getClientById } from "@/app/actions/client";
+import InvoiceBasicFields from "@/app/components/invoice/InvoiceBasicFields";
+import InvoiceSummary from "@/app/components/invoice/InvoiceSummary";
 
 export default async function NewInvoicePage({ searchParams }) {
   const params = await searchParams;
 
   const clientId = Number(params.clientId);
 
-  let companyCode = "";
-  let companyName = "";
+  let client = null;
 
   if (!isNaN(clientId)) {
-    const client = await getClientById(clientId);
-
-    if (client) {
-      companyCode = client.companyCode;
-      companyName = client.companyName;
-    }
+    client = await getClientById(clientId);
   }
-  const currentFY = "2025-26";
 
   return (
     <div className="min-h-screen bg-zinc-50 p-4 flex items-center justify-center">
@@ -32,8 +27,10 @@ export default async function NewInvoicePage({ searchParams }) {
           {/* Header */}
           <div className="mb-4">
             <h1 className="text-xl font-semibold text-zinc-800">
-              Create Invoice - {companyName}
+              Create Invoice
             </h1>
+
+            <p className="text-sm text-zinc-500 mt-1">{client?.companyName}</p>
 
             <p className="text-sm text-zinc-500 mt-1">
               Add a new invoice for your client
@@ -41,143 +38,19 @@ export default async function NewInvoicePage({ searchParams }) {
           </div>
 
           {/* Form */}
-          <form action={createInvoice} className="space-y-4">
-            {/* ===================================== */}
-            {/* ROW 1 */}
-            {/* ===================================== */}
+          <form action={createInvoice} className="space-y-6">
+            <InvoiceBasicFields client={client} invoice={{}} />
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-              {/* Company Code */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-zinc-600">
-                  Company Code
-                </label>
-
-                <input
-                  name="companyCode"
-                  defaultValue={companyCode}
-                  readOnly
-                  className="input-primary focus:ring-blue-500 caret-blue-500"
-                />
-              </div>
-
-              {/* Financial Year */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-zinc-600">
-                  Financial Year
-                </label>
-
-                <input
-                  name="financialYear"
-                  defaultValue={currentFY}
-                  placeholder="2025-26"
-                  required
-                  className="input-primary focus:ring-blue-500 caret-blue-500"
-                />
-              </div>
-
-              {/* Invoice Number */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-zinc-600">
-                  Invoice Number
-                </label>
-
-                <input
-                  name="invoiceNumber"
-                  placeholder="INV-001"
-                  required
-                  className="input-primary focus:ring-blue-500 caret-blue-500"
-                />
-              </div>
-
-              {/* Amount */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-zinc-600">
-                  Amount (₹)
-                </label>
-
-                <input
-                  name="amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  required
-                  className="input-primary focus:ring-blue-500 caret-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* ===================================== */}
-            {/* ROW 2 */}
-            {/* ===================================== */}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              {/* From Date */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-zinc-600">
-                  From Date
-                </label>
-
-                <input
-                  name="invoiceFromDate"
-                  type="date"
-                  className="input-primary focus:ring-blue-500 caret-blue-500"
-                />
-              </div>
-
-              {/* To Date */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-zinc-600">
-                  To Date
-                </label>
-
-                <input
-                  name="invoiceToDate"
-                  type="date"
-                  className="input-primary focus:ring-blue-500 caret-blue-500"
-                />
-              </div>
-
-              {/* Due Date */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-zinc-600">
-                  Due Date
-                </label>
-
-                <input
-                  name="dueDate"
-                  type="date"
-                  className="input-primary focus:ring-blue-500 caret-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* ===================================== */}
-            {/* NOTES */}
-            {/* ===================================== */}
-
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-zinc-600">
-                  Notes (Optional)
-                </label>
-              </div>
-
-              <textarea
-                name="notes"
-                rows={4}
-                placeholder="Add invoice remarks, payment terms, reference details, GST notes, etc."
-                className="w-full rounded-xl border border-zinc-200/80 dark:border-zinc-700/50 px-4 py-3 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none transition-all resize-y focus:ring-2focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            {/* ===================================== */}
-            {/* ACTIONS */}
-            {/* ===================================== */}
+            {/* InvoiceSummary will become interactive in the next step */}
+            <InvoiceSummary
+              invoiceAmount={0}
+              gstNumber={client?.gstNumber}
+              tdsApplicable={client?.tdsApplicable}
+              deductionAmount={0}
+              otherCharges={0}
+            />
 
             <div className="flex items-center justify-between pt-2">
-              {/* Back */}
               <Link
                 href="/invoices"
                 className="
@@ -189,7 +62,6 @@ export default async function NewInvoicePage({ searchParams }) {
                 ← Back to Invoice List
               </Link>
 
-              {/* Submit */}
               <button
                 type="submit"
                 className="

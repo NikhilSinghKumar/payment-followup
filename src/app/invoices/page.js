@@ -159,7 +159,7 @@ export default async function InvoicePage({ searchParams }) {
 
                 {/* Amount */}
                 <div className="font-medium text-center text-zinc-800 whitespace-nowrap">
-                  ₹{Number(inv.amount).toLocaleString("en-IN")}
+                  ₹{Number(inv.invoiceAmount).toLocaleString("en-IN")}
                 </div>
 
                 {/* Paid */}

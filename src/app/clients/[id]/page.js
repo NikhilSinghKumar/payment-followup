@@ -7,7 +7,7 @@ import {
   paymentAllocations,
 } from "@/db/schema";
 import { getClientById } from "@/app/actions/client";
-
+import { enrichInvoices } from "@/lib/invoice-summary";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import ClientTabs from "@/app/components/client/clientTabs";
 import ClientOverviewTab from "@/app/components/client/tabs/clientOverviewTab";
@@ -70,7 +70,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
     .select({
       invoiceId: paymentAllocations.invoiceId,
 
-      paidAmount: sql`
+      paid: sql`
     COALESCE(
       SUM(${paymentAllocations.allocatedAmount}),
       0
@@ -96,22 +96,20 @@ export default async function ClientDetailPage({ params, searchParams }) {
 
       invoiceNumber: invoices.invoiceNumber,
 
-      amount: invoices.amount,
+      invoiceAmount: invoices.invoiceAmount,
+
+      netPayableAmount: invoices.netPayableAmount,
 
       status: invoices.status,
 
       dueDate: invoices.dueDate,
 
-      invoiceFromDate: invoices.invoiceFromDate,
-
-      invoiceToDate: invoices.invoiceToDate,
-
       awbCount: sql`
       COALESCE(${awbCounts.awbCount}, 0)
     `.mapWith(Number),
 
-      paidAmount: sql`
-      COALESCE(${paymentTotals.paidAmount}, 0)
+      paid: sql`
+      COALESCE(${paymentTotals.paid}, 0)
     `.mapWith(Number),
     })
 
@@ -126,17 +124,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
     .orderBy(desc(invoices.id));
 
   // NORMALIZED INVOIVE DATA
-  const normalizedInvoiceData = invoiceData.map((invoice) => {
-    const amount = Number(invoice.amount || 0);
-
-    const paidAmount = Number(invoice.paidAmount || 0);
-
-    return {
-      ...invoice,
-
-      outstandingAmount: amount - paidAmount,
-    };
-  });
+  const normalizedInvoiceData = enrichInvoices(invoiceData);
 
   // =====================================
   // SUMMARY TOTALS
@@ -145,23 +133,28 @@ export default async function ClientDetailPage({ params, searchParams }) {
   const totalInvoices = normalizedInvoiceData.length;
 
   const totalAmount = normalizedInvoiceData.reduce(
-    (sum, item) => sum + Number(item.amount || 0),
+    (sum, item) => sum + Number(item.invoiceAmount || 0),
     0,
   );
 
   const totalOutstanding = normalizedInvoiceData.reduce(
-    (sum, item) => sum + Number(item.outstandingAmount || 0),
+    (sum, item) => sum + Number(item.due || 0),
     0,
   );
 
-  const overdueInvoices = normalizedInvoiceData.filter((invoice) => {
-    if (!invoice.dueDate) return false;
+  const overdueInvoices = normalizedInvoiceData.filter(
+    (invoice) => invoice.isOverdue,
+  ).length;
 
-    return (
-      new Date(invoice.dueDate) < new Date() &&
-      Number(invoice.outstandingAmount) > 0
-    );
-  }).length;
+  const totalNetPayable = normalizedInvoiceData.reduce(
+    (sum, item) => sum + Number(item.netPayableAmount || 0),
+    0,
+  );
+
+  const totalPaid = normalizedInvoiceData.reduce(
+    (sum, item) => sum + Number(item.paid || 0),
+    0,
+  );
 
   return (
     <div className="min-h-screen p-4 bg-zinc-50 md:p-6">
@@ -194,7 +187,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
 
                     {client.gstNumber && (
                       <>
-                        <span>•</span>
+                        <span className="text-pink-500 text-xl">•</span>
                         <span>{client.gstNumber}</span>
                       </>
                     )}
@@ -225,7 +218,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
         {/* SUMMARY CARDS */}
         {/* ===================================== */}
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
           {/* Total Invoices */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
@@ -245,6 +238,28 @@ export default async function ClientDetailPage({ params, searchParams }) {
 
             <h2 className="mt-2 text-2xl font-semibold text-zinc-800">
               ₹{totalAmount.toLocaleString()}
+            </h2>
+          </div>
+
+          {/* Net Payable */}
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Net Payable
+            </p>
+
+            <h2 className="mt-2 text-2xl font-semibold text-blue-600">
+              ₹{totalNetPayable.toLocaleString("en-IN")}
+            </h2>
+          </div>
+
+          {/* Total Paid */}
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Total Paid
+            </p>
+
+            <h2 className="mt-2 text-2xl font-semibold text-emerald-500">
+              ₹{totalPaid.toLocaleString("en-IN")}
             </h2>
           </div>
 

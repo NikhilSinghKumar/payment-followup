@@ -9,6 +9,10 @@ import {
   followups,
   invoiceAwbs,
 } from "@/db/schema";
+import { calculateInvoice } from "@/lib/invoice-calculator";
+import { getClientTaxSettings } from "@/lib/client-tax-settings";
+import { getFinancialYear } from "@/lib/financial-year";
+import { enrichInvoices } from "@/lib/invoice-summary";
 import { eq, sql, ilike, isNull, or, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -46,7 +50,10 @@ export async function getInvoices(
     .select({
       id: invoices.id,
       invoiceNumber: invoices.invoiceNumber,
-      amount: invoices.amount,
+      invoiceAmount: invoices.invoiceAmount,
+
+      netPayableAmount: invoices.netPayableAmount,
+      invoiceDate: invoices.invoiceDate,
       dueDate: invoices.dueDate,
       financialYear: invoices.financialYear,
       companyName: clients.companyName,
@@ -65,6 +72,7 @@ export async function getInvoices(
   const data = await query
     .groupBy(
       invoices.id,
+      invoices.invoiceDate,
       clients.companyName,
       clients.companyCode,
       clients.gstNumber,
@@ -72,49 +80,10 @@ export async function getInvoices(
     )
     .orderBy(invoices.id);
 
+  const invoiceList = enrichInvoices(data);
+
   // COMPUTE STATUS
-  return data
-    .map((inv) => {
-      const amount = Number(inv.amount);
-      const paid = Number(inv.paid);
-      const due = amount - paid;
-
-      let statusValue = "pending";
-
-      if (paid === 0) statusValue = "pending";
-      else if (paid < amount) statusValue = "partial";
-      else statusValue = "paid";
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      let dueDays = 0;
-      let dueDaysText = "";
-
-      if (inv.dueDate) {
-        const dueDate = new Date(inv.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
-
-        dueDays = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
-
-        if (dueDays > 0) {
-          dueDaysText = `${dueDays} days overdue`;
-        } else if (dueDays < 0) {
-          dueDaysText = `Due in ${Math.abs(dueDays)} days`;
-        } else {
-          dueDaysText = "Due today";
-        }
-      }
-
-      return {
-        ...inv,
-        paid,
-        due,
-        status: statusValue,
-        dueDays,
-        dueDaysText,
-      };
-    })
+  return invoiceList
     .filter((inv) => {
       if (!aging) return true;
 
@@ -142,18 +111,6 @@ export async function getInvoices(
     })
     .filter((inv) => {
       if (!status) return true;
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (status === "overdue") {
-        if (!inv.dueDate) return false;
-
-        const due = new Date(inv.dueDate);
-        due.setHours(0, 0, 0, 0);
-
-        return due < today && inv.status !== "paid";
-      }
 
       return inv.status === status;
     })
@@ -185,7 +142,7 @@ export async function getInvoices(
 
       if (!inv.dueDate) return false;
 
-      return new Date(inv.dueDate).getMonth() + 1 === Number(month);
+      return new Date(inv.invoiceDate).getMonth() + 1 === Number(month);
     })
     .sort((a, b) => {
       // If aging filter is selected, sort by overdue days (highest → lowest)
@@ -209,15 +166,19 @@ export async function createInvoice(formData) {
 
   const companyCode = formData.get("companyCode")?.trim();
   const invoiceNumber = formData.get("invoiceNumber")?.trim();
-  const financialYear = formData.get("financialYear")?.trim();
   const notes = formData.get("notes")?.trim();
-  const amount = parseFloat(formData.get("amount"));
-  const invoiceFromDate = formData.get("invoiceFromDate")
-    ? new Date(formData.get("invoiceFromDate"))
+  const invoiceAmount = parseFloat(formData.get("invoiceAmount"));
+
+  const deductionAmount = parseFloat(formData.get("deductionAmount") || 0);
+
+  const otherCharges = parseFloat(formData.get("otherCharges") || 0);
+
+  const invoiceDate = formData.get("invoiceDate")
+    ? new Date(formData.get("invoiceDate"))
     : null;
-  const invoiceToDate = formData.get("invoiceToDate")
-    ? new Date(formData.get("invoiceToDate"))
-    : null;
+
+  const financialYear = getFinancialYear(invoiceDate);
+
   const dueDate = formData.get("dueDate")
     ? new Date(formData.get("dueDate"))
     : null;
@@ -226,7 +187,13 @@ export async function createInvoice(formData) {
   // VALIDATION
   // =====================================
 
-  if (!companyCode || !invoiceNumber || !financialYear || isNaN(amount)) {
+  if (
+    !companyCode ||
+    !invoiceNumber ||
+    !financialYear ||
+    !invoiceDate ||
+    isNaN(invoiceAmount)
+  ) {
     return {
       error: "Invalid input",
     };
@@ -249,6 +216,15 @@ export async function createInvoice(formData) {
   }
 
   const clientId = client[0].id;
+  const taxSettings = await getClientTaxSettings(clientId);
+
+  const calculatedInvoice = calculateInvoice({
+    invoiceAmount,
+    gstNumber: taxSettings.gstNumber,
+    tdsApplicable: taxSettings.tdsApplicable,
+    deductionAmount,
+    otherCharges,
+  });
 
   // =====================================
   // DUPLICATE CHECK
@@ -279,12 +255,31 @@ export async function createInvoice(formData) {
   await db.insert(invoices).values({
     clientId,
     financialYear,
+
     invoiceNumber,
-    amount,
-    status: "pending",
-    invoiceFromDate,
-    invoiceToDate,
+    invoiceDate,
     dueDate,
+
+    invoiceAmount: calculatedInvoice.invoiceAmount,
+
+    basicAmount: calculatedInvoice.basicAmount,
+
+    cgstAmount: calculatedInvoice.cgstAmount,
+    sgstAmount: calculatedInvoice.sgstAmount,
+    igstAmount: calculatedInvoice.igstAmount,
+
+    tdsAmount: calculatedInvoice.tdsAmount,
+
+    deductionAmount: calculatedInvoice.deductionAmount,
+    otherCharges: calculatedInvoice.otherCharges,
+
+    netPayableAmount: calculatedInvoice.netPayableAmount,
+
+    gstNumberUsed: calculatedInvoice.gstNumberUsed,
+    tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
+
+    status: "pending",
+
     notes,
   });
 
@@ -298,13 +293,22 @@ export async function getInvoiceById(id) {
   const data = await db
     .select({
       id: invoices.id,
-      amount: invoices.amount,
-      dueDate: invoices.dueDate,
+
       invoiceNumber: invoices.invoiceNumber,
-      invoiceFromDate: invoices.invoiceFromDate,
-      invoiceToDate: invoices.invoiceToDate,
-      companyCode: clients.companyCode,
+
+      invoiceDate: invoices.invoiceDate,
+
+      dueDate: invoices.dueDate,
+
+      invoiceAmount: invoices.invoiceAmount,
+
+      deductionAmount: invoices.deductionAmount,
+
+      otherCharges: invoices.otherCharges,
+
       notes: invoices.notes,
+
+      companyCode: clients.companyCode,
     })
     .from(invoices)
     .leftJoin(clients, eq(invoices.clientId, clients.id))
@@ -316,28 +320,116 @@ export async function getInvoiceById(id) {
 
 // Update/Edit
 export async function updateInvoice(id, formData) {
-  const amount = parseFloat(formData.get("amount"));
+  // =====================================
+  // FORM DATA
+  // =====================================
+
+  const clientId = Number(formData.get("clientId"));
+  const invoiceNumber = formData.get("invoiceNumber");
+
+  const invoiceAmount = parseFloat(formData.get("invoiceAmount"));
+
+  const deductionAmount = parseFloat(formData.get("deductionAmount") || 0);
+
+  const otherCharges = parseFloat(formData.get("otherCharges") || 0);
+
   const notes = formData.get("notes");
 
-  const invoiceFromDate = formData.get("invoiceFromDate")
-    ? new Date(formData.get("invoiceFromDate"))
-    : null;
-
-  const invoiceToDate = formData.get("invoiceToDate")
-    ? new Date(formData.get("invoiceToDate"))
+  const invoiceDate = formData.get("invoiceDate")
+    ? new Date(formData.get("invoiceDate"))
     : null;
 
   const dueDate = formData.get("dueDate")
     ? new Date(formData.get("dueDate"))
     : null;
 
+  // =====================================
+  // VALIDATION
+  // =====================================
+
+  if (!companyCode || !invoiceNumber || !invoiceDate || isNaN(invoiceAmount)) {
+    return {
+      error: "Please fill all required fields.",
+    };
+  }
+
+  // =====================================
+  // FIND CLIENT
+  // =====================================
+
+  const client = await db.query.clients.findFirst({
+    where: eq(clients.id, clientId),
+  });
+
+  if (!client) {
+    return {
+      error: "Client not found.",
+    };
+  }
+
+  // =====================================
+  // FINANCIAL YEAR
+  // =====================================
+
+  const financialYear = getFinancialYear(invoiceDate);
+
+  // =====================================
+  // GST & TDS
+  // =====================================
+
+  const taxSettings = await getClientTaxSettings(client.id);
+
+  // =====================================
+  // CALCULATE INVOICE
+  // =====================================
+
+  const calculatedInvoice = calculateInvoice({
+    invoiceAmount,
+    gstNumber: taxSettings.gstNumber,
+    tdsApplicable: taxSettings.tdsApplicable,
+    deductionAmount,
+    otherCharges,
+  });
+
+  // =====================================
+  // UPDATE
+  // =====================================
+
   await db
     .update(invoices)
     .set({
-      amount,
-      invoiceFromDate,
-      invoiceToDate,
+      clientId: client.id,
+
+      financialYear,
+
+      invoiceNumber,
+
+      invoiceDate,
+
       dueDate,
+
+      invoiceAmount: calculatedInvoice.invoiceAmount,
+
+      basicAmount: calculatedInvoice.basicAmount,
+
+      cgstAmount: calculatedInvoice.cgstAmount,
+
+      sgstAmount: calculatedInvoice.sgstAmount,
+
+      igstAmount: calculatedInvoice.igstAmount,
+
+      tdsAmount: calculatedInvoice.tdsAmount,
+
+      deductionAmount: calculatedInvoice.deductionAmount,
+
+      otherCharges: calculatedInvoice.otherCharges,
+
+      netPayableAmount: calculatedInvoice.netPayableAmount,
+
+      gstNumberUsed: calculatedInvoice.gstNumberUsed,
+
+      tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
+
       notes,
     })
     .where(eq(invoices.id, id));
@@ -345,7 +437,9 @@ export async function updateInvoice(id, formData) {
   revalidatePath("/invoices");
   revalidatePath(`/invoices/${id}`);
 
-  return { success: true };
+  return {
+    success: true,
+  };
 }
 
 // DELETE INVOICE

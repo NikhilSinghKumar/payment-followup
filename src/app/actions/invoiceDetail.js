@@ -11,6 +11,7 @@ import {
   followups,
 } from "@/db/schema";
 import { revalidatePath } from "next/cache";
+import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 
 // =====================================
@@ -25,12 +26,38 @@ export async function getInvoiceSummary(id) {
   const invoiceResult = await db
     .select({
       id: invoices.id,
+
       invoiceNumber: invoices.invoiceNumber,
+
       financialYear: invoices.financialYear,
-      amount: invoices.amount,
+
+      invoiceAmount: invoices.invoiceAmount,
+
+      netPayableAmount: invoices.netPayableAmount,
+
       dueDate: invoices.dueDate,
+
       status: invoices.status,
+
       companyName: clients.companyName,
+      basicAmount: invoices.basicAmount,
+
+      cgstAmount: invoices.cgstAmount,
+
+      sgstAmount: invoices.sgstAmount,
+
+      igstAmount: invoices.igstAmount,
+
+      tdsAmount: invoices.tdsAmount,
+
+      deductionAmount: invoices.deductionAmount,
+
+      otherCharges: invoices.otherCharges,
+
+      netPayableAmount: invoices.netPayableAmount,
+
+      gstNumberUsed: invoices.gstNumberUsed,
+      tdsApplicableUsed: invoices.tdsApplicableUsed,
     })
     .from(invoices)
     .leftJoin(clients, eq(clients.id, invoices.clientId))
@@ -80,12 +107,18 @@ export async function getInvoiceSummary(id) {
 
   const totalPaid = Number(paymentResult[0]?.total || 0);
 
+  const paymentSummary = calculateInvoiceStatus({
+    netPayable: invoice.netPayableAmount,
+    paid: totalPaid,
+    dueDate: invoice.dueDate,
+  });
+
   // =====================================
   // OUTSTANDING
   // =====================================
 
-  const invoiceAmount = Number(invoice.amount);
-  const outstanding = invoiceAmount - totalPaid;
+  const netPayableAmount = Number(invoice.netPayableAmount);
+  const outstanding = Math.max(0, netPayableAmount - totalPaid);
 
   // =====================================
   // RETURN
@@ -94,8 +127,7 @@ export async function getInvoiceSummary(id) {
   return {
     ...invoice,
     awbCount,
-    totalPaid,
-    outstanding,
+    ...paymentSummary,
   };
 }
 
@@ -306,21 +338,17 @@ export async function addInvoicePayment(invoiceId, formData) {
     .where(eq(paymentAllocations.invoiceId, invoiceId));
 
   const totalPaid = Number(allocations[0]?.total || 0);
-  const invoiceAmount = Number(invoiceData.amount);
-  let status = "pending";
 
-  if (totalPaid > 0 && totalPaid < invoiceAmount) {
-    status = "partial";
-  }
-
-  if (totalPaid >= invoiceAmount) {
-    status = "paid";
-  }
+  const paymentSummary = calculateInvoiceStatus({
+    netPayable: invoice.netPayableAmount,
+    paid: totalPaid,
+    dueDate: invoice.dueDate,
+  });
 
   await db
     .update(invoices)
     .set({
-      status,
+      status: paymentSummary.status,
       updatedAt: new Date(),
     })
     .where(eq(invoices.id, invoiceId));
@@ -332,7 +360,9 @@ export async function addInvoicePayment(invoiceId, formData) {
   revalidatePath(`/invoices/${invoiceId}`);
 
   return {
-    success: true,
+    ...invoice,
+    awbCount,
+    ...paymentSummary,
   };
 }
 
