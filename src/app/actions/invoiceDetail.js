@@ -118,7 +118,6 @@ export async function getInvoiceSummary(id) {
   // =====================================
 
   const netPayableAmount = Number(invoice.netPayableAmount);
-  const outstanding = Math.max(0, netPayableAmount - totalPaid);
 
   // =====================================
   // RETURN
@@ -360,9 +359,7 @@ export async function addInvoicePayment(invoiceId, formData) {
   revalidatePath(`/invoices/${invoiceId}`);
 
   return {
-    ...invoice,
-    awbCount,
-    ...paymentSummary,
+    success: true,
   };
 }
 
