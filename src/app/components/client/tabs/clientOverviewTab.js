@@ -169,63 +169,127 @@ export default function ClientOverviewTab({ client, invoices = [] }) {
               No invoices found.
             </div>
           ) : (
-            recentInvoices.map((invoice) => {
-              const outstanding = Number(invoice.due || 0);
+            recentInvoices.map((invoice) => (
+              <Link
+                key={invoice.id}
+                href={`/invoices/${invoice.id}`}
+                className="
+      grid
+      grid-cols-[1.6fr_150px_130px_150px_180px_120px_50px]
+      items-center
+      gap-4
+      border-b border-zinc-100
+      px-5 py-4
+      transition-all
+      hover:bg-blue-50/40
+    "
+              >
+                {/* ===================================== */}
+                {/* Invoice */}
+                {/* ===================================== */}
 
-              return (
-                <Link
-                  key={invoice.id}
-                  href={`/invoices/${invoice.id}`}
-                  className="grid grid-cols-[1.2fr_120px_120px_120px_100px] gap-3 border-b border-zinc-100 px-5 py-4 text-sm transition hover:bg-zinc-50"
-                >
-                  {/* Invoice */}
-                  <div>
-                    <div className="font-medium text-zinc-800">
-                      {invoice.invoiceNumber}
-                    </div>
-
-                    <div className="mt-1 text-xs text-zinc-500">
-                      {invoice.financialYear}
-                    </div>
+                <div>
+                  <div className="font-semibold text-blue-600">
+                    {invoice.invoiceNumber}
                   </div>
 
-                  {/* Amount */}
-                  <div className="font-medium text-zinc-800">
-                    ₹{Number(invoice.invoiceAmount).toLocaleString()}
-                  </div>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
+                    <span>FY {invoice.financialYear}</span>
 
-                  {/* Paid */}
-                  <div className="text-emerald-600">
-                    ₹{Number(invoice.paid).toLocaleString()}
-                  </div>
+                    <span className="text-pink-400">•</span>
 
-                  {/* Outstanding */}
-                  <div className="font-medium text-orange-600">
-                    ₹{Number(invoice.due).toLocaleString("en-IN")}
-                  </div>
-
-                  {/* Status */}
-                  <div>
-                    <span
-                      className={`rounded-full px-2 py-1 text-xs font-medium ${
-                        invoice.status === "paid"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : invoice.status === "partial"
-                            ? "bg-orange-100 text-orange-700"
-                            : invoice.status === "overdue"
-                              ? "bg-red-100 text-red-700"
-                              : invoice.status === "disputed"
-                                ? "bg-pink-100 text-pink-700"
-                                : "bg-blue-100 text-blue-700"
-                      }`}
-                    >
-                      {invoice.status.charAt(0).toUpperCase() +
-                        invoice.status.slice(1)}
+                    <span className="rounded-md bg-zinc-100 px-2 py-0.5 font-medium">
+                      {invoice.awbCount} AWB{invoice.awbCount !== 1 ? "s" : ""}
                     </span>
                   </div>
-                </Link>
-              );
-            })
+                </div>
+
+                {/* ===================================== */}
+                {/* Net Payable */}
+                {/* ===================================== */}
+
+                <div>
+                  <div className="font-semibold text-zinc-800">
+                    ₹{Number(invoice.netPayableAmount).toLocaleString("en-IN")}
+                  </div>
+                </div>
+
+                {/* ===================================== */}
+                {/* Paid */}
+                {/* ===================================== */}
+
+                <div>
+                  <div className="font-semibold text-emerald-600">
+                    ₹{Number(invoice.paid).toLocaleString("en-IN")}
+                  </div>
+                </div>
+
+                {/* ===================================== */}
+                {/* Balance Due */}
+                {/* ===================================== */}
+
+                <div>
+                  <div
+                    className={`font-semibold ${
+                      invoice.due > 0 ? "text-orange-600" : "text-emerald-600"
+                    }`}
+                  >
+                    ₹{Number(invoice.due).toLocaleString("en-IN")}
+                  </div>
+                </div>
+
+                {/* ===================================== */}
+                {/* Due Date */}
+                {/* ===================================== */}
+
+                <div>
+                  <div className="font-medium text-zinc-800">
+                    {invoice.dueDate
+                      ? new Date(invoice.dueDate).toLocaleDateString("en-IN")
+                      : "-"}
+                  </div>
+
+                  {invoice.dueDaysText && (
+                    <div
+                      className={`mt-1 text-xs ${
+                        invoice.isOverdue ? "text-red-600" : "text-zinc-500"
+                      }`}
+                    >
+                      {invoice.dueDaysText}
+                    </div>
+                  )}
+                </div>
+
+                {/* ===================================== */}
+                {/* Status */}
+                {/* ===================================== */}
+
+                <div>
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                      invoice.status === "paid"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : invoice.status === "partial"
+                          ? "bg-orange-100 text-orange-700"
+                          : invoice.status === "overdue"
+                            ? "bg-red-100 text-red-700"
+                            : invoice.status === "disputed"
+                              ? "bg-pink-100 text-pink-700"
+                              : "bg-blue-100 text-blue-700"
+                    }`}
+                  >
+                    {invoice.status.charAt(0).toUpperCase() +
+                      invoice.status.slice(1)}
+                  </span>
+                </div>
+
+                {/* ===================================== */}
+                {/* Arrow */}
+                {/* ===================================== */}
+
+                <div className="flex justify-end text-zinc-400 text-xl">→</div>
+              </Link>
+            ))
           )}
         </div>
       </div>
