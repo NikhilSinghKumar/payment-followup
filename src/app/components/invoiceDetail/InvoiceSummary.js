@@ -1,5 +1,4 @@
 export default function InvoiceSummary({ data }) {
-  console.log(data);
   return (
     <div>
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -51,7 +50,9 @@ export default function InvoiceSummary({ data }) {
               </div>
 
               <div className="mt-1">
-                <StatusBadge status={data.status} />
+                <StatusBadge
+                  status={data.isOverdue ? "overdue" : data.status}
+                />
               </div>
             </div>
 

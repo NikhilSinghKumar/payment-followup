@@ -42,7 +42,6 @@ export async function updatePayment(paymentId, invoiceId, prevState, formData) {
         reference,
         notes,
         paymentDate,
-        status: invoiceStatus.status,
         updatedAt: new Date(),
       })
       .where(eq(payments.id, paymentId));
@@ -66,6 +65,7 @@ export async function updatePayment(paymentId, invoiceId, prevState, formData) {
     const invoiceResult = await db
       .select({
         invoiceAmount: invoices.invoiceAmount,
+        dueDate: invoices.dueDate,
       })
       .from(invoices)
       .where(eq(invoices.id, invoiceId))
@@ -98,7 +98,7 @@ export async function updatePayment(paymentId, invoiceId, prevState, formData) {
     await db
       .update(invoices)
       .set({
-        status,
+        status: invoiceStatus.status,
         updatedAt: new Date(),
       })
       .where(eq(invoices.id, invoiceId));
