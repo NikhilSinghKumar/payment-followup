@@ -66,7 +66,7 @@ export function calculateInvoice({
   // Net Payable
   // -----------------------------
   const netPayableAmount = round(
-    invoiceAmount + deductionAmount + otherCharges - tdsAmount,
+    invoiceAmount + deductionAmount + otherCharges + tdsAmount,
   );
 
   return {

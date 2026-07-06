@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { createInvoice } from "@/app/actions/invoice";
 import { getClientById } from "@/app/actions/client";
-import InvoiceBasicFields from "@/app/components/invoice/InvoiceBasicFields";
-import InvoiceSummary from "@/app/components/invoice/InvoiceSummary";
+import InvoiceForm from "@/app/components/invoice/InvoiceForm";
 
 export default async function NewInvoicePage({ searchParams }) {
   const params = await searchParams;
@@ -38,44 +36,11 @@ export default async function NewInvoicePage({ searchParams }) {
           </div>
 
           {/* Form */}
-          <form action={createInvoice} className="space-y-6">
-            <InvoiceBasicFields client={client} invoice={{}} />
-
-            {/* InvoiceSummary will become interactive in the next step */}
-            <InvoiceSummary
-              invoiceAmount={0}
-              gstNumber={client?.gstNumber}
-              tdsApplicable={client?.tdsApplicable}
-              deductionAmount={0}
-              otherCharges={0}
-            />
-
-            <div className="flex items-center justify-between pt-2">
-              <Link
-                href="/invoices"
-                className="
-                  text-sm text-zinc-500
-                  hover:text-blue-500
-                  transition-colors
-                "
-              >
-                ← Back to Invoice List
-              </Link>
-
-              <button
-                type="submit"
-                className="
-                  h-9 px-5 rounded-lg
-                  text-white text-sm font-medium
-                  bg-gradient-to-r from-blue-500 to-purple-500
-                  shadow-sm hover:shadow-md
-                  cursor-pointer transition-all duration-200
-                "
-              >
-                Save Invoice
-              </button>
-            </div>
-          </form>
+          <InvoiceForm
+            client={client}
+            action={createInvoice}
+            submitLabel="Save Invoice"
+          />
         </div>
       </div>
     </div>

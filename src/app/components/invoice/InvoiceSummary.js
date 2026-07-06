@@ -42,6 +42,8 @@ export default function InvoiceSummary({
         <SummaryRow label="IGST" value={summary.igstAmount} />
 
         <SummaryRow label="TDS" value={summary.tdsAmount} />
+        <SummaryRow label="Deductions" value={summary.deductionAmount} />
+        <SummaryRow label="Other Charges" value={summary.otherCharges} />
 
         <hr className="my-2 border-zinc-200" />
 

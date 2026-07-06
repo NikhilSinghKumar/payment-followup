@@ -1,6 +1,11 @@
 "use client";
 
-export default function InvoiceBasicFields({ client, invoice = {} }) {
+export default function InvoiceBasicFields({
+  client,
+  invoice = {},
+  values,
+  onChange,
+}) {
   return (
     <div className="space-y-4">
       {/* Hidden Fields */}
@@ -14,7 +19,7 @@ export default function InvoiceBasicFields({ client, invoice = {} }) {
       {/* ROW 1 */}
       {/* ===================================== */}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
         {/* Company Code */}
         <div className="space-y-1">
           <label className="text-sm font-medium text-zinc-600">
@@ -24,6 +29,18 @@ export default function InvoiceBasicFields({ client, invoice = {} }) {
           <input
             name="companyCode"
             defaultValue={client?.companyCode ?? ""}
+            readOnly
+            className="input-primary bg-zinc-100 cursor-not-allowed"
+          />
+        </div>
+
+        {/* Company Code */}
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-zinc-600">GST No.</label>
+
+          <input
+            name="companyCode"
+            defaultValue={client?.gstNumber ?? ""}
             readOnly
             className="input-primary bg-zinc-100 cursor-not-allowed"
           />
@@ -44,27 +61,6 @@ export default function InvoiceBasicFields({ client, invoice = {} }) {
           />
         </div>
 
-        {/* Invoice Date */}
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-zinc-600">
-            Invoice Date <span className="text-red-500">*</span>
-          </label>
-
-          <input
-            type="date"
-            name="invoiceDate"
-            defaultValue={invoice?.invoiceDate ?? ""}
-            required
-            className="input-primary"
-          />
-        </div>
-      </div>
-
-      {/* ===================================== */}
-      {/* ROW 2 */}
-      {/* ===================================== */}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Invoice Amount */}
         <div className="space-y-1">
           <label className="text-sm font-medium text-zinc-600">
@@ -76,28 +72,53 @@ export default function InvoiceBasicFields({ client, invoice = {} }) {
             name="invoiceAmount"
             step="0.01"
             min="0"
-            defaultValue={invoice?.invoiceAmount ?? ""}
-            required
+            value={values.invoiceAmount}
+            onChange={onChange}
             className="input-primary"
+          />
+        </div>
+      </div>
+
+      {/* ===================================== */}
+      {/* ROW 2 */}
+      {/* ===================================== */}
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+        {/* Invoice Date */}
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-zinc-600">
+            Invoice Date <span className="text-red-500">*</span>
+          </label>
+
+          <input
+            type="date"
+            name="invoiceDate"
+            value={values.invoiceDate}
+            onChange={onChange}
+            className="input-primary"
+            required
           />
         </div>
 
         {/* Due Date */}
         <div className="space-y-1">
-          <label className="text-sm font-medium text-zinc-600">Due Date</label>
+          <label className="text-sm font-medium text-zinc-600">
+            Due Date <span className="text-red-500">*</span>
+          </label>
 
           <input
             type="date"
             name="dueDate"
             defaultValue={invoice?.dueDate ?? ""}
             className="input-primary"
+            required
           />
         </div>
 
         {/* Deduction */}
         <div className="space-y-1">
           <label className="text-sm font-medium text-zinc-600">
-            Deduction Amount
+            Deduction Amount (₹)
           </label>
 
           <input
@@ -105,8 +126,26 @@ export default function InvoiceBasicFields({ client, invoice = {} }) {
             name="deductionAmount"
             step="0.01"
             min="0"
-            defaultValue={invoice?.deductionAmount ?? "0"}
+            value={values.deductionAmount}
+            onChange={onChange}
             className="input-primary"
+          />
+        </div>
+
+        {/* Other Charges */}
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-zinc-600">
+            Other Charges (₹)
+          </label>
+
+          <input
+            type="number"
+            name="otherCharges"
+            step="0.01"
+            min="0"
+            className="input-primary"
+            value={values.otherCharges}
+            onChange={onChange}
           />
         </div>
       </div>
@@ -116,22 +155,6 @@ export default function InvoiceBasicFields({ client, invoice = {} }) {
       {/* ===================================== */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Other Charges */}
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-zinc-600">
-            Other Charges
-          </label>
-
-          <input
-            type="number"
-            name="otherCharges"
-            step="0.01"
-            min="0"
-            defaultValue={invoice?.otherCharges ?? "0"}
-            className="input-primary"
-          />
-        </div>
-
         {/* Notes */}
         {/* <div className="space-y-1">
           <label className="text-sm font-medium text-zinc-600">Notes</label>
