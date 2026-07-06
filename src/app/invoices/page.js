@@ -45,9 +45,11 @@ export default async function InvoicePage({ searchParams }) {
 
       <div className="flex items-center justify-between mb-2">
         <div>
-          <h1 className="text-3xl font-semibold text-zinc-800">Invoices</h1>
+          <h1 className="text-3xl font-semibold text-zinc-800">
+            Invoice List of All Clients
+          </h1>
           <p className="text-sm text-zinc-500 mt-1">
-            Track, manage, and import your invoices
+            Track, manage, and import invoices
           </p>
         </div>
 
