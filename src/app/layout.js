@@ -22,7 +22,15 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+
+        <footer>
+          <div className="mb-2 flex flex-col gap-3 text-sm text-zinc-500 md:flex-row md:items-center md:justify-center">
+            <p>© {new Date().getFullYear()} Payfolo. All rights reserved.</p>
+          </div>
+        </footer>
+      </body>
     </html>
   );
 }
