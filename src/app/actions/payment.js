@@ -42,6 +42,7 @@ export async function updatePayment(paymentId, invoiceId, prevState, formData) {
         reference,
         notes,
         paymentDate,
+        status: invoiceStatus.status,
         updatedAt: new Date(),
       })
       .where(eq(payments.id, paymentId));
@@ -70,7 +71,7 @@ export async function updatePayment(paymentId, invoiceId, prevState, formData) {
       .where(eq(invoices.id, invoiceId))
       .limit(1);
 
-    const invoiceAmount = Number(invoiceResult[0]?.amount || 0);
+    const invoiceAmount = Number(invoiceResult[0]?.invoiceAmount || 0);
 
     const allocationResult = await db
       .select({
@@ -85,17 +86,11 @@ export async function updatePayment(paymentId, invoiceId, prevState, formData) {
       .where(eq(paymentAllocations.invoiceId, invoiceId));
 
     const totalPaid = Number(allocationResult[0]?.total || 0);
-
-    let status = "pending";
-
-    if (totalPaid > 0 && totalPaid < invoiceAmount) {
-      status = "partial";
-    }
-
-    if (totalPaid >= invoiceAmount) {
-      status = "paid";
-    }
-
+    const invoiceStatus = calculateInvoiceStatus({
+      netPayable: invoiceAmount,
+      paid: totalPaid,
+      dueDate: invoiceResult[0]?.dueDate,
+    });
     // =====================================
     // UPDATE INVOICE
     // =====================================
