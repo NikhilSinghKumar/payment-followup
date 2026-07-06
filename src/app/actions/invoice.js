@@ -13,6 +13,7 @@ import { calculateInvoice } from "@/lib/invoice-calculator";
 import { getClientTaxSettings } from "@/lib/client-tax-settings";
 import { getFinancialYear } from "@/lib/financial-year";
 import { enrichInvoices } from "@/lib/invoice-summary";
+import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { eq, sql, ilike, isNull, or, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -347,9 +348,19 @@ export async function updateInvoice(id, formData) {
   // VALIDATION
   // =====================================
 
-  if (!companyCode || !invoiceNumber || !invoiceDate || isNaN(invoiceAmount)) {
+  if (!clientId || !invoiceNumber || !invoiceDate || isNaN(invoiceAmount)) {
     return {
       error: "Please fill all required fields.",
+    };
+  }
+
+  const existingInvoice = await db.query.invoices.findFirst({
+    where: eq(invoices.id, id),
+  });
+
+  if (!existingInvoice) {
+    return {
+      error: "Invoice not found.",
     };
   }
 
@@ -364,6 +375,16 @@ export async function updateInvoice(id, formData) {
   if (!client) {
     return {
       error: "Client not found.",
+    };
+  }
+
+  const duplicateInvoice = await db.query.invoices.findFirst({
+    where: and(eq(invoices.invoiceNumber, invoiceNumber), ne(invoices.id, id)),
+  });
+
+  if (duplicateInvoice) {
+    return {
+      error: "Invoice number already exists.",
     };
   }
 
@@ -391,6 +412,26 @@ export async function updateInvoice(id, formData) {
     otherCharges,
   });
 
+  const allocationResult = await db
+    .select({
+      total: sql`
+      COALESCE(
+        SUM(${paymentAllocations.allocatedAmount}),
+        0
+      )
+    `,
+    })
+    .from(paymentAllocations)
+    .where(eq(paymentAllocations.invoiceId, id));
+
+  const paid = Number(allocationResult[0]?.total || 0);
+
+  const invoiceStatus = calculateInvoiceStatus({
+    netPayable: calculatedInvoice.netPayableAmount,
+    paid,
+    dueDate,
+  });
+
   // =====================================
   // UPDATE
   // =====================================
@@ -399,38 +440,24 @@ export async function updateInvoice(id, formData) {
     .update(invoices)
     .set({
       clientId: client.id,
-
       financialYear,
-
       invoiceNumber,
-
       invoiceDate,
-
       dueDate,
-
       invoiceAmount: calculatedInvoice.invoiceAmount,
-
       basicAmount: calculatedInvoice.basicAmount,
-
       cgstAmount: calculatedInvoice.cgstAmount,
-
       sgstAmount: calculatedInvoice.sgstAmount,
-
       igstAmount: calculatedInvoice.igstAmount,
-
       tdsAmount: calculatedInvoice.tdsAmount,
-
       deductionAmount: calculatedInvoice.deductionAmount,
-
       otherCharges: calculatedInvoice.otherCharges,
-
       netPayableAmount: calculatedInvoice.netPayableAmount,
-
       gstNumberUsed: calculatedInvoice.gstNumberUsed,
-
       tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
-
       notes,
+      status: invoiceStatus.status,
+      updatedAt: new Date(),
     })
     .where(eq(invoices.id, id));
 
