@@ -47,9 +47,7 @@ export function calculateInvoiceStatus({ netPayable, paid, dueDate }) {
   if (due <= 0) {
     status = "paid";
   } else if (paid > 0) {
-    status = dueDays > 0 ? "overdue" : "partial";
-  } else {
-    status = dueDays > 0 ? "overdue" : "pending";
+    status = "partial";
   }
 
   const isOverdue = due > 0 && dueDays > 0;
