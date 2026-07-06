@@ -14,7 +14,7 @@ import { getClientTaxSettings } from "@/lib/client-tax-settings";
 import { getFinancialYear } from "@/lib/financial-year";
 import { enrichInvoices } from "@/lib/invoice-summary";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
-import { eq, sql, ilike, isNull, or, and, inArray } from "drizzle-orm";
+import { eq, sql, ilike, isNull, or, and, ne, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function getInvoices(
@@ -293,27 +293,20 @@ export async function createInvoice(formData) {
 export async function getInvoiceById(id) {
   const data = await db
     .select({
+      clientId: invoices.clientId,
       id: invoices.id,
-
       invoiceNumber: invoices.invoiceNumber,
-
       invoiceDate: invoices.invoiceDate,
-
       dueDate: invoices.dueDate,
-
       invoiceAmount: invoices.invoiceAmount,
-
       deductionAmount: invoices.deductionAmount,
-
       otherCharges: invoices.otherCharges,
-
       notes: invoices.notes,
-
       companyCode: clients.companyCode,
     })
     .from(invoices)
     .leftJoin(clients, eq(invoices.clientId, clients.id))
-    .where(eq(invoices.id, id))
+    .where(and(eq(invoices.id, id), isNull(invoices.deletedAt)))
     .limit(1);
 
   return data[0];
@@ -355,8 +348,14 @@ export async function updateInvoice(id, formData) {
   }
 
   const existingInvoice = await db.query.invoices.findFirst({
-    where: eq(invoices.id, id),
+    where: and(eq(invoices.id, id), isNull(invoices.deletedAt)),
   });
+
+  if (existingInvoice.clientId !== clientId) {
+    return {
+      error: "Client cannot be changed.",
+    };
+  }
 
   if (!existingInvoice) {
     return {
@@ -426,6 +425,12 @@ export async function updateInvoice(id, formData) {
 
   const paid = Number(allocationResult[0]?.total || 0);
 
+  if (paid > calculatedInvoice.netPayableAmount) {
+    return {
+      error: "Invoice amount cannot be less than the amount already received.",
+    };
+  }
+
   const invoiceStatus = calculateInvoiceStatus({
     netPayable: calculatedInvoice.netPayableAmount,
     paid,
@@ -463,6 +468,7 @@ export async function updateInvoice(id, formData) {
 
   revalidatePath("/invoices");
   revalidatePath(`/invoices/${id}`);
+  revalidatePath(`/clients/${client.id}`);
 
   return {
     success: true,

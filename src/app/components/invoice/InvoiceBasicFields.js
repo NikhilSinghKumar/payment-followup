@@ -109,7 +109,11 @@ export default function InvoiceBasicFields({
           <input
             type="date"
             name="dueDate"
-            defaultValue={invoice?.dueDate ?? ""}
+            defaultValue={
+              invoice?.dueDate
+                ? new Date(invoice.dueDate).toISOString().split("T")[0]
+                : ""
+            }
             className="input-primary"
             required
           />

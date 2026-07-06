@@ -15,7 +15,9 @@ export default function InvoiceForm({
     invoiceAmount: invoice.invoiceAmount || "",
     deductionAmount: invoice.deductionAmount || "",
     otherCharges: invoice.otherCharges || "",
-    invoiceDate: invoice.invoiceDate || "",
+    invoiceDate: invoice.invoiceDate
+      ? new Date(invoice.invoiceDate).toISOString().split("T")[0]
+      : "",
   });
 
   function handleChange(e) {
