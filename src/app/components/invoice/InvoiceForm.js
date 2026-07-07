@@ -31,20 +31,28 @@ export default function InvoiceForm({
 
   return (
     <form action={action} className="space-y-6">
-      <InvoiceBasicFields
-        client={client}
-        invoice={invoice}
-        values={values}
-        onChange={handleChange}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left */}
+        <div className="lg:col-span-2">
+          <InvoiceBasicFields
+            client={client}
+            invoice={invoice}
+            values={values}
+            onChange={handleChange}
+          />
+        </div>
 
-      <InvoiceSummary
-        invoiceAmount={values.invoiceAmount}
-        gstNumber={client?.gstNumber}
-        tdsApplicable={client?.tdsApplicable}
-        deductionAmount={values.deductionAmount}
-        otherCharges={values.otherCharges}
-      />
+        {/* Right */}
+        <div>
+          <InvoiceSummary
+            invoiceAmount={values.invoiceAmount}
+            gstNumber={client?.gstNumber}
+            tdsApplicable={client?.tdsApplicable}
+            deductionAmount={values.deductionAmount}
+            otherCharges={values.otherCharges}
+          />
+        </div>
+      </div>
 
       <div className="flex items-center justify-between pt-2">
         <Link
