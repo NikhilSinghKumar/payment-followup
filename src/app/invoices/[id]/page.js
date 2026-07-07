@@ -43,6 +43,7 @@ export default async function InvoiceDetailPage({ params }) {
 
         {/* TABS */}
         <InvoiceTabs
+          invoice={summary}
           invoiceId={invoiceId}
           awbs={awbs}
           payments={payments}

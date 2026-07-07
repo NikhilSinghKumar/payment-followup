@@ -6,17 +6,23 @@ import AwbsTab from "./tabs/AwbsTab";
 import PaymentsTab from "./tabs/PaymentsTab";
 import FollowupsTab from "./tabs/FollowupsTab";
 import ActivityTab from "./tabs/ActivityTab";
+import OverviewTab from "./tabs/OverviewTab";
 
 export default function InvoiceTabs({
+  invoice,
   invoiceId,
   awbs,
   payments,
   followups,
   activities,
 }) {
-  const [tab, setTab] = useState("awbs");
+  const [tab, setTab] = useState("overview");
 
   const tabs = [
+    {
+      key: "overview",
+      label: "Overview",
+    },
     {
       key: "awbs",
       label: `AWBs (${awbs.length})`,
@@ -56,6 +62,8 @@ export default function InvoiceTabs({
 
       {/* TAB CONTENT */}
       <div className="p-4">
+        {tab === "overview" && <OverviewTab invoice={invoice} />}
+
         {tab === "awbs" && <AwbsTab invoiceId={invoiceId} awbs={awbs} />}
 
         {tab === "payments" && (
