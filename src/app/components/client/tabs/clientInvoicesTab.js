@@ -50,7 +50,6 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
             </div>
           ) : (
             invoices.map((invoice) => {
-              console.log(invoice);
               const outstanding = Number(invoice.due || 0);
 
               return (

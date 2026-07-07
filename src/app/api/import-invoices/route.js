@@ -41,7 +41,6 @@ export async function POST(req) {
 
       // 🔹 Validation
       if (!companyCode || !invoiceNumber || !financialYear || isNaN(amount)) {
-        console.log("❌ Invalid row:", row);
         skipped++;
         continue;
       }
@@ -54,7 +53,6 @@ export async function POST(req) {
         .limit(1);
 
       if (!client.length) {
-        console.log("❌ Client not found:", companyCode);
         skipped++;
         continue;
       }
@@ -75,12 +73,6 @@ export async function POST(req) {
         .limit(1);
 
       if (existing.length > 0) {
-        console.log(
-          "⚠️ Duplicate skipped:",
-          companyCode,
-          invoiceAmount,
-          invoiceNumber,
-        );
         skipped++;
         continue;
       }
