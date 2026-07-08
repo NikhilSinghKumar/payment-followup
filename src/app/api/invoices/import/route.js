@@ -6,6 +6,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { calculateInvoice } from "@/lib/invoice-calculator";
 import { getFinancialYear } from "@/lib/financial-year";
 import { getClientTaxSettings } from "@/lib/client-tax-settings";
+import { revalidatePath } from "next/cache";
 
 export async function POST(req) {
   try {
@@ -25,6 +26,7 @@ export async function POST(req) {
 
     const formData = await req.formData();
     const file = formData.get("file");
+    const csvInvoiceNumbers = new Set();
 
     if (!file) {
       return NextResponse.json(
@@ -52,6 +54,18 @@ export async function POST(req) {
 
     const invoicesToInsert = [];
 
+    // Fetch all existing invoice numbers for this client once
+    const existingInvoices = await db
+      .select({
+        invoiceNumber: invoices.invoiceNumber,
+      })
+      .from(invoices)
+      .where(and(eq(invoices.clientId, clientId), isNull(invoices.deletedAt)));
+
+    const existingInvoiceNumbers = new Set(
+      existingInvoices.map((i) => i.invoiceNumber),
+    );
+
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index];
 
@@ -64,19 +78,28 @@ export async function POST(req) {
         const otherCharges = Number(row["Other Charges"] || 0);
         const notes = row["Notes"] || "";
 
-        if (!invoiceNumber || isNaN(invoiceAmount)) {
-          throw new Error("Invalid data.");
+        if (isNaN(invoiceDate.getTime())) {
+          throw new Error("Invalid invoice date.");
         }
 
-        const duplicate = await db.query.invoices.findFirst({
-          where: and(
-            eq(invoices.invoiceNumber, invoiceNumber),
-            isNull(invoices.deletedAt),
-          ),
-        });
+        if (isNaN(dueDate.getTime())) {
+          throw new Error("Invalid due date.");
+        }
 
-        if (duplicate) {
+        if (!invoiceNumber) {
+          throw new Error("Invoice number is required.");
+        }
+
+        if (existingInvoiceNumbers.has(invoiceNumber)) {
           throw new Error("Invoice number already exists.");
+        }
+
+        if (dueDate < invoiceDate) {
+          throw new Error("Due date cannot be before invoice date.");
+        }
+
+        if (isNaN(invoiceAmount) || invoiceAmount <= 0) {
+          throw new Error("Invoice amount must be greater than zero.");
         }
 
         const financialYear = getFinancialYear(invoiceDate);
@@ -89,7 +112,14 @@ export async function POST(req) {
           otherCharges,
         });
 
-        await db.insert(invoices).values({
+        if (csvInvoiceNumbers.has(invoiceNumber)) {
+          throw new Error("Duplicate invoice number found in CSV.");
+        }
+
+        csvInvoiceNumbers.add(invoiceNumber);
+        existingInvoiceNumbers.add(invoiceNumber);
+
+        invoicesToInsert.push({
           clientId,
           invoiceNumber,
           financialYear,
@@ -109,14 +139,20 @@ export async function POST(req) {
           notes,
           status: "pending",
         });
-
-        imported++;
       } catch (err) {
         errors.push({
           row: index + 2,
           error: err.message,
         });
       }
+    }
+
+    if (invoicesToInsert.length) {
+      await db.insert(invoices).values(invoicesToInsert);
+
+      imported = invoicesToInsert.length;
+      revalidatePath("/invoices");
+      revalidatePath(`/clients/${clientId}`);
     }
 
     return NextResponse.json({
