@@ -15,9 +15,7 @@ export default function InvoiceSummary({ data }) {
               </h1>
 
               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
-                <span>{data.invoiceNumber}</span>
-                <span className="text-pink-400 font-extrabold">•</span>
-                <span>{data.financialYear}</span>
+                <span>{data.companyCode}</span>
               </div>
             </div>
           </div>

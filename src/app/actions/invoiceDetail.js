@@ -25,6 +25,7 @@ export async function getInvoiceSummary(id) {
 
   const invoiceResult = await db
     .select({
+      companyCode: clients.companyCode,
       id: invoices.id,
       invoiceDate: invoices.invoiceDate,
       invoiceNumber: invoices.invoiceNumber,
