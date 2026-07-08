@@ -1,4 +1,7 @@
 import Link from "next/link";
+import DownloadInvoiceSample from "../../invoice/DownloadInvoiceSample";
+import ImportInvoices from "../../invoice/ImportInvoices";
+import ExportInvoices from "../../invoice/ExportInvoices";
 
 export default function ClientInvoicesTab({ clientId, invoices = [] }) {
   return (
@@ -18,7 +21,12 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
           </p>
         </div>
 
-        <div className="flex items-center justify-end gap-4">
+        <div className="flex items-center justify-end gap-2">
+          <DownloadInvoiceSample />
+
+          <ImportInvoices clientId={clientId} />
+
+          <ExportInvoices clientId={clientId} />
           <Link
             href={`/invoices/new?clientId=${clientId}`}
             className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
