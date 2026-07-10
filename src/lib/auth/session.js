@@ -4,8 +4,7 @@ import { db } from "@/db";
 import { sessions } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
-const SESSION_TOKEN_BYTES = 32;
-const SESSION_DURATION_DAYS = 7;
+import { SESSION_DURATION_DAYS, SESSION_TOKEN_BYTES } from "./constants";
 
 const INVALID_SESSION = {
   session: null,
@@ -66,12 +65,12 @@ export async function validateSession(sessionToken) {
     },
   });
 
-  if (session.user.deletedAt) {
+  // Session not found
+  if (!session) {
     return INVALID_SESSION;
   }
 
-  // Session not found
-  if (!session) {
+  if (session.user.deletedAt) {
     return INVALID_SESSION;
   }
 
