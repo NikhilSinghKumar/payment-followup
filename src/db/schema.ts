@@ -1,5 +1,6 @@
 import {
   pgTable,
+  pgEnum,
   serial,
   text,
   integer,
@@ -11,38 +12,182 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+export const userTypeEnum = pgEnum("user_type", ["SUPER_ADMIN", "USER"]);
+
 // =========================
 // USERS
 // =========================
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
 
-  name: text("name"),
-  email: text("email").notNull().unique(),
+export const users = pgTable(
+  "users",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull().unique(),
+    mobile: text("mobile"),
+    passwordHash: text("password_hash").notNull(),
+    userType: userTypeEnum("user_type").default("USER").notNull(),
+    // USER | SUPER_ADMIN
+    isActive: boolean("is_active").default(true).notNull(),
+    emailVerified: boolean("email_verified").default(false).notNull(),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => ({
+    emailIdx: uniqueIndex("users_email_idx").on(table.email),
+  }),
+);
 
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+// ==========================================
+// SESSIONS
+// ==========================================
+
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "cascade",
+      }),
+
+    tokenHash: text("token_hash").notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    expiresAt: timestamp("expires_at", {
+      withTimezone: true,
+    }).notNull(),
+    isRevoked: boolean("is_revoked").default(false).notNull(),
+    revokedAt: timestamp("revoked_at", {
+      withTimezone: true,
+    }),
+    lastSeenAt: timestamp("last_seen_at", {
+      withTimezone: true,
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdx: index("sessions_user_idx").on(table.userId),
+    tokenIdx: uniqueIndex("sessions_token_idx").on(table.tokenHash),
+  }),
+);
+
+export const companies = pgTable(
+  "companies",
+  {
+    id: serial("id").primaryKey(),
+    companyName: text("company_name").notNull(),
+    companyCode: text("company_code").notNull(),
+    gstNumber: text("gst_number"),
+    email: text("email"),
+    phone: text("phone"),
+    address: text("address"),
+    city: text("city"),
+    state: text("state"),
+    pincode: text("pincode"),
+    country: text("country").default("India").notNull(),
+    logo: text("logo"),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+    deletedAt: timestamp("deleted_at", {
+      withTimezone: true,
+    }),
+  },
+  (table) => ({
+    companyCodeIdx: uniqueIndex("companies_company_code_idx").on(
+      table.companyCode,
+    ),
+  }),
+);
+
+export const companyUsers = pgTable(
+  "company_users",
+  {
+    id: serial("id").primaryKey(),
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, {
+        onDelete: "cascade",
+      }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "cascade",
+      }),
+    roleId: integer("role_id"),
+    isActive: boolean("is_active").default(true).notNull(),
+    joinedAt: timestamp("joined_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    companyUserUnique: uniqueIndex("company_users_company_user_idx").on(
+      table.companyId,
+      table.userId,
+    ),
+
+    companyIdx: index("company_users_company_idx").on(table.companyId),
+    userIdx: index("company_users_user_idx").on(table.userId),
+  }),
+);
 
 // =========================
 // CLIENTS
 // =========================
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
-
+  companyId: integer("company_id")
+    .notNull()
+    .references(() => companies.id, {
+      onDelete: "cascade",
+    }),
   companyName: text("company_name").notNull(),
   email: text("email"),
   phone: text("phone"),
-
   companyCode: text("company_code").notNull().unique(),
   gstNumber: text("gst_number"),
-
   address: text("address"),
 
   // Status
   isActive: boolean("is_active").notNull().default(true),
-
   tdsApplicable: boolean("tds_applicable").notNull().default(false),
-
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   deletedAt: timestamp("deleted_at", {
@@ -528,6 +673,12 @@ export const invoices = pgTable(
   {
     id: serial("id").primaryKey(),
 
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, {
+        onDelete: "cascade",
+      }),
+
     // =====================================
     // CLIENT
     // =====================================
@@ -761,6 +912,12 @@ export const payments = pgTable(
   {
     id: serial("id").primaryKey(),
 
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, {
+        onDelete: "cascade",
+      }),
+
     invoiceId: integer("invoice_id").references(() => invoices.id),
 
     // =====================================
@@ -950,7 +1107,11 @@ export const followups = pgTable(
   "followups",
   {
     id: serial("id").primaryKey(),
-
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, {
+        onDelete: "cascade",
+      }),
     invoiceId: integer("invoice_id")
       .references(() => invoices.id)
       .notNull(),
