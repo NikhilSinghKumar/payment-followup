@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
-
-export const SESSION_COOKIE_NAME = "payfolo_session";
+import { SESSION_COOKIE_NAME } from "./constants";
 
 export async function setSessionCookie(sessionToken, expiresAt) {
   const cookieStore = await cookies();
