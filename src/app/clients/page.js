@@ -1,4 +1,5 @@
 import { getClients } from "../actions/client";
+import { logout } from "../actions/auth/logout";
 import Link from "next/link";
 import ImportBox from "../components/ImportClients";
 import SearchBox from "../components/SearchBox";
@@ -77,6 +78,12 @@ export default async function ClientsPage({ searchParams }) {
           </Link>
         </div>
       </div>
+
+      <form action={logout}>
+        <button className="rounded-lg bg-red-600 px-4 py-2 text-white cursor-pointer">
+          Logout
+        </button>
+      </form>
 
       {/* Alphabet Navigation */}
       <div className="flex flex-wrap justify-center gap-1 mb-5">
