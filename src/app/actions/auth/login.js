@@ -1,6 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 
 import { db } from "@/db";
 import { users } from "@/db/schema";
@@ -13,6 +14,20 @@ import { AUTH_MESSAGES } from "@/lib/auth/constants";
 export async function login(prevState, formData) {
   const email = formData.get("email")?.trim().toLowerCase();
   const password = formData.get("password");
+
+  // ---------------------------------------------
+  // Request Information
+  // ---------------------------------------------
+
+  const headersList = await headers();
+
+  const forwardedFor = headersList.get("x-forwarded-for");
+
+  const ipAddress = forwardedFor
+    ? forwardedFor.split(",")[0].trim()
+    : headersList.get("x-real-ip");
+
+  const userAgent = headersList.get("user-agent");
 
   // -----------------------------
   // Validation
@@ -70,6 +85,8 @@ export async function login(prevState, formData) {
 
   const { sessionToken, expiresAt } = await createSession({
     userId: user.id,
+    ipAddress,
+    userAgent,
   });
 
   // -----------------------------
