@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useEffect, useActionState } from "react";
+import { useRouter } from "next/navigation";
 import { login } from "@/app/actions/auth/login";
 
 const INITIAL_STATE = {
@@ -10,6 +11,13 @@ const INITIAL_STATE = {
 
 export default function LoginForm() {
   const [state, formAction, pending] = useActionState(login, INITIAL_STATE);
+
+  const router = useRouter();
+  useEffect(() => {
+    if (state.success) {
+      router.replace("/clients");
+    }
+  }, [state.success, router]);
 
   return (
     <div className="w-full max-w-md rounded-xl bg-white p-8 shadow">
