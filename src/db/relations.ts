@@ -8,12 +8,58 @@ import {
   clientContactLocations,
   invoices,
   payments,
+  paymentAllocations,
   clientSubClients,
   followups,
   invoiceAwbs,
+  users,
+  sessions,
+  companies,
+  companyUsers,
 } from "./schema";
 
-export const clientsRelations = relations(clients, ({ many }) => ({
+export const usersRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+  companyUsers: many(companyUsers),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const companiesRelations = relations(companies, ({ many }) => ({
+  companyUsers: many(companyUsers),
+  clients: many(clients),
+  invoices: many(invoices),
+  payments: many(payments),
+  followups: many(followups),
+}));
+
+export const companyUsersRelations = relations(companyUsers, ({ one }) => ({
+  company: one(companies, {
+    fields: [companyUsers.companyId],
+    references: [companies.id],
+  }),
+
+  user: one(users, {
+    fields: [companyUsers.userId],
+    references: [users.id],
+  }),
+
+  // role: one(roles, {
+  //   fields: [companyUsers.roleId],
+  //   references: [roles.id],
+  // }),
+}));
+
+export const clientsRelations = relations(clients, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [clients.companyId],
+    references: [companies.id],
+  }),
   locations: many(clientLocations),
   contacts: many(clientContacts),
   invoices: many(invoices),
@@ -95,6 +141,10 @@ export const clientSubClientsRelations = relations(
 );
 
 export const invoicesRelations = relations(invoices, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [invoices.companyId],
+    references: [companies.id],
+  }),
   client: one(clients, {
     fields: [invoices.clientId],
     references: [clients.id],
@@ -108,4 +158,57 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   payments: many(payments),
   followups: many(followups),
   awbs: many(invoiceAwbs),
+}));
+
+export const paymentsRelations = relations(payments, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [payments.companyId],
+    references: [companies.id],
+  }),
+
+  client: one(clients, {
+    fields: [payments.clientId],
+    references: [clients.id],
+  }),
+
+  invoice: one(invoices, {
+    fields: [payments.invoiceId],
+    references: [invoices.id],
+  }),
+
+  allocations: many(paymentAllocations),
+}));
+
+export const paymentAllocationsRelations = relations(
+  paymentAllocations,
+  ({ one }) => ({
+    payment: one(payments, {
+      fields: [paymentAllocations.paymentId],
+      references: [payments.id],
+    }),
+
+    invoice: one(invoices, {
+      fields: [paymentAllocations.invoiceId],
+      references: [invoices.id],
+    }),
+  }),
+);
+
+export const followupsRelations = relations(followups, ({ one }) => ({
+  company: one(companies, {
+    fields: [followups.companyId],
+    references: [companies.id],
+  }),
+
+  invoice: one(invoices, {
+    fields: [followups.invoiceId],
+    references: [invoices.id],
+  }),
+}));
+
+export const invoiceAwbsRelations = relations(invoiceAwbs, ({ one }) => ({
+  invoice: one(invoices, {
+    fields: [invoiceAwbs.invoiceId],
+    references: [invoices.id],
+  }),
 }));
