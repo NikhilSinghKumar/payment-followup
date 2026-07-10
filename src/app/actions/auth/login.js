@@ -8,17 +8,11 @@ import { users } from "@/db/schema";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
 import { setSessionCookie } from "@/lib/auth/cookies";
+import { AUTH_MESSAGES } from "@/lib/auth/constants";
 
 export async function login(prevState, formData) {
   const email = formData.get("email")?.trim().toLowerCase();
   const password = formData.get("password");
-
-  console.log("Email:", formData.get("email"));
-  console.log("Password:", formData.get("password"));
-
-  for (const [key, value] of formData.entries()) {
-    console.log(key, value);
-  }
 
   // -----------------------------
   // Validation
@@ -27,7 +21,7 @@ export async function login(prevState, formData) {
   if (!email || !password) {
     return {
       success: false,
-      error: "Email and password are required.",
+      message: AUTH_MESSAGES.EMAIL_PASSWORD_REQUIRED,
     };
   }
 
@@ -42,7 +36,7 @@ export async function login(prevState, formData) {
   if (!user) {
     return {
       success: false,
-      error: "Invalid email or password.",
+      message: AUTH_MESSAGES.INVALID_CREDENTIALS,
     };
   }
 
@@ -53,7 +47,7 @@ export async function login(prevState, formData) {
   if (!user.isActive || user.deletedAt) {
     return {
       success: false,
-      error: "Your account has been disabled.",
+      message: AUTH_MESSAGES.ACCOUNT_DISABLED,
     };
   }
 
@@ -66,7 +60,7 @@ export async function login(prevState, formData) {
   if (!validPassword) {
     return {
       success: false,
-      error: "Invalid email or password.",
+      message: AUTH_MESSAGES.INVALID_EMAIL_OR_PASSWORD,
     };
   }
 
@@ -97,6 +91,6 @@ export async function login(prevState, formData) {
 
   return {
     success: true,
-    error: null,
+    message: null,
   };
 }
