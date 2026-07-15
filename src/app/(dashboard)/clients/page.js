@@ -1,9 +1,8 @@
-import { getClients } from "../actions/client";
-import { logout } from "../actions/auth/logout";
+import { getClients } from "../../actions/client";
 import Link from "next/link";
-import ImportBox from "../components/ImportClients";
-import SearchBox from "../components/SearchBox";
-import DeleteInvoiceButton from "../components/DeleteInvoiceButton";
+import ImportBox from "../../components/ImportClients";
+import SearchBox from "../../components/SearchBox";
+import DeleteInvoiceButton from "../../components/DeleteInvoiceButton";
 
 const ALPHABETS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -16,20 +15,11 @@ export default async function ClientsPage({ searchParams }) {
   const data = await getClients(query, letter);
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-6">
+    <div className="h-full bg-zinc-50">
       {/* Gradient Accent Top Bar */}
-      <div className="h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400 mb-6" />
+      {/* <div className="h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400 mb-6" /> */}
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-zinc-800">Clients</h1>
-
-          <p className="text-sm text-zinc-500 mt-1">
-            Manage and view all your clients
-          </p>
-        </div>
-
+      <div className="flex items-center justify-center mb-4">
         <div className="flex items-center gap-2">
           <SearchBox />
           <ImportBox />
@@ -37,22 +27,22 @@ export default async function ClientsPage({ searchParams }) {
             href="/api/import-client-sample"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-blue-500 underline text-sm text-blue-500 underline border border-zinc-200 text-zinc-600 p-2 rounded-lg"
+            className="text-sm text-blue-500 text-sm text-blue-500 border border-zinc-200 text-zinc-600 p-2 rounded-lg"
           >
-            Sample Client (CSV)
+            Sample(csv)
           </a>
           <a
             href="/api/export-clients"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-blue-500 underline border border-zinc-200 text-zinc-600 p-2 rounded-lg"
+            className="text-sm text-blue-500 border border-zinc-200 text-zinc-600 p-2 rounded-lg"
           >
             Export Clients
           </a>
           <Link
             href="/clients/new"
             className="
-            h-10 px-4 inline-flex items-center justify-center
+            py-2 px-4 inline-flex items-center justify-center
             rounded-xl text-white text-sm font-medium
             bg-gradient-to-r from-blue-500 to-purple-500
             shadow-md hover:shadow-lg
@@ -62,31 +52,11 @@ export default async function ClientsPage({ searchParams }) {
           >
             + Add Client
           </Link>
-
-          <Link
-            href="/invoices"
-            className="
-          h-10 px-4 inline-flex items-center justify-center
-          rounded-xl text-white text-sm font-medium
-          bg-gradient-to-r from-blue-500 to-purple-500
-          shadow-md hover:shadow-lg
-          transition-all duration-200
-          hover:scale-[1.02]
-        "
-          >
-            Invoice List
-          </Link>
         </div>
       </div>
 
-      <form action={logout}>
-        <button className="rounded-lg bg-red-600 px-4 py-2 text-white cursor-pointer">
-          Logout
-        </button>
-      </form>
-
       {/* Alphabet Navigation */}
-      <div className="flex flex-wrap justify-center gap-1 mb-5">
+      <div className="flex flex-wrap justify-center gap-1 mb-6">
         <Link
           href={`/clients?q=${query}`}
           className={`
@@ -106,7 +76,7 @@ export default async function ClientsPage({ searchParams }) {
             key={char}
             href={`/clients?letter=${char}&q=${query}`}
             className={`
-          w-9 h-9 flex items-center justify-center
+          w-8 h-8 flex items-center justify-center
           rounded-lg text-sm font-medium transition-all
           ${
             letter === char
@@ -127,7 +97,7 @@ export default async function ClientsPage({ searchParams }) {
           className="
         grid grid-cols-[80px_2fr_140px_180px_120px_180px]
         items-center
-        px-5 py-3
+        px-5 py-2
         bg-zinc-50
         border-b border-zinc-200
         text-sm font-semibold text-zinc-600
@@ -150,7 +120,7 @@ export default async function ClientsPage({ searchParams }) {
               className="
             grid grid-cols-[80px_2fr_140px_180px_120px_180px]
             items-center
-            px-5 py-3
+            px-5 py-1
             text-sm
             border-b border-zinc-100
             hover:bg-zinc-50

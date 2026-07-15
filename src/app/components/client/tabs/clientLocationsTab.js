@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import ImportLocations from "@/app/clients/_components/import-locations";
+import ImportLocations from "@/app/(dashboard)/clients/_components/import-locations";
 
 export default function ClientLocationsTab({ clientId, locations = [] }) {
   const [selectedLocation, setSelectedLocation] = useState(null);

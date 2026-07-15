@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import ImportContacts from "@/app/clients/_components/import-contacts";
-import ExportContacts from "@/app/clients/_components/export-contacts";
+import ImportContacts from "@/app/(dashboard)/clients/_components/import-contacts";
+import ExportContacts from "@/app/(dashboard)/clients/_components/export-contacts";
 
 export default function ClientContactsTab({ clientId, contacts = [] }) {
   const [selectedContact, setSelectedContact] = useState(null);

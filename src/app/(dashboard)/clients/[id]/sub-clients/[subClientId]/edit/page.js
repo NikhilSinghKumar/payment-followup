@@ -1,6 +1,6 @@
 import { getClientById } from "@/app/actions/client";
 import { getSubClientById, updateSubClient } from "@/app/actions/sub-client";
-import SubClientForm from "@/app/clients/[id]/sub-clients/new/SubclientForm";
+import SubClientForm from "@/app/(dashboard)/clients/[id]/sub-clients/new/SubclientForm";
 
 export default async function EditSubClientPage({ params }) {
   const { id: clientId, subClientId } = await params;

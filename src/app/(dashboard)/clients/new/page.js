@@ -1,6 +1,6 @@
 "use client";
 import { useActionState } from "react";
-import { createClient } from "../../actions/client";
+import { createClient } from "../../../actions/client";
 import Link from "next/link";
 
 export default function NewClientPage() {
