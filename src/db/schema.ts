@@ -22,7 +22,8 @@ export const users = pgTable(
   "users",
   {
     id: serial("id").primaryKey(),
-    name: text("name").notNull(),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name"),
     email: text("email").notNull().unique(),
     mobile: text("mobile"),
     passwordHash: text("password_hash").notNull(),
@@ -139,7 +140,10 @@ export const companyUsers = pgTable(
       .references(() => users.id, {
         onDelete: "cascade",
       }),
-    roleId: integer("role_id"),
+    roleId: integer("role_id").references(() => roles.id, {
+      onDelete: "set null",
+    }),
+    designation: text("designation"),
     isActive: boolean("is_active").default(true).notNull(),
     joinedAt: timestamp("joined_at", {
       withTimezone: true,
@@ -165,6 +169,114 @@ export const companyUsers = pgTable(
 
     companyIdx: index("company_users_company_idx").on(table.companyId),
     userIdx: index("company_users_user_idx").on(table.userId),
+  }),
+);
+
+export const roles = pgTable(
+  "roles",
+  {
+    id: serial("id").primaryKey(),
+
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, {
+        onDelete: "cascade",
+      }),
+
+    roleName: text("role_name").notNull(),
+
+    description: text("description"),
+
+    isSystem: boolean("is_system").default(false).notNull(),
+
+    isActive: boolean("is_active").default(true).notNull(),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+
+    deletedAt: timestamp("deleted_at", {
+      withTimezone: true,
+    }),
+  },
+  (table) => ({
+    companyRoleUnique: uniqueIndex("roles_company_role_idx").on(
+      table.companyId,
+      table.roleName,
+    ),
+
+    companyIdx: index("roles_company_idx").on(table.companyId),
+  }),
+);
+
+export const permissions = pgTable(
+  "permissions",
+  {
+    id: serial("id").primaryKey(),
+
+    permissionKey: text("permission_key").notNull().unique(),
+
+    module: text("module").notNull(),
+
+    action: text("action").notNull(),
+
+    description: text("description"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    permissionKeyIdx: uniqueIndex("permissions_key_idx").on(
+      table.permissionKey,
+    ),
+  }),
+);
+
+export const rolePermissions = pgTable(
+  "role_permissions",
+  {
+    id: serial("id").primaryKey(),
+
+    roleId: integer("role_id")
+      .notNull()
+      .references(() => roles.id, {
+        onDelete: "cascade",
+      }),
+
+    permissionId: integer("permission_id")
+      .notNull()
+      .references(() => permissions.id, {
+        onDelete: "cascade",
+      }),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    rolePermissionUnique: uniqueIndex("role_permissions_unique_idx").on(
+      table.roleId,
+      table.permissionId,
+    ),
+
+    roleIdx: index("role_permissions_role_idx").on(table.roleId),
+
+    permissionIdx: index("role_permissions_permission_idx").on(
+      table.permissionId,
+    ),
   }),
 );
 

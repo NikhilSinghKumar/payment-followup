@@ -6,7 +6,7 @@ export const SESSION_COOKIE_NAME = "payfolo_session";
 
 export const SESSION_TOKEN_BYTES = 32;
 
-export const SESSION_DURATION_DAYS = 7;
+export const SESSION_DURATION_DAYS = 1;
 
 // ==========================================
 // USER TYPES

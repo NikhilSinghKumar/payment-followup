@@ -1,9 +1,12 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ImportClients() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const router = useRouter();
 
   const handleUpload = async () => {
     if (!file) return alert("Select a file");
@@ -20,6 +23,10 @@ export default function ImportClients() {
 
     const data = await res.json();
     setLoading(false);
+
+    if (res.ok && data.status === "success") {
+      router.refresh();
+    }
 
     alert(`
     Import Completed

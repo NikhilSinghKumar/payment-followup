@@ -1,0 +1,112 @@
+import Link from "next/link";
+import { Building2, Users, Eye } from "lucide-react";
+
+export default function CompanyTable({ companies }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <table className="min-w-full">
+        <thead className="border-b bg-slate-50">
+          <tr>
+            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Company
+            </th>
+
+            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Company Code
+            </th>
+
+            <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Users
+            </th>
+
+            <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Status
+            </th>
+
+            <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {companies.length === 0 ? (
+            <tr>
+              <td
+                colSpan={5}
+                className="py-16 text-center text-sm text-slate-500"
+              >
+                No companies found.
+              </td>
+            </tr>
+          ) : (
+            companies.map((company) => (
+              <tr
+                key={company.id}
+                className="border-b border-slate-100 transition-colors hover:bg-slate-50"
+              >
+                {/* Company */}
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+                      <Building2 className="h-5 w-5" />
+                    </div>
+
+                    <div>
+                      <div className="font-semibold text-slate-800">
+                        {company.companyName}
+                      </div>
+
+                      <div className="mt-0.5 text-sm text-slate-500">
+                        {company.email || "No email"}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                {/* Code */}
+                <td className="px-6 py-4">
+                  <span className="rounded-lg bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+                    {company.companyCode}
+                  </span>
+                </td>
+
+                {/* Users */}
+                <td className="px-6 py-4 text-center">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+                    <Users className="h-4 w-4" />
+                    {company.userCount}
+                  </span>
+                </td>
+
+                {/* Status */}
+                <td className="px-6 py-4 text-center">
+                  {company.isActive ? (
+                    <span className="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                      Inactive
+                    </span>
+                  )}
+                </td>
+
+                {/* Actions */}
+                <td className="px-6 py-4 text-right">
+                  <Link
+                    href={`/companies/${company.id}`}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600"
+                  >
+                    <Eye className="h-4 w-4" />
+                    View
+                  </Link>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}

@@ -2,8 +2,18 @@ import { db } from "@/db";
 import { clients } from "@/db/schema";
 import { parse } from "csv-parse/sync";
 import { inArray } from "drizzle-orm";
+import { getCurrentUser } from "@/lib/auth/auth";
 
 export async function POST(req) {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser.user) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!currentUser.companyId) {
+    throw new Error("User is not associated with a company.");
+  }
   try {
     const formData = await req.formData();
     const file = formData.get("file");
@@ -118,6 +128,7 @@ export async function POST(req) {
       }
 
       toInsert.push({
+        companyId: currentUser.companyId,
         companyName,
         email,
         phone,

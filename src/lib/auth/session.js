@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 import { db } from "@/db";
-import { sessions } from "@/db/schema";
+import { sessions, companyUsers } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
 import { SESSION_DURATION_DAYS, SESSION_TOKEN_BYTES } from "./constants";
@@ -91,9 +91,16 @@ export async function validateSession(sessionToken) {
     return INVALID_SESSION;
   }
 
+  const companyUser = await db.query.companyUsers.findFirst({
+    where: and(
+      eq(companyUsers.userId, session.user.id),
+      eq(companyUsers.isActive, true),
+    ),
+  });
+
   return {
     session,
     user: session.user,
-    companyId: null,
+    companyId: companyUser?.companyId ?? null,
   };
 }

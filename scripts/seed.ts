@@ -5,52 +5,51 @@ import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { users, companies } from "../src/db/schema";
 
+import { seedPermissions } from "./seed-permissions";
+
 async function seed() {
   const DEFAULT_PASSWORD = "Admin@123";
   const ADMIN_EMAIL = "nikhil@pafex.in";
   const SALT_ROUNDS = 12;
 
+  console.log("🌱 Seeding database...");
+
+  // -----------------------------------------
+  // Super Admin
+  // -----------------------------------------
+
   const existingAdmin = await db.query.users.findFirst({
     where: eq(users.email, ADMIN_EMAIL),
   });
 
-  if (existingAdmin) {
-    console.log("Super Admin already exists.");
-    return;
-  }
-  console.log("🌱 Seeding database...");
+  if (!existingAdmin) {
+    const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
 
-  // -----------------------------------------
-  // Password
-  // -----------------------------------------
-
-  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
-
-  // -----------------------------------------
-  // Create Super Admin
-  // -----------------------------------------
-
-  await db
-    .insert(users)
-    .values({
-      name: "Super Admin",
-      email: "nikhil@pafex.in",
+    await db.insert(users).values({
+      firstName: "Super",
+      lastName: "Admin",
+      email: ADMIN_EMAIL,
       passwordHash,
       userType: "SUPER_ADMIN",
       isActive: true,
       emailVerified: true,
-    })
-    .returning();
+    });
 
-  console.log("✅ Super Admin created");
+    console.log("✅ Super Admin created");
+  } else {
+    console.log("ℹ️ Super Admin already exists");
+  }
 
   // -----------------------------------------
-  // Create Demo Company
+  // Demo Company
   // -----------------------------------------
 
-  await db
-    .insert(companies)
-    .values({
+  const existingCompany = await db.query.companies.findFirst({
+    where: eq(companies.companyCode, "PAFEX"),
+  });
+
+  if (!existingCompany) {
+    await db.insert(companies).values({
       companyName: "Pafex",
       companyCode: "PAFEX",
       gstNumber: "22AAAAA0000A1Z5",
@@ -59,17 +58,24 @@ async function seed() {
       city: "New Delhi",
       state: "Delhi",
       country: "India",
-    })
-    .returning();
+    });
 
-  console.log("✅ Company created");
+    console.log("✅ Demo Company created");
+  } else {
+    console.log("ℹ️ Demo Company already exists");
+  }
+
+  // -----------------------------------------
+  // Permissions
+  // -----------------------------------------
+
+  await seedPermissions();
 
   console.log("");
   console.log("===================================");
-  console.log("Seed completed successfully");
+  console.log("✅ Database seeded successfully");
   console.log("===================================");
   console.log("");
-  console.log("Login");
   console.log(`Email    : ${ADMIN_EMAIL}`);
   console.log(`Password : ${DEFAULT_PASSWORD}`);
 }

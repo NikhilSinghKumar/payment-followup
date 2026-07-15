@@ -16,6 +16,7 @@ import { enrichInvoices } from "@/lib/invoice-summary";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { eq, sql, ilike, isNull, or, and, ne, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getCurrentUser } from "@/lib/auth/auth";
 
 export async function getInvoices(
   search,
@@ -184,6 +185,18 @@ export async function createInvoice(formData) {
     ? new Date(formData.get("dueDate"))
     : null;
 
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser.user) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!currentUser.companyId) {
+    throw new Error("User is not associated with a company.");
+  }
+
+  const companyId = currentUser.companyId;
+
   // =====================================
   // VALIDATION
   // =====================================
@@ -254,6 +267,7 @@ export async function createInvoice(formData) {
   // =====================================
 
   await db.insert(invoices).values({
+    companyId,
     clientId,
     financialYear,
 

@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { clients } from "@/db/schema";
 import { ilike, or, and, sql, eq, isNull } from "drizzle-orm";
+import { getCurrentUser } from "@/lib/auth/auth";
 
 // Create client
 export async function createClient(prevState, formData) {
@@ -13,6 +14,16 @@ export async function createClient(prevState, formData) {
   const gstNumber = formData.get("gstNumber");
 
   const tdsApplicable = formData.get("tdsApplicable") === "on";
+
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser.user) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!currentUser.companyId) {
+    throw new Error("User is not associated with a company.");
+  }
 
   if (!companyName) {
     throw new Error("Company name is required");
@@ -28,6 +39,7 @@ export async function createClient(prevState, formData) {
 
   try {
     await db.insert(clients).values({
+      companyId: currentUser.companyId,
       companyName,
       companyCode,
       email,
@@ -38,7 +50,12 @@ export async function createClient(prevState, formData) {
 
     return { success: true };
   } catch (err) {
-    return { error: "Client already exists or failed" };
+    console.error("Create Client Error:");
+    console.error(err);
+
+    return {
+      error: err.message,
+    };
   }
 }
 
