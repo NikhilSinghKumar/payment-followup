@@ -12,7 +12,7 @@ export default function ExportInvoicesButton() {
       href={href}
       className="h-[40px] px-4 flex items-center rounded-lg text-sm font-medium border border-zinc-300 bg-white dark:text-zinc-500 hover:bg-zinc-50 transition"
     >
-      Export CSV
+      Export Invoices
     </a>
   );
 }

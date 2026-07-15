@@ -37,7 +37,7 @@ export default function SearchBox() {
       placeholder="Search..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
-      className="py-2 px-3 rounded-lg border border-zinc-300 text-sm bg-white dark:placeholder:text-zinc-500 dark:text-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      className="py-2 px-4 rounded-lg border border-zinc-300 text-sm bg-white dark:placeholder:text-zinc-500 dark:text-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
     />
   );
 }

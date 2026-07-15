@@ -1,16 +1,16 @@
-import { getInvoices, getFinancialYears } from "../actions/invoice";
+import { getInvoices, getFinancialYears } from "../../actions/invoice";
 import Link from "next/link";
-import ImportInvoices from "../components/ImportInvoices";
-import SearchBox from "../components/SearchBox";
-import FilterDropdown from "../components/FilterDropdown";
-import DeleteInvoiceButton from "../components/DeleteInvoiceButton";
-import SortDropdown from "../components/invoice/SortDropdown";
-import AgingFilterDropdown from "../components/invoice/AgingFilterDropdown";
-import FinancialYearFilterDropdown from "../components/invoice/FinancialYearFilterDropdown";
-import MonthFilterDropdown from "../components/invoice/MonthFilterDropdown";
-import AmountRangeFilterDropdown from "../components/invoice/AmountRangeFilterDropdown";
-import AlphabetDropdown from "../components/invoice/AlphabetDropdown";
-import ExportInvoicesButton from "../components/invoice/ExportInvoicesButton";
+import ImportInvoices from "../../components/ImportInvoices";
+import SearchBox from "../../components/SearchBox";
+import FilterDropdown from "../../components/FilterDropdown";
+import DeleteInvoiceButton from "../../components/DeleteInvoiceButton";
+import SortDropdown from "../../components/invoice/SortDropdown";
+import AgingFilterDropdown from "../../components/invoice/AgingFilterDropdown";
+import FinancialYearFilterDropdown from "../../components/invoice/FinancialYearFilterDropdown";
+import MonthFilterDropdown from "../../components/invoice/MonthFilterDropdown";
+import AmountRangeFilterDropdown from "../../components/invoice/AmountRangeFilterDropdown";
+import AlphabetDropdown from "../../components/invoice/AlphabetDropdown";
+import ExportInvoicesButton from "../../components/invoice/ExportInvoicesButton";
 
 export default async function InvoicePage({ searchParams }) {
   const resolvedParams = await searchParams;
@@ -40,19 +40,8 @@ export default async function InvoicePage({ searchParams }) {
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-6">
-      <div className="h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400 mb-6" />
-
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <h1 className="text-3xl font-semibold text-zinc-800">
-            Invoice List of All Clients
-          </h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Track, manage, and import invoices
-          </p>
-        </div>
-
+    <div className="bg-zinc-50">
+      <div className="flex items-center justify-center mb-2">
         <div className="flex items-center gap-2">
           <SearchBox />
           <ImportInvoices />
@@ -68,22 +57,15 @@ export default async function InvoicePage({ searchParams }) {
             href="/api/import-invoice-sample"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium text-zinc-500 border border-zinc-200 underline p-2 rounded-lg"
+            className="text-sm font-medium text-zinc-500 border border-zinc-200 underline py-2 px-3 rounded-lg"
           >
-            Sample CSV
+            Sample(csv)
           </a>
-
-          <Link
-            href="/clients"
-            className="h-[40px] px-4 flex items-center rounded-lg text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 border border-zinc-300 text-white hover:bg-zinc-100 hover:scale-[1.03] transition"
-          >
-            Client List
-          </Link>
           <ExportInvoicesButton />
         </div>
       </div>
 
-      <div className="flex justify-end items-center gap-2 mb-6">
+      <div className="flex justify-center items-center gap-2 mb-6">
         <AlphabetDropdown />
         <FilterDropdown />
         <SortDropdown />
@@ -100,14 +82,14 @@ export default async function InvoicePage({ searchParams }) {
             grid
             grid-cols-[80px_2fr_1fr_1fr_1fr_1.2fr_1fr_1fr_260px]
             items-center
-            px-5 py-3
+            px-5 py-2
             bg-zinc-50
             border-b border-zinc-200
             text-sm font-semibold text-zinc-600
           "
         >
           <div>S.N.</div>
-          <div className="text-center">Company</div>
+          <div className="">Company</div>
           <div className="text-center">Invoice No.</div>
           <div className="text-center">Amount</div>
           <div className="text-center">Paid</div>
@@ -139,7 +121,7 @@ export default async function InvoicePage({ searchParams }) {
             grid
             grid-cols-[80px_2fr_1fr_1fr_1fr_1.2fr_1fr_1fr_260px]
             items-center
-            px-5 py-3
+            px-5 py-1
             text-sm
             border-b border-zinc-100
             hover:bg-zinc-50
@@ -165,12 +147,12 @@ export default async function InvoicePage({ searchParams }) {
                 </div>
 
                 {/* Paid */}
-                <div className="font-medium text-emerald-600 whitespace-nowrap">
+                <div className="font-medium text-center text-emerald-600 whitespace-nowrap">
                   ₹{Number(inv.paid).toLocaleString("en-IN")}
                 </div>
 
                 {/* Due */}
-                <div className="font-medium text-red-600 whitespace-nowrap">
+                <div className="font-medium text-center text-red-600 whitespace-nowrap">
                   ₹{Number(inv.due).toLocaleString("en-IN")}
                 </div>
 
