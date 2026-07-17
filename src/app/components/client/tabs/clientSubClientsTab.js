@@ -13,12 +13,6 @@ export default function ClientSubClientsTab({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-zinc-800">Sub Clients</h3>
-          <p className="text-sm text-zinc-500">
-            Manage sub clients under parent clients
-          </p>
-        </div>
         <div className="flex items-center justify-end gap-2">
           <Link
             href={`/clients/${client.id}/sub-clients/new`}

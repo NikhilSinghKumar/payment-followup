@@ -57,15 +57,15 @@ export default function ClientOverviewTab({ client, invoices = [] }) {
                 key={invoice.id}
                 href={`/invoices/${invoice.id}`}
                 className="
-      grid
-      grid-cols-[1.6fr_150px_130px_150px_180px_120px_50px]
-      items-center
-      gap-4
-      border-b border-zinc-100
-      px-5 py-4
-      transition-all
-      hover:bg-blue-50/40
-    "
+                  grid
+                  grid-cols-[1.6fr_150px_130px_150px_180px_120px_50px]
+                  items-center
+                  gap-2
+                  border-b border-zinc-100
+                  px-5 py-2
+                  transition-all
+                  hover:bg-blue-50/40
+                "
               >
                 {/* ===================================== */}
                 {/* Invoice */}

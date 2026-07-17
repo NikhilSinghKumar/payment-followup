@@ -16,11 +16,18 @@ import {
   sessions,
   companies,
   companyUsers,
+  notifications,
+  notificationLogs,
+  notificationSettings,
+  notificationTemplates,
+  notificationPreferences,
 } from "./schema";
 
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   companyUsers: many(companyUsers),
+  notifications: many(notifications),
+  notificationPreferences: many(notificationPreferences),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -30,12 +37,17 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
   }),
 }));
 
-export const companiesRelations = relations(companies, ({ many }) => ({
+export const companiesRelations = relations(companies, ({ one, many }) => ({
   companyUsers: many(companyUsers),
   clients: many(clients),
   invoices: many(invoices),
   payments: many(payments),
   followups: many(followups),
+  notifications: many(notifications),
+  notificationLogs: many(notificationLogs),
+  notificationSettings: one(notificationSettings),
+  notificationTemplates: many(notificationTemplates),
+  notificationPreferences: many(notificationPreferences),
 }));
 
 export const companyUsersRelations = relations(companyUsers, ({ one }) => ({
@@ -65,6 +77,8 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   invoices: many(invoices),
   payments: many(payments),
   subClients: many(clientSubClients),
+  notifications: many(notifications),
+  notificationLogs: many(notificationLogs),
 }));
 
 export const clientLocationsRelations = relations(
@@ -158,6 +172,8 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   payments: many(payments),
   followups: many(followups),
   awbs: many(invoiceAwbs),
+  notifications: many(notifications),
+  notificationLogs: many(notificationLogs),
 }));
 
 export const paymentsRelations = relations(payments, ({ one, many }) => ({
@@ -177,6 +193,8 @@ export const paymentsRelations = relations(payments, ({ one, many }) => ({
   }),
 
   allocations: many(paymentAllocations),
+  notifications: many(notifications),
+  notificationLogs: many(notificationLogs),
 }));
 
 export const paymentAllocationsRelations = relations(
@@ -212,3 +230,90 @@ export const invoiceAwbsRelations = relations(invoiceAwbs, ({ one }) => ({
     references: [invoices.id],
   }),
 }));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  company: one(companies, {
+    fields: [notifications.companyId],
+    references: [companies.id],
+  }),
+
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+
+  client: one(clients, {
+    fields: [notifications.clientId],
+    references: [clients.id],
+  }),
+
+  invoice: one(invoices, {
+    fields: [notifications.invoiceId],
+    references: [invoices.id],
+  }),
+
+  payment: one(payments, {
+    fields: [notifications.paymentId],
+    references: [payments.id],
+  }),
+}));
+
+export const notificationLogsRelations = relations(
+  notificationLogs,
+  ({ one }) => ({
+    company: one(companies, {
+      fields: [notificationLogs.companyId],
+      references: [companies.id],
+    }),
+
+    client: one(clients, {
+      fields: [notificationLogs.clientId],
+      references: [clients.id],
+    }),
+
+    invoice: one(invoices, {
+      fields: [notificationLogs.invoiceId],
+      references: [invoices.id],
+    }),
+
+    payment: one(payments, {
+      fields: [notificationLogs.paymentId],
+      references: [payments.id],
+    }),
+  }),
+);
+
+export const notificationSettingsRelations = relations(
+  notificationSettings,
+  ({ one }) => ({
+    company: one(companies, {
+      fields: [notificationSettings.companyId],
+      references: [companies.id],
+    }),
+  }),
+);
+
+export const notificationTemplatesRelations = relations(
+  notificationTemplates,
+  ({ one }) => ({
+    company: one(companies, {
+      fields: [notificationTemplates.companyId],
+      references: [companies.id],
+    }),
+  }),
+);
+
+export const notificationPreferencesRelations = relations(
+  notificationPreferences,
+  ({ one }) => ({
+    company: one(companies, {
+      fields: [notificationPreferences.companyId],
+      references: [companies.id],
+    }),
+
+    user: one(users, {
+      fields: [notificationPreferences.userId],
+      references: [users.id],
+    }),
+  }),
+);

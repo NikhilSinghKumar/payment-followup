@@ -15,9 +15,8 @@ export default function SubClientForm({
   const [state, formAction] = useActionState(formServerAction, {});
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
+    <div className="bg-zinc-50 flex items-center justify-center">
       <div className="w-full max-w-xl">
-        <div className="h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400 mb-5" />
         <div className="mb-6 flex items-center gap-2 text-sm text-zinc-500">
           <Link href="/clients" className="hover:text-blue-600 hover:underline">
             Clients
@@ -89,7 +88,6 @@ export default function SubClientForm({
             {/* Company Name */}
             {isEdit && (
               <>
-                {" "}
                 <input type="hidden" name="clientId" value={clientId} />
                 <input type="hidden" name="id" value={subClient.id} />
               </>
@@ -107,34 +105,36 @@ export default function SubClientForm({
               />
             </div>
 
-            {/* Company Code */}
-            <div>
-              <label className="mb-1 block text-sm text-zinc-600">
-                Company Code *
-              </label>
+            <div className="flex gap-2">
+              {/* Company Code */}
+              <div>
+                <label className="mb-1 block text-sm text-zinc-600">
+                  Company Code *
+                </label>
 
-              <input
-                name="companyCode"
-                placeholder="e.g. OTBLR"
-                required
-                defaultValue={subClient?.companyCode ?? ""}
-                className="input-primary input-primary focus:ring-blue-500 caret-blue-500"
-              />
-            </div>
+                <input
+                  name="companyCode"
+                  placeholder="e.g. OTBLR"
+                  required
+                  defaultValue={subClient?.companyCode ?? ""}
+                  className="input-primary input-primary focus:ring-blue-500 caret-blue-500"
+                />
+              </div>
 
-            {/* GST */}
-            <div>
-              <label className="mb-1 block text-sm text-zinc-600">
-                GST Number *
-              </label>
+              {/* GST */}
+              <div>
+                <label className="mb-1 block text-sm text-zinc-600">
+                  GST Number *
+                </label>
 
-              <input
-                name="gstNumber"
-                required
-                placeholder="29ABCDE1234F1Z5"
-                defaultValue={subClient?.gstNumber ?? ""}
-                className="input-primary input-primary focus:ring-blue-500 caret-blue-500"
-              />
+                <input
+                  name="gstNumber"
+                  required
+                  placeholder="29ABCDE1234F1Z5"
+                  defaultValue={subClient?.gstNumber ?? ""}
+                  className="input-primary input-primary focus:ring-blue-500 caret-blue-500"
+                />
+              </div>
             </div>
 
             {/* Address */}

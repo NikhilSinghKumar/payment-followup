@@ -11,16 +11,6 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
       {/* ===================================== */}
 
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-800">
-            Client Invoics
-          </h2>
-
-          <p className="mt-1 text-sm text-zinc-500">
-            List of invoices of this client
-          </p>
-        </div>
-
         <div className="flex items-center justify-end gap-2">
           <DownloadInvoiceSample />
 
@@ -38,9 +28,9 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
         {/* TABLE HEADER */}
-        <div className="grid grid-cols-[1.3fr_90px_90px_120px_120px_120px_120px_140px_100px] gap-3 border-b border-zinc-200 bg-zinc-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+        <div className="grid grid-cols-[2fr_80px_80px_120px_120px_120px_120px_140px_100px] gap-2 border-b border-zinc-200 bg-zinc-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-600">
           <div>Invoice</div>
-          <div>AWB Count</div>
+          <div>AWB</div>
           <div>FY</div>
           <div>Invoice Amount</div>
           <div>Net Payable</div>

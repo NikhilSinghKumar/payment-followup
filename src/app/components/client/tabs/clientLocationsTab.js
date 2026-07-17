@@ -26,16 +26,6 @@ export default function ClientLocationsTab({ clientId, locations = [] }) {
       {/* ===================================== */}
 
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-800">
-            Client Locations
-          </h2>
-
-          <p className="mt-1 text-sm text-zinc-500">
-            Manage different locations of your client.
-          </p>
-        </div>
-
         <div className="flex items-center justify-end gap-4">
           <Link
             href={`/clients/${clientId}/locations/new`}

@@ -5,6 +5,7 @@ import {
   text,
   integer,
   numeric,
+  varchar,
   timestamp,
   date,
   boolean,
@@ -1252,4 +1253,334 @@ export const followups = pgTable(
       followupDateIdx: index("followup_date_idx").on(table.followupDate),
     };
   },
+);
+
+// =========================
+// NOTIFICATIONS
+// =========================
+
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "SYSTEM",
+  "INVOICE",
+  "PAYMENT",
+  "CLIENT",
+  "FOLLOWUP",
+  "EMAIL",
+]);
+
+export const notificationPriorityEnum = pgEnum("notification_priority", [
+  "LOW",
+  "MEDIUM",
+  "HIGH",
+  "CRITICAL",
+]);
+
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: serial("id").primaryKey(),
+
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+
+    userId: integer("user_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
+
+    clientId: integer("client_id").references(() => clients.id, {
+      onDelete: "set null",
+    }),
+
+    invoiceId: integer("invoice_id").references(() => invoices.id, {
+      onDelete: "set null",
+    }),
+
+    paymentId: integer("payment_id").references(() => payments.id, {
+      onDelete: "set null",
+    }),
+
+    type: notificationTypeEnum("type").notNull(),
+
+    priority: notificationPriorityEnum("priority").default("LOW").notNull(),
+
+    title: text("title").notNull(),
+
+    message: text("message").notNull(),
+
+    actionUrl: text("action_url"),
+
+    icon: varchar("icon", { length: 50 }),
+
+    color: varchar("color", { length: 20 }),
+
+    isRead: boolean("is_read").default(false).notNull(),
+
+    readAt: timestamp("read_at"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("notifications_company_idx").on(table.companyId),
+    userIdx: index("notifications_user_idx").on(table.userId),
+    readIdx: index("notifications_read_idx").on(table.isRead),
+    createdIdx: index("notifications_created_idx").on(table.createdAt),
+  }),
+);
+
+// =========================
+// NOTIFICATION LOGS
+// =========================
+
+export const notificationChannelEnum = pgEnum("notification_channel", [
+  "EMAIL",
+  "SMS",
+  "WHATSAPP",
+  "IN_APP",
+]);
+
+export const notificationStatusEnum = pgEnum("notification_status", [
+  "PENDING",
+  "SENT",
+  "DELIVERED",
+  "FAILED",
+  "OPENED",
+]);
+
+export const emailTypeEnum = pgEnum("email_type", [
+  "BILL_SUBMITTED",
+  "DUE_REMINDER",
+  "OVERDUE_REMINDER",
+  "FINAL_REMINDER",
+  "PAYMENT_RECEIVED",
+  "PAYMENT_CLEARED",
+  "BLOCK_NOTICE",
+]);
+
+export const notificationLogs = pgTable(
+  "notification_logs",
+  {
+    id: serial("id").primaryKey(),
+
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+
+    clientId: integer("client_id").references(() => clients.id),
+
+    invoiceId: integer("invoice_id").references(() => invoices.id),
+
+    paymentId: integer("payment_id").references(() => payments.id),
+
+    channel: notificationChannelEnum("channel").default("EMAIL").notNull(),
+
+    emailType: emailTypeEnum("email_type"),
+
+    recipient: text("recipient").notNull(),
+
+    subject: text("subject"),
+
+    status: notificationStatusEnum("status").default("PENDING").notNull(),
+
+    errorMessage: text("error_message"),
+
+    sentAt: timestamp("sent_at"),
+
+    deliveredAt: timestamp("delivered_at"),
+
+    openedAt: timestamp("opened_at"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("notification_logs_company_idx").on(table.companyId),
+    invoiceIdx: index("notification_logs_invoice_idx").on(table.invoiceId),
+    clientIdx: index("notification_logs_client_idx").on(table.clientId),
+    statusIdx: index("notification_logs_status_idx").on(table.status),
+    createdIdx: index("notification_logs_created_idx").on(table.createdAt),
+  }),
+);
+
+// =========================
+// NOTIFICATIONS SETTINGS
+// =========================
+export const notificationSettings = pgTable(
+  "notification_settings",
+  {
+    id: serial("id").primaryKey(),
+
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, {
+        onDelete: "cascade",
+      }),
+
+    sendBillSubmission: boolean("send_bill_submission").default(true).notNull(),
+
+    reminderBeforeDue: boolean("reminder_before_due").default(true).notNull(),
+
+    reminderDaysBefore: integer("reminder_days_before").default(2).notNull(),
+
+    sendDueTodayNotification: boolean("send_due_today_notification")
+      .default(true)
+      .notNull(),
+
+    sendOverdueReminder: boolean("send_overdue_reminder")
+      .default(true)
+      .notNull(),
+
+    overdueReminderDays: integer("overdue_reminder_days").default(10).notNull(),
+
+    sendPaymentConfirmation: boolean("send_payment_confirmation")
+      .default(true)
+      .notNull(),
+
+    sendInvoicePdf: boolean("send_invoice_pdf").default(true).notNull(),
+
+    ccAccountsEmail: text("cc_accounts_email"),
+
+    ccSalesEmail: text("cc_sales_email"),
+
+    notifyManager: boolean("notify_manager").default(false).notNull(),
+
+    businessStartHour: integer("business_start_hour").default(9).notNull(),
+
+    businessEndHour: integer("business_end_hour").default(18).notNull(),
+
+    skipWeekends: boolean("skip_weekends").default(false).notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    companyUnique: uniqueIndex("notification_settings_company_uidx").on(
+      table.companyId,
+    ),
+  }),
+);
+
+// =========================
+// NOTIFICATION TEMPLATES
+// =========================
+
+export const templateTypeEnum = pgEnum("template_type", [
+  "BILL_SUBMITTED",
+  "DUE_REMINDER",
+  "OVERDUE_REMINDER",
+  "FINAL_REMINDER",
+  "PAYMENT_RECEIVED",
+  "PAYMENT_CLEARED",
+  "INTERNAL_DUE_TODAY",
+  "BLOCK_RECOMMENDATION",
+]);
+
+export const notificationTemplates = pgTable(
+  "notification_templates",
+  {
+    id: serial("id").primaryKey(),
+
+    companyId: integer("company_id").references(() => companies.id, {
+      onDelete: "cascade",
+    }),
+
+    type: templateTypeEnum("type").notNull(),
+
+    name: varchar("name", { length: 100 }).notNull(),
+
+    subject: text("subject").notNull(),
+
+    body: text("body").notNull(),
+
+    isDefault: boolean("is_default").default(false).notNull(),
+
+    isActive: boolean("is_active").default(true).notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    companyIdx: index("notification_templates_company_idx").on(table.companyId),
+
+    typeIdx: index("notification_templates_type_idx").on(table.type),
+
+    activeIdx: index("notification_templates_active_idx").on(table.isActive),
+  }),
+);
+
+// =========================
+// NOTIFICATION PREFRENCES
+// =========================
+
+export const notificationPreferenceTypeEnum = pgEnum(
+  "notification_preference_type",
+  [
+    "INVOICE_CREATED",
+    "INVOICE_DUE",
+    "PAYMENT_RECEIVED",
+    "PAYMENT_CLEARED",
+    "CLIENT_OVERDUE",
+    "FOLLOWUP_DUE",
+    "EMAIL_FAILED",
+    "SYSTEM",
+    "BLOCK_RECOMMENDATION",
+  ],
+);
+
+export const notificationDeliveryChannelEnum = pgEnum(
+  "notification_delivery_channel",
+  ["IN_APP", "EMAIL", "SMS", "WHATSAPP"],
+);
+
+export const notificationPreferences = pgTable(
+  "notification_preferences",
+  {
+    id: serial("id").primaryKey(),
+
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, {
+        onDelete: "cascade",
+      }),
+
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "cascade",
+      }),
+
+    type: notificationPreferenceTypeEnum("type").notNull(),
+
+    channel: notificationDeliveryChannelEnum("channel")
+      .default("IN_APP")
+      .notNull(),
+
+    enabled: boolean("enabled").default(true).notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    companyIdx: index("notification_preferences_company_idx").on(
+      table.companyId,
+    ),
+
+    userIdx: index("notification_preferences_user_idx").on(table.userId),
+
+    uniquePreference: uniqueIndex("notification_preferences_unique").on(
+      table.userId,
+      table.type,
+      table.channel,
+    ),
+  }),
 );

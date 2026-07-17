@@ -24,16 +24,6 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
       {/* ===================================== */}
 
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-800">
-            Client Contacts
-          </h2>
-
-          <p className="mt-1 text-sm text-zinc-500">
-            Manage payment followup contacts.
-          </p>
-        </div>
-
         <div className="flex gap-2">
           <Link
             href={`/clients/${clientId}/contacts/new`}

@@ -57,9 +57,7 @@ Total: ${data.summary.total}
     <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md border border-zinc-200 px-2 rounded-xl shadow-sm">
       {/* File Picker */}
       <label className="flex items-center gap-2 cursor-pointer text-sm text-zinc-600 hover:text-zinc-800 transition">
-        <span className="max-w-[140px] truncate">
-          {file ? file.name : "Choose file"}
-        </span>
+        <span>{file ? truncateFileName(file.name, 10) : "Choose file"}</span>
 
         <input
           type="file"
