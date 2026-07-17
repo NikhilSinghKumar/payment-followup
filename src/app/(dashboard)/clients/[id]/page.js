@@ -157,26 +157,21 @@ export default async function ClientDetailPage({ params, searchParams }) {
   );
 
   return (
-    <div className="min-h-screen p-4 bg-zinc-50 md:p-6">
-      <div className="h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400 mb-6"></div>
+    <div className="bg-zinc-50">
       {/* ===================================== */}
       {/* PAGE WRAPPER */}
       {/* ===================================== */}
 
-      <div className="mx-auto max-w-7xl space-y-4">
+      <div className="mx-auto max-w-7xl p-2 space-y-4">
         {/* ===================================== */}
         {/* HEADER */}
         {/* ===================================== */}
 
-        <div className="bg-white p-5">
+        <div className="">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             {/* LEFT */}
             <div>
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 text-lg font-semibold text-white">
-                  {client.companyName?.charAt(0)}
-                </div>
-
                 <div>
                   <h1 className="text-2xl font-semibold text-zinc-800">
                     {client.companyName}
@@ -200,16 +195,6 @@ export default async function ClientDetailPage({ params, searchParams }) {
                   {client.address}
                 </p>
               )}
-            </div>
-
-            {/* ACTIONS */}
-            <div className="flex items-center gap-2">
-              <Link
-                href="/clients"
-                className="rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-600 transition hover:bg-zinc-100"
-              >
-                ← Back to Clients
-              </Link>
             </div>
           </div>
         </div>

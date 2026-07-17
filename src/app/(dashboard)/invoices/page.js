@@ -62,6 +62,13 @@ export default async function InvoicePage({ searchParams }) {
             Sample(csv)
           </a>
           <ExportInvoicesButton />
+
+          <Link
+            href={``}
+            className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
+          >
+            + New Invoice
+          </Link>
         </div>
       </div>
 

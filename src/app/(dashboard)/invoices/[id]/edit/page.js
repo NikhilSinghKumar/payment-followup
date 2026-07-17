@@ -22,12 +22,9 @@ export default async function EditInvoicePage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-4 flex items-center justify-center">
+    <div className="bg-zinc-50 flex items-center justify-center">
       {/* Container */}
       <div className="w-full max-w-4xl">
-        {/* Accent */}
-        <div className="h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400 mb-4" />
-
         {/* Card */}
         <div className="bg-white border border-zinc-200 rounded-xl shadow-sm p-4">
           <div className="mb-4">

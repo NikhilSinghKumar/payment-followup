@@ -38,9 +38,9 @@ export default function ImportInvoices() {
       alert(`
 Import Completed
 
-Inserted: ${data.inserted}
-Skipped: ${data.skipped}
-Total: ${data.total}
+Inserted: ${data.summary.inserted}
+Skipped: ${data.summary.skipped}
+Total: ${data.summary.total}
 `);
 
       // ✅ reset file after upload

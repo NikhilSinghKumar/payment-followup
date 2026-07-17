@@ -173,12 +173,8 @@ export default function ClientContactForm({
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-6">
+    <div className="bg-zinc-50">
       <div className="mx-auto w-full max-w-4xl">
-        {/* TOP BAR */}
-
-        <div className="mb-5 h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400" />
-
         {/* BREADCRUMB */}
 
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -201,15 +197,6 @@ export default function ClientContactForm({
 
               <span className="text-zinc-800">{contact ? "Edit" : "New"}</span>
             </div>
-          </div>
-
-          <div>
-            <Link
-              href={`/clients/${clientId}?tab=contacts`}
-              className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
-            >
-              ← Back to Contacts
-            </Link>
           </div>
         </div>
 
@@ -244,7 +231,7 @@ export default function ClientContactForm({
 
           {/* CLIENT */}
 
-          <div className="mt-5 py-3">
+          <div className="py-3">
             <div className="mt-1 flex items-center gap-2">
               <p className="text-base font-semibold text-zinc-800">
                 {client.companyName}

@@ -12,8 +12,6 @@ export default function Topbar({
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  console.log("Topbar user:", user);
-
   useEffect(() => {
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {

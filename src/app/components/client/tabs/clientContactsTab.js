@@ -80,14 +80,6 @@ export default function ClientContactsTab({ clientId, contacts = [] }) {
           {/* ===================================== */}
 
           <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-            {/* SEARCH */}
-            <div className="border-b border-zinc-200 p-4">
-              <input
-                placeholder="Search contacts..."
-                className="input-primary"
-              />
-            </div>
-
             {/* CONTACT LIST */}
             <div className="divide-y divide-zinc-100">
               {sortedContacts.map((contact, index) => {

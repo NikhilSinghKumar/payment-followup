@@ -30,7 +30,7 @@ export default function InvoiceForm({
   }
 
   return (
-    <form action={action} className="space-y-6">
+    <form action={action}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left */}
         <div className="lg:col-span-2">
@@ -54,14 +54,7 @@ export default function InvoiceForm({
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-2">
-        <Link
-          href="/invoices"
-          className="text-sm text-zinc-500 hover:text-blue-500 transition-colors"
-        >
-          ← Back to Invoice List
-        </Link>
-
+      <div className="flex items-center justify-end pt-2">
         <button
           type="submit"
           className="h-9 px-5 rounded-lg text-white text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200"

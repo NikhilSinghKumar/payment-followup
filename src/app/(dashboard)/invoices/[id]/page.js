@@ -32,8 +32,7 @@ export default async function InvoiceDetailPage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-6">
-      <div className="h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400 mb-6" />
+    <div className="bg-zinc-50 p-2">
       <div className="mx-auto space-y-4">
         {/* SUMMARY */}
         <InvoiceSummary data={summary} />

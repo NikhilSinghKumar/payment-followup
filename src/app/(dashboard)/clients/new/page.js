@@ -1,14 +1,15 @@
 "use client";
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { createClient } from "../../../actions/client";
+import Alert from "@/app/components/ui/Alert";
 import Link from "next/link";
 
 export default function NewClientPage() {
   const [state, formAction] = useActionState(createClient, {});
+
   return (
-    <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
+    <div className="bg-zinc-50 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-        <div className="h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-400 mb-5" />
         {/* Card */}
         <div className="w-full max-w-xl bg-white/80 backdrop-blur-md rounded-2xl shadow-md border border-zinc-200 p-6">
           {/* Header */}
@@ -21,17 +22,11 @@ export default function NewClientPage() {
             </p>
           </div>
 
-          {state?.error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-600 rounded">
-              {state.error}
-            </div>
-          )}
-
-          {state?.success && (
-            <div className="mb-4 p-3 bg-green-100 text-green-600 rounded">
-              Client created successfully
-            </div>
-          )}
+          <Alert
+            key={state?.success || state?.error}
+            success={state?.success ? "Client created successfully." : null}
+            error={state?.error}
+          />
 
           {/* Form */}
           <form action={formAction} className="space-y-4">
@@ -57,6 +52,7 @@ export default function NewClientPage() {
                 name="companyCode"
                 placeholder="e.g. ABC123"
                 required
+                style={{ textTransform: "uppercase" }}
                 className="input-primary focus:ring-blue-500 caret-blue-500"
               />
             </div>
@@ -90,6 +86,8 @@ export default function NewClientPage() {
                 name="gstNumber"
                 placeholder="e.g. 07ABCDE1234F1Z5"
                 className="input-primary focus:ring-blue-500 caret-blue-500"
+                maxLength={15}
+                style={{ textTransform: "uppercase" }}
               />
             </div>
 
@@ -112,17 +110,10 @@ export default function NewClientPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className=" w-full h-[40px] px-4 py-2 rounded-lg text-white text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.02]"
+              className=" w-full h-[40px] mb-4 px-4 py-2 rounded-lg text-white text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.02]"
             >
               Save Client
             </button>
-
-            <Link
-              href="/clients"
-              className="text-sm text-blue-500 hover:underline"
-            >
-              ← Back to Clients
-            </Link>
           </form>
         </div>
       </div>

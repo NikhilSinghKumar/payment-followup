@@ -5,10 +5,12 @@ export async function getCurrentUser() {
   const sessionToken = await getSessionCookie();
 
   if (!sessionToken) {
-    return null;
+    return {
+      session: null,
+      user: null,
+      companyId: null,
+    };
   }
 
-  const auth = await validateSession(sessionToken);
-
-  return auth.user;
+  return await validateSession(sessionToken);
 }

@@ -8,33 +8,37 @@ import { getCurrentUser } from "@/lib/auth/auth";
 // Create client
 export async function createClient(prevState, formData) {
   const companyName = formData.get("companyName");
-  const companyCode = formData.get("companyCode");
+  const companyCode = formData.get("companyCode")?.trim().toUpperCase();
   const email = formData.get("email");
   const phone = formData.get("phone");
-  const gstNumber = formData.get("gstNumber");
+  const gstNumber = formData.get("gstNumber")?.trim().toUpperCase();
 
   const tdsApplicable = formData.get("tdsApplicable") === "on";
 
   const currentUser = await getCurrentUser();
 
   if (!currentUser.user) {
-    throw new Error("Unauthorized");
+    return {
+      error: "Unauthorized",
+    };
   }
 
   if (!currentUser.companyId) {
-    throw new Error("User is not associated with a company.");
+    return {
+      error: "User is not associated with a company.",
+    };
   }
 
   if (!companyName) {
-    throw new Error("Company name is required");
+    return { error: "Company name is required" };
   }
 
   if (!companyCode) {
-    throw new Error("Company code is required");
+    return { error: "Company code is required" };
   }
 
   if (!gstNumber) {
-    throw new Error("GST No. is required");
+    return { error: "GST No. is required" };
   }
 
   try {
