@@ -1,11 +1,12 @@
 import { createInvoice } from "@/app/actions/invoice";
-import { getClientById } from "@/app/actions/client";
+import { getClientById, getClients } from "@/app/actions/client";
 import InvoiceForm from "@/app/components/invoice/InvoiceForm";
 
 export default async function NewInvoicePage({ searchParams }) {
   const params = await searchParams;
 
   const clientId = Number(params.clientId);
+  const clients = await getClients();
 
   let client = null;
 
@@ -35,6 +36,7 @@ export default async function NewInvoicePage({ searchParams }) {
           {/* Form */}
           <InvoiceForm
             client={client}
+            clients={clients}
             action={createInvoice}
             submitLabel="Save Invoice"
           />

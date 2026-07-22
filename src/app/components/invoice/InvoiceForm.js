@@ -7,6 +7,7 @@ import InvoiceSummary from "./InvoiceSummary";
 
 export default function InvoiceForm({
   client,
+  clients = [],
   action,
   invoice = {},
   submitLabel = "Save Invoice",
@@ -20,6 +21,8 @@ export default function InvoiceForm({
       : "",
   });
 
+  const [selectedClient, setSelectedClient] = useState(client);
+
   function handleChange(e) {
     const { name, value } = e.target;
 
@@ -29,6 +32,14 @@ export default function InvoiceForm({
     }));
   }
 
+  function handleClientChange(e) {
+    const id = Number(e.target.value);
+
+    const client = clients.find((c) => c.id === id);
+
+    setSelectedClient(client || null);
+  }
+
   return (
     <form action={action}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -36,9 +47,13 @@ export default function InvoiceForm({
         <div className="lg:col-span-2">
           <InvoiceBasicFields
             client={client}
+            clients={clients}
             invoice={invoice}
             values={values}
             onChange={handleChange}
+            handleClientChange={handleClientChange}
+            selectedClient={selectedClient}
+            setSelectedClient={setSelectedClient}
           />
         </div>
 
@@ -46,8 +61,8 @@ export default function InvoiceForm({
         <div>
           <InvoiceSummary
             invoiceAmount={values.invoiceAmount}
-            gstNumber={client?.gstNumber}
-            tdsApplicable={client?.tdsApplicable}
+            gstNumber={selectedClient?.gstNumber}
+            tdsApplicable={selectedClient?.tdsApplicable}
             deductionAmount={values.deductionAmount}
             otherCharges={values.otherCharges}
           />

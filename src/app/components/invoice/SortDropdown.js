@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function SortDropdown() {
@@ -8,22 +9,28 @@ export default function SortDropdown() {
 
   const currentSort = searchParams.get("sort") || "high";
 
-  function handleChange(e) {
+  function toggleSort() {
     const params = new URLSearchParams(searchParams);
 
-    params.set("sort", e.target.value);
+    const newSort = currentSort === "high" ? "low" : "high";
+
+    params.set("sort", newSort);
 
     router.push(`/invoices?${params.toString()}`);
   }
 
   return (
-    <select
-      value={currentSort}
-      onChange={handleChange}
-      className="h-[40px] px-3 rounded-lg border border-zinc-300 text-sm bg-white dark:text-zinc-500"
+    <button
+      onClick={toggleSort}
+      className="flex items-center gap-1 font-semibold transition"
     >
-      <option value="high">Highest</option>
-      <option value="low">Lowest</option>
-    </select>
+      <span>Amount</span>
+
+      {currentSort === "high" ? (
+        <ChevronDown size={16} />
+      ) : (
+        <ChevronUp size={16} />
+      )}
+    </button>
   );
 }

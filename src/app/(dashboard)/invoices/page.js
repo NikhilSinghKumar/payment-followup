@@ -8,7 +8,7 @@ import SortDropdown from "../../components/invoice/SortDropdown";
 import AgingFilterDropdown from "../../components/invoice/AgingFilterDropdown";
 import FinancialYearFilterDropdown from "../../components/invoice/FinancialYearFilterDropdown";
 import MonthFilterDropdown from "../../components/invoice/MonthFilterDropdown";
-import AmountRangeFilterDropdown from "../../components/invoice/AmountRangeFilterDropdown";
+import AmountRangeFilter from "../../components/invoice/AmountRangeFilter";
 import AlphabetDropdown from "../../components/invoice/AlphabetDropdown";
 import ExportInvoicesButton from "../../components/invoice/ExportInvoicesButton";
 
@@ -20,8 +20,10 @@ export default async function InvoicePage({ searchParams }) {
   const aging = resolvedParams?.aging || "";
   const financialYear = resolvedParams?.financialYear || "";
   const month = resolvedParams?.month || "";
-  const amountRange = resolvedParams?.amountRange || "";
   const alphabet = resolvedParams?.alphabet || "";
+
+  const minAmount = resolvedParams?.minAmount || "";
+  const maxAmount = resolvedParams?.maxAmount || "";
 
   const data = await getInvoices(
     query,
@@ -30,7 +32,8 @@ export default async function InvoicePage({ searchParams }) {
     aging,
     financialYear,
     month,
-    amountRange,
+    minAmount,
+    maxAmount,
     alphabet,
   );
 
@@ -64,7 +67,7 @@ export default async function InvoicePage({ searchParams }) {
           <ExportInvoicesButton />
 
           <Link
-            href={``}
+            href="/invoices/new"
             className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
           >
             + New Invoice
@@ -75,8 +78,7 @@ export default async function InvoicePage({ searchParams }) {
       <div className="flex justify-center items-center gap-2 mb-6">
         <AlphabetDropdown />
         <FilterDropdown />
-        <SortDropdown />
-        <AmountRangeFilterDropdown />
+        <AmountRangeFilter />
         <AgingFilterDropdown />
         <MonthFilterDropdown />
         <FinancialYearFilterDropdown years={years} />
@@ -98,7 +100,9 @@ export default async function InvoicePage({ searchParams }) {
           <div>S.N.</div>
           <div className="">Company</div>
           <div className="text-center">Invoice No.</div>
-          <div className="text-center">Amount</div>
+          <div className="text-center">
+            <SortDropdown />
+          </div>
           <div className="text-center">Paid</div>
           <div className="text-center">Due</div>
           <div className="text-center">Due Date</div>
@@ -239,7 +243,7 @@ export default async function InvoicePage({ searchParams }) {
                   </Link>
 
                   {/* Delete */}
-                  <DeleteInvoiceButton invoiceId={inv.id} />
+                  {/* <DeleteInvoiceButton invoiceId={inv.id} /> */}
                 </div>
               </div>
             );

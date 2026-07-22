@@ -1,15 +1,46 @@
 "use client";
+import ClientCombobox from "@/app/components/ui/ClientCombobox";
 
 export default function InvoiceBasicFields({
   client,
+  clients,
   invoice = {},
   values,
   onChange,
+  handleClientChange,
+  selectedClient,
+  setSelectedClient,
 }) {
   return (
     <div className="space-y-4">
       {/* Hidden Fields */}
-      <input type="hidden" name="clientId" value={client?.id ?? ""} />
+      {/* <input type="hidden" name="clientId" value={client?.id ?? ""} /> */}
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-zinc-600">
+          Client <span className="text-red-500">*</span>
+        </label>
+        <ClientCombobox
+          clients={clients}
+          selectedClient={selectedClient}
+          onSelect={setSelectedClient}
+        />
+        {/* <select
+          name="clientId"
+          value={selectedClient?.id || ""}
+          onChange={handleClientChange}
+          className="input-primary"
+          required
+        >
+          <option value="">Select Client</option>
+
+          {clients.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.companyName}
+            </option>
+          ))}
+        </select> */}
+      </div>
+      {client && <input type="hidden" name="clientId" value={client.id} />}
       <input
         type="hidden"
         name="subClientId"
@@ -28,7 +59,7 @@ export default function InvoiceBasicFields({
 
           <input
             name="companyCode"
-            defaultValue={client?.companyCode ?? ""}
+            value={selectedClient?.companyCode || ""}
             readOnly
             className="input-primary bg-zinc-100 cursor-not-allowed"
           />
@@ -39,8 +70,8 @@ export default function InvoiceBasicFields({
           <label className="text-sm font-medium text-zinc-600">GST No.</label>
 
           <input
-            name="companyCode"
-            defaultValue={client?.gstNumber ?? ""}
+            name="gstNumber"
+            value={selectedClient?.gstNumber || ""}
             readOnly
             className="input-primary bg-zinc-100 cursor-not-allowed"
           />
