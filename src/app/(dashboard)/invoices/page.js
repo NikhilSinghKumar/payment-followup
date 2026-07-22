@@ -86,24 +86,14 @@ export default async function InvoicePage({ searchParams }) {
 
       <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
         {/* Header */}
-        <div
-          className="
-            grid
-            grid-cols-[80px_2fr_1fr_1fr_1fr_1.2fr_1fr_1fr_260px]
-            items-center
-            px-5 py-2
-            bg-zinc-50
-            border-b border-zinc-200
-            text-sm font-semibold text-zinc-600
-          "
-        >
+        <div className="grid grid-cols-[60px_2.4fr_1fr_1.3fr_1fr_1fr_110px_130px_180px] items-center px-5 py-2 bg-zinc-50 border-b border-zinc-200 text-sm font-semibold text-zinc-600">
           <div>S.N.</div>
           <div className="">Company</div>
           <div className="text-center">Invoice No.</div>
-          <div className="text-center">
+          <div className="text-center pl-4">
             <SortDropdown />
           </div>
-          <div className="text-center">Paid</div>
+          <div className="text-center ">Paid</div>
           <div className="text-center">Due</div>
           <div className="text-center">Due Date</div>
           <div className="text-center">Status</div>
@@ -128,16 +118,7 @@ export default async function InvoicePage({ searchParams }) {
             return (
               <div
                 key={inv.id}
-                className="
-            grid
-            grid-cols-[80px_2fr_1fr_1fr_1fr_1.2fr_1fr_1fr_260px]
-            items-center
-            px-5 py-1
-            text-sm
-            border-b border-zinc-100
-            hover:bg-zinc-50
-            transition-colors
-          "
+                className="grid grid-cols-[60px_2.4fr_1fr_1.3fr_1fr_1fr_110px_130px_180px] items-center px-5 py-1 text-sm border-b border-zinc-100 hover:bg-zinc-50 transition-colors"
               >
                 <div className="font-medium text-zinc-800 truncate pr-4">
                   {index + 1}
