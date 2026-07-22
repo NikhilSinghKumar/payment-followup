@@ -173,7 +173,7 @@ export default async function ClientsPage({ searchParams }) {
 
                 {/* Edit */}
                 <Link
-                  href={`/clients/${c.id}/edit`}
+                  href={`/(dashboard)/clients/${c.id}/edit`}
                   className="
                 h-8 px-3 inline-flex items-center justify-center
                 rounded-lg text-xs font-medium

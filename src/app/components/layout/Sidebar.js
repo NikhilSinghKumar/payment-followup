@@ -8,7 +8,7 @@ import SidebarItem from "./SidebarItem";
 
 export default function Sidebar() {
   return (
-    <aside className="flex h-screen w-64 flex-col border-r bg-white">
+    <aside className="flex h-screen w-58 flex-col border-r bg-white">
       {/* Logo */}
 
       <Link href="/dashboard" className="border-b px-6 py-6">

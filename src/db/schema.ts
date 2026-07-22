@@ -10,6 +10,7 @@ import {
   date,
   boolean,
   index,
+  jsonb,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
@@ -1260,12 +1261,36 @@ export const followups = pgTable(
 // =========================
 
 export const notificationTypeEnum = pgEnum("notification_type", [
+  // Invoice
+  "INVOICE_CREATED",
+  "BILL_SUBMITTED",
+  "INVOICE_DUE",
+  "DUE_REMINDER",
+  "OVERDUE_REMINDER",
+  "FINAL_REMINDER",
+
+  // Payment
+  "PAYMENT_RECEIVED",
+  "PAYMENT_CLEARED",
+
+  // Client
+  "CLIENT_CREATED",
+  "CLIENT_UPDATED",
+  "CLIENT_OVERDUE",
+  "SERVICE_SUSPENSION_NOTICE",
+  "SERVICE_SUSPENSION_ALERT",
+
+  // Followup
+  "FOLLOWUP_CREATED",
+  "FOLLOWUP_DUE",
+  "FOLLOWUP_COMPLETED",
+
+  // Email
+  "EMAIL_SENT",
+  "EMAIL_FAILED",
+
+  // System
   "SYSTEM",
-  "INVOICE",
-  "PAYMENT",
-  "CLIENT",
-  "FOLLOWUP",
-  "EMAIL",
 ]);
 
 export const notificationPriorityEnum = pgEnum("notification_priority", [
@@ -1319,6 +1344,7 @@ export const notifications = pgTable(
     readAt: timestamp("read_at"),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    archivedAt: timestamp("archived_at"),
   },
   (table) => ({
     companyIdx: index("notifications_company_idx").on(table.companyId),
@@ -1389,6 +1415,14 @@ export const notificationLogs = pgTable(
     deliveredAt: timestamp("delivered_at"),
 
     openedAt: timestamp("opened_at"),
+
+    provider: varchar("provider", { length: 50 }),
+
+    providerMessageId: text("provider_message_id"),
+
+    attempts: integer("attempts").default(1).notNull(),
+
+    metadata: jsonb("metadata"),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
@@ -1474,7 +1508,8 @@ export const templateTypeEnum = pgEnum("template_type", [
   "PAYMENT_RECEIVED",
   "PAYMENT_CLEARED",
   "INTERNAL_DUE_TODAY",
-  "BLOCK_RECOMMENDATION",
+  "SERVICE_SUSPENSION_NOTICE",
+  "SERVICE_SUSPENSION_ALERT",
 ]);
 
 export const notificationTemplates = pgTable(
@@ -1521,15 +1556,36 @@ export const notificationTemplates = pgTable(
 export const notificationPreferenceTypeEnum = pgEnum(
   "notification_preference_type",
   [
+    // Invoice
     "INVOICE_CREATED",
+    "BILL_SUBMITTED",
     "INVOICE_DUE",
+    "DUE_REMINDER",
+    "OVERDUE_REMINDER",
+    "FINAL_REMINDER",
+
+    // Payment
     "PAYMENT_RECEIVED",
     "PAYMENT_CLEARED",
+
+    // Client
+    "CLIENT_CREATED",
+    "CLIENT_UPDATED",
     "CLIENT_OVERDUE",
+    "SERVICE_SUSPENSION_NOTICE",
+    "SERVICE_SUSPENSION_ALERT",
+
+    // Followup
+    "FOLLOWUP_CREATED",
     "FOLLOWUP_DUE",
+    "FOLLOWUP_COMPLETED",
+
+    // Email
+    "EMAIL_SENT",
     "EMAIL_FAILED",
+
+    // System
     "SYSTEM",
-    "BLOCK_RECOMMENDATION",
   ],
 );
 

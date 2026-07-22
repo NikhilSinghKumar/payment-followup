@@ -14,6 +14,7 @@
  *   status: "pending" | "partial" | "paid" | "overdue"
  * }}
  */
+
 export function calculateInvoiceStatus({ netPayable, paid, dueDate }) {
   netPayable = Number(netPayable || 0);
   paid = Number(paid || 0);
@@ -42,6 +43,19 @@ export function calculateInvoiceStatus({ netPayable, paid, dueDate }) {
     }
   }
 
+  const DUE_REMINDER_DAYS = 7;
+  const SERVICE_SUSPENSION_DAYS = 10;
+
+  // NOW calculate flags
+  const isPaid = due <= 0;
+  const isPartial = paid > 0 && due > 0;
+  const isPending = paid === 0 && due > 0;
+
+  const isDueToday = due > 0 && dueDays === 0;
+  const isDueSoon = due > 0 && dueDays === -DUE_REMINDER_DAYS;
+  const isOverdue = due > 0 && dueDays > 0;
+  const shouldBlockClient = due > 0 && dueDays >= SERVICE_SUSPENSION_DAYS;
+
   let status = "pending";
 
   if (due <= 0) {
@@ -50,14 +64,24 @@ export function calculateInvoiceStatus({ netPayable, paid, dueDate }) {
     status = "partial";
   }
 
-  const isOverdue = due > 0 && dueDays > 0;
-
   return {
     paid,
     due,
+
     dueDays,
     dueDaysText,
+
     status,
+
     isOverdue,
+
+    isPaid,
+    isPartial,
+    isPending,
+
+    isDueToday,
+    isDueSoon,
+
+    shouldBlockClient,
   };
 }

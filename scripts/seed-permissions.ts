@@ -1,7 +1,6 @@
-import { db } from "@/db";
-import { permissions } from "@/db/schema";
-
-import { PERMISSIONS } from "@/lib/auth/permissions";
+import { db } from "../src/db";
+import { permissions } from "../src/db/schema";
+import { PERMISSIONS } from "../src/lib/auth/permissions";
 
 import { eq } from "drizzle-orm";
 

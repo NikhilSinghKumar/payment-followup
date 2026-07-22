@@ -6,6 +6,7 @@ import { db } from "../src/db";
 import { users, companies } from "../src/db/schema";
 
 import { seedPermissions } from "./seed-permissions";
+import { seedNotificationTemplates } from "./seed-notification-templates";
 
 async function seed() {
   const DEFAULT_PASSWORD = "Admin@123";
@@ -70,6 +71,8 @@ async function seed() {
   // -----------------------------------------
 
   await seedPermissions();
+
+  await seedNotificationTemplates();
 
   console.log("");
   console.log("===================================");
