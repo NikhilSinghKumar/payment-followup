@@ -1,22 +1,14 @@
 import { NextResponse } from "next/server";
 import { runNotificationScheduler } from "@/lib/notifications/notification-scheduler";
 
-export async function GET() {
-  try {
-    const result = await runNotificationScheduler();
+export async function GET(request) {
+  if (process.env.NODE_ENV === "production") {
+    const authHeader = request.headers.get("authorization");
 
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message,
-      },
-      {
-        status: 500,
-      },
-    );
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
+
+  return NextResponse.json(await runNotificationScheduler());
 }

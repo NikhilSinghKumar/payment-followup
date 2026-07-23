@@ -5,6 +5,7 @@ import {
   FileText,
   IndianRupee,
   BellRing,
+  Megaphone,
   Shield,
   KeyRound,
   BarChart3,
@@ -41,7 +42,7 @@ export const SIDEBAR_NAVIGATION = [
       {
         title: "Followups",
         href: "/followups",
-        icon: BellRing,
+        icon: Megaphone,
       },
     ],
   },

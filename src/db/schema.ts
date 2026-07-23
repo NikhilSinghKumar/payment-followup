@@ -1236,6 +1236,9 @@ export const followups = pgTable(
       withTimezone: true,
     }),
 
+    nextFollowupDate: timestamp("next_followup_date", {
+      withTimezone: true,
+    }),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),

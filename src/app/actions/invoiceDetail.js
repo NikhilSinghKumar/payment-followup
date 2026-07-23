@@ -13,6 +13,7 @@ import {
 import { revalidatePath } from "next/cache";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
+import { getCurrentUser } from "@/lib/auth/auth";
 
 // =====================================
 // SUMMARY
@@ -251,6 +252,14 @@ export async function addInvoicePayment(invoiceId, formData) {
   // FORM VALUES
   // =====================================
 
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser?.user || !currentUser?.companyId) {
+    return {
+      error: "Unauthorized",
+    };
+  }
+
   const receiptNumber = formData.get("receiptNumber")?.trim();
   const method = formData.get("method");
   const reference = formData.get("reference")?.trim();
@@ -293,33 +302,39 @@ export async function addInvoicePayment(invoiceId, formData) {
   // CREATE PAYMENT
   // =====================================
 
-  const insertedPayment = await db
-    .insert(payments)
-    .values({
+  try {
+    const insertedPayment = await db
+      .insert(payments)
+      .values({
+        companyId: currentUser.companyId,
+        invoiceId,
+        clientId: invoiceData.clientId,
+        amount: String(amount),
+        paymentDate,
+        receiptNumber,
+        method,
+        reference,
+        notes,
+      })
+      .returning({
+        id: payments.id,
+      });
+
+    const paymentId = insertedPayment[0].id;
+
+    // =====================================
+    // CREATE PAYMENT ALLOCATION
+    // =====================================
+
+    await db.insert(paymentAllocations).values({
+      paymentId,
       invoiceId,
-      clientId: invoiceData.clientId,
-      amount: String(amount),
-      paymentDate,
-      receiptNumber,
-      method,
-      reference,
-      notes,
-    })
-    .returning({
-      id: payments.id,
+      allocatedAmount: String(amount),
     });
-
-  const paymentId = insertedPayment[0].id;
-
-  // =====================================
-  // CREATE PAYMENT ALLOCATION
-  // =====================================
-
-  await db.insert(paymentAllocations).values({
-    paymentId,
-    invoiceId,
-    allocatedAmount: String(amount),
-  });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
 
   // =====================================
   // UPDATE INVOICE STATUS
@@ -369,10 +384,22 @@ export async function addInvoiceFollowup(invoiceId, formData) {
   // FORM VALUES
   // =====================================
 
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser?.user || !currentUser?.companyId) {
+    return {
+      error: "Unauthorized",
+    };
+  }
+
   const note = formData.get("note")?.trim();
 
   const followupDate = formData.get("followupDate")
     ? new Date(formData.get("followupDate"))
+    : null;
+
+  const nextFollowupDate = formData.get("nextFollowupDate")
+    ? new Date(formData.get("nextFollowupDate"))
     : null;
 
   // =====================================
@@ -389,11 +416,18 @@ export async function addInvoiceFollowup(invoiceId, formData) {
   // INSERT
   // =====================================
 
-  await db.insert(followups).values({
-    invoiceId,
-    note,
-    followupDate,
-  });
+  try {
+    await db.insert(followups).values({
+      companyId: currentUser.companyId,
+      invoiceId,
+      note,
+      followupDate,
+      nextFollowupDate,
+    });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
 
   // =====================================
   // REFRESH

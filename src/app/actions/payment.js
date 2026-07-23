@@ -7,6 +7,7 @@ import { payments, paymentAllocations, invoices } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 
 import { revalidatePath } from "next/cache";
+import { calculateInvoiceStatus } from "@/lib/invoice-status";
 
 export async function updatePayment(paymentId, invoiceId, prevState, formData) {
   try {
