@@ -61,7 +61,7 @@ export default function OverviewTab({ company }) {
       {/* Statistics */}
       {/* ===================================== */}
 
-      <div className="rounded-xl border bg-white p-5">
+      {/* <div className="rounded-xl border bg-white p-5">
         <h2 className="mb-5 text-lg font-semibold">Statistics</h2>
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -73,7 +73,7 @@ export default function OverviewTab({ company }) {
 
           <Stat label="Payments" value={company.totalPayments} />
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

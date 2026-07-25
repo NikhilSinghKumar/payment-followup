@@ -14,11 +14,11 @@ export default function RoleTable({ roles }) {
 
             <th className="px-4 py-3 text-left">Company</th>
 
-            <th className="px-4 py-3 text-left">Description</th>
+            {/* <th className="px-4 py-3 text-left">Description</th> */}
 
             <th className="px-4 py-3 text-center">System</th>
 
-            <th className="px-4 py-3 text-center">Status</th>
+            {/* <th className="px-4 py-3 text-center">Status</th> */}
 
             <th className="px-4 py-3 text-center">Actions</th>
           </tr>
@@ -52,14 +52,14 @@ export default function RoleTable({ roles }) {
                 <td className="px-4 py-3">{role.companyName}</td>
 
                 {/* Description */}
-
+                {/* 
                 <td className="px-4 py-3 text-slate-600">
                   {role.description || "-"}
-                </td>
+                </td> */}
 
                 {/* System */}
 
-                <td className="px-4 py-3 text-center">
+                {/* <td className="px-4 py-3 text-center">
                   {role.isSystem ? (
                     <span className="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700">
                       Yes
@@ -69,7 +69,7 @@ export default function RoleTable({ roles }) {
                       No
                     </span>
                   )}
-                </td>
+                </td> */}
 
                 {/* Status */}
 

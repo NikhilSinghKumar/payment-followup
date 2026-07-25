@@ -95,7 +95,7 @@ export default async function ClientsPage({ searchParams }) {
         {/* Header */}
         <div
           className="
-        grid grid-cols-[80px_2fr_140px_180px_120px_180px]
+        grid grid-cols-[60px_3fr_110px_180px_90px_110px_170px]
         items-center
         px-5 py-2
         bg-zinc-50
@@ -107,6 +107,7 @@ export default async function ClientsPage({ searchParams }) {
           <div>Company</div>
           <div>Code</div>
           <div className="text-center">GST No.</div>
+          <div>TDS</div>
           <div>Status</div>
 
           <div className="text-center">Actions</div>
@@ -117,22 +118,16 @@ export default async function ClientsPage({ searchParams }) {
           data.map((c, index) => (
             <div
               key={c.id}
-              className="
-            grid grid-cols-[80px_2fr_140px_180px_120px_180px]
-            items-center
-            px-5 py-1
-            text-sm
-            border-b border-zinc-100
-            hover:bg-zinc-50
-            transition-colors
-          "
+              className="grid grid-cols-[60px_3fr_110px_180px_90px_110px_170px] items-center px-5 py-1 text-sm border-b border-zinc-100 hover:bg-zinc-50 transition-colors"
             >
               {/* S.N */}
               <div className="font-medium text-zinc-700">{index + 1}</div>
 
               {/* Company */}
-              <div className="font-medium text-zinc-800 truncate">
-                {c.companyName}
+              <div className="font-medium text-zinc-800">
+                {c.companyName.length > 25
+                  ? `${c.companyName.slice(0, 30)}...`
+                  : c.companyName}
               </div>
 
               {/* Code */}
@@ -140,6 +135,10 @@ export default async function ClientsPage({ searchParams }) {
 
               <div className="text-zinc-500 text-center font-mono">
                 {c.gstNumber || "---"}
+              </div>
+
+              <div className="text-zinc-500">
+                {c.tdsApplicable ? "Yes" : "No"}
               </div>
 
               {/* Status */}

@@ -48,10 +48,6 @@ export default function CompanyTable({ companies }) {
                 {/* Company */}
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
-                      <Building2 className="h-5 w-5" />
-                    </div>
-
                     <div>
                       <div className="font-semibold text-slate-800">
                         {company.companyName}
@@ -98,7 +94,6 @@ export default function CompanyTable({ companies }) {
                     href={`/companies/${company.id}`}
                     className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600"
                   >
-                    <Eye className="h-4 w-4" />
                     View
                   </Link>
                 </td>

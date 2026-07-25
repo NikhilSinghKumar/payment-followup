@@ -13,9 +13,9 @@ export default function CompanySummary({ company }) {
 
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-bold text-white">
+              {/* <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-bold text-white">
                 {company.companyName?.charAt(0)}
-              </div>
+              </div> */}
 
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">
@@ -26,7 +26,7 @@ export default function CompanySummary({ company }) {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-2 text-sm text-slate-600">
+            {/* <div className="mt-5 grid gap-2 text-sm text-slate-600">
               <div>
                 <span className="font-medium">GST :</span>{" "}
                 {company.gstNumber || "-"}
@@ -41,12 +41,12 @@ export default function CompanySummary({ company }) {
                 <span className="font-medium">Phone :</span>{" "}
                 {company.phone || "-"}
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* RIGHT */}
 
-          <div className="grid grid-cols-2 gap-3 text-center">
+          {/* <div className="grid grid-cols-2 gap-3 text-center">
             <div className="rounded-xl border p-4">
               <div className="text-2xl font-bold text-blue-600">
                 {company.totalUsers}
@@ -78,7 +78,7 @@ export default function CompanySummary({ company }) {
 
               <div className="text-xs text-slate-500">Payments</div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -86,7 +86,7 @@ export default function CompanySummary({ company }) {
       {/* TABS */}
       {/* ====================================== */}
 
-      <div className="flex flex-wrap gap-2 rounded-xl border bg-white p-2">
+      {/* <div className="flex flex-wrap gap-2 rounded-xl border bg-white p-2">
         <Link
           href={`?tab=overview`}
           className="rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
@@ -114,7 +114,7 @@ export default function CompanySummary({ company }) {
         >
           Settings
         </Link>
-      </div>
+      </div> */}
     </div>
   );
 }

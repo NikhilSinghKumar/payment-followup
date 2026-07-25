@@ -25,17 +25,17 @@ export default async function CompanyDetailPage({ params, searchParams }) {
   let content;
 
   switch (tab) {
-    case "users":
-      content = <UsersTab company={company} users={users} />;
-      break;
+    // case "users":
+    //   content = <UsersTab company={company} users={users} />;
+    //   break;
 
-    case "clients":
-      content = <ClientsTab company={company} clients={clients} />;
-      break;
+    // case "clients":
+    //   content = <ClientsTab company={company} clients={clients} />;
+    //   break;
 
-    case "settings":
-      content = <SettingsTab company={company} />;
-      break;
+    // case "settings":
+    //   content = <SettingsTab company={company} />;
+    //   break;
 
     default:
       content = <OverviewTab company={company} />;

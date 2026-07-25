@@ -62,14 +62,13 @@ export default function ClientEditForm({ client }) {
             {/* GST Number */}
             <div>
               <label className="text-sm text-zinc-600 mb-1 block">
-                GST Number *
+                GST Number
               </label>
 
               <input
                 name="gstNumber"
                 defaultValue={client.gstNumber}
                 placeholder="e.g. 07ABCDE1234F1Z5"
-                required
                 className="input-primary focus:ring-blue-500 caret-blue-500"
               />
             </div>
