@@ -7,8 +7,6 @@ import { getCurrentUser } from "@/lib/auth/auth";
 export async function POST(req) {
   const currentUser = await getCurrentUser();
 
-  console.log("currentUser =", currentUser);
-
   if (!currentUser.user) {
     throw new Error("Unauthorized");
   }

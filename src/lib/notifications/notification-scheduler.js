@@ -22,10 +22,6 @@ async function processInvoices(invoices, handler, label) {
   let failed = 0;
 
   for (const invoice of invoices) {
-    console.log("==================================");
-    console.log(label);
-    console.log(invoice); // <-- Add this
-    console.log("==================================");
     try {
       await handler(invoice);
       processed++;
@@ -107,10 +103,6 @@ async function processServiceSuspension() {
 // ======================================================
 
 export async function runNotificationScheduler() {
-  console.log("========================================");
-  console.log("Notification Scheduler Started");
-  console.log("========================================");
-
   const startedAt = Date.now();
 
   const summary = {
@@ -140,9 +132,6 @@ export async function runNotificationScheduler() {
     },
   );
 
-  console.log("========================================");
-  console.log("Notification Scheduler Completed");
-  console.log("========================================");
   console.table({
     "Invoices Checked": totals.total,
     Processed: totals.processed,
