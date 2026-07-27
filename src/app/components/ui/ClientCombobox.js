@@ -71,10 +71,6 @@ export default function ClientCombobox({
 
                   <div className="flex flex-col">
                     <span>{client.companyName}</span>
-
-                    <span className="text-xs text-zinc-500">
-                      {client.companyCode}
-                    </span>
                   </div>
                 </CommandItem>
               ))}
