@@ -102,7 +102,7 @@ export default function ImportErrorTable({ errors = [] }) {
                 filteredErrors.map((error, index) => (
                   <tr
                     key={index}
-                    className="border-t bg-zinc-50 hover:bg-zinc-50 transition"
+                    className="border-t bg-zinc-50 text-zinc-600 hover:bg-zinc-50 transition"
                   >
                     <td className="px-4 py-3 font-semibold">{error.row}</td>
 
