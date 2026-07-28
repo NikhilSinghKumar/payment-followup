@@ -6,6 +6,7 @@ import { getFinancialYear } from "@/lib/financial-year";
 import { parse } from "csv-parse/sync";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
+import { parseImportDate } from "@/lib/date-parser";
 
 export async function POST(req) {
   try {
@@ -61,11 +62,9 @@ export async function POST(req) {
 
         const invoiceNumber = row.invoice_number?.trim() || "";
 
-        const invoiceDate = row.invoice_date
-          ? new Date(row.invoice_date)
-          : null;
+        const invoiceDate = parseImportDate(row.invoice_date);
 
-        const dueDate = row.due_date ? new Date(row.due_date) : null;
+        const dueDate = parseImportDate(row.due_date);
 
         const paymentTerms = row.payment_terms
           ? parseInt(row.payment_terms)
