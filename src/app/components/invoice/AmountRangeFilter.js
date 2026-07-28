@@ -12,7 +12,7 @@ export default function AmountRangeFilter() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="h-[40px] px-4 rounded-lg border border-zinc-300 bg-white text-sm hover:bg-zinc-50">
+        <button className="h-[40px] px-4 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-500 hover:bg-zinc-50">
           Amount Range
         </button>
       </PopoverTrigger>
