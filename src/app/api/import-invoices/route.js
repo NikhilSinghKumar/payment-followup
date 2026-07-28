@@ -3,7 +3,6 @@ import { invoices, clients } from "@/db/schema";
 import { calculateInvoice } from "@/lib/invoice-calculator";
 import { getClientTaxSettings } from "@/lib/client-tax-settings";
 import { getFinancialYear } from "@/lib/financial-year";
-
 import { parse } from "csv-parse/sync";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
@@ -18,7 +17,9 @@ export async function POST(req) {
 
     if (!currentUser.companyId) {
       return Response.json(
-        { error: "User is not associated with any company." },
+        {
+          error: "User is not associated with any company.",
+        },
         { status: 400 },
       );
     }
@@ -42,17 +43,23 @@ export async function POST(req) {
 
     let inserted = 0;
     let skipped = 0;
+
     const total = records.length;
 
-    for (const row of records) {
+    const errors = [];
+
+    for (let i = 0; i < records.length; i++) {
+      const row = records[i];
+      const csvRow = i + 2;
+
       try {
-        //------------------------------------
+        //------------------------------------------
         // Read CSV
-        //------------------------------------
+        //------------------------------------------
 
-        const companyCode = row.company_code?.trim();
+        const companyCode = row.company_code?.trim() || "";
 
-        const invoiceNumber = row.invoice_number?.trim();
+        const invoiceNumber = row.invoice_number?.trim() || "";
 
         const invoiceDate = row.invoice_date
           ? new Date(row.invoice_date)
@@ -78,30 +85,50 @@ export async function POST(req) {
 
         const notes = row.notes?.trim() || "";
 
-        //------------------------------------
+        //------------------------------------------
         // Validation
-        //------------------------------------
+        //------------------------------------------
 
-        if (
-          !companyCode ||
-          !invoiceNumber ||
-          !invoiceDate ||
-          !dueDate ||
-          isNaN(invoiceAmount)
-        ) {
+        const rowErrors = [];
+
+        if (!companyCode) rowErrors.push("Company Code is required");
+
+        if (!invoiceNumber) rowErrors.push("Invoice Number is required");
+
+        if (!invoiceDate || isNaN(invoiceDate.getTime()))
+          rowErrors.push("Invalid Invoice Date");
+
+        if (!dueDate || isNaN(dueDate.getTime()))
+          rowErrors.push("Invalid Due Date");
+
+        if (isNaN(invoiceAmount)) rowErrors.push("Invalid Invoice Amount");
+
+        if (isNaN(deductionAmount)) rowErrors.push("Invalid Deduction Amount");
+
+        if (isNaN(otherCharges)) rowErrors.push("Invalid Other Charges");
+
+        if (rowErrors.length > 0) {
           skipped++;
+
+          errors.push({
+            row: csvRow,
+            companyCode,
+            invoiceNumber,
+            reason: rowErrors.join(", "),
+          });
+
           continue;
         }
 
-        //------------------------------------
+        //------------------------------------------
         // Financial Year
-        //------------------------------------
+        //------------------------------------------
 
         const financialYear = getFinancialYear(invoiceDate);
 
-        //------------------------------------
-        // Find Client
-        //------------------------------------
+        //------------------------------------------
+        // Client
+        //------------------------------------------
 
         const client = await db
           .select()
@@ -111,14 +138,22 @@ export async function POST(req) {
 
         if (!client.length) {
           skipped++;
+
+          errors.push({
+            row: csvRow,
+            companyCode,
+            invoiceNumber,
+            reason: "Client not found",
+          });
+
           continue;
         }
 
         const clientId = client[0].id;
 
-        //------------------------------------
+        //------------------------------------------
         // Duplicate Check
-        //------------------------------------
+        //------------------------------------------
 
         const existing = await db
           .select()
@@ -134,18 +169,26 @@ export async function POST(req) {
 
         if (existing.length) {
           skipped++;
+
+          errors.push({
+            row: csvRow,
+            companyCode,
+            invoiceNumber,
+            reason: "Invoice already exists for this Financial Year",
+          });
+
           continue;
         }
 
-        //------------------------------------
+        //------------------------------------------
         // Tax Settings
-        //------------------------------------
+        //------------------------------------------
 
         const taxSettings = await getClientTaxSettings(clientId);
 
-        //------------------------------------
+        //------------------------------------------
         // Calculate Invoice
-        //------------------------------------
+        //------------------------------------------
 
         const calculatedInvoice = calculateInvoice({
           invoiceAmount,
@@ -155,9 +198,9 @@ export async function POST(req) {
           otherCharges,
         });
 
-        //------------------------------------
+        //------------------------------------------
         // Insert
-        //------------------------------------
+        //------------------------------------------
 
         await db.insert(invoices).values({
           companyId,
@@ -203,25 +246,37 @@ export async function POST(req) {
 
         inserted++;
       } catch (err) {
-        console.error("Invoice import failed:", row, err);
+        console.error(`Invoice Import Error (Row ${csvRow})`, err);
+
         skipped++;
+
+        errors.push({
+          row: csvRow,
+          companyCode: row.company_code || "",
+          invoiceNumber: row.invoice_number || "",
+          reason: "Unexpected server error",
+        });
       }
     }
 
     return Response.json({
       status: "success",
+
       summary: {
         inserted,
         skipped,
         total,
       },
+
+      errors,
     });
   } catch (err) {
     console.error(err);
 
     return Response.json(
       {
-        error: "Import failed",
+        status: "error",
+        error: "Import failed.",
       },
       {
         status: 500,

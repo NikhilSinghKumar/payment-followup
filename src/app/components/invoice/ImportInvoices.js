@@ -29,12 +29,6 @@ export default function ImportInvoices({ clientId }) {
 
       const result = await res.json();
 
-      if (!res.ok) {
-        alert(result.error);
-
-        return;
-      }
-
       let message =
         `Imported : ${result.imported}\n` + `Failed : ${result.failed}`;
 
@@ -46,13 +40,9 @@ export default function ImportInvoices({ clientId }) {
         });
       }
 
-      alert(message);
-
       router.refresh();
     } catch (err) {
       console.error(err);
-
-      alert("Import failed.");
     } finally {
       setLoading(false);
 
