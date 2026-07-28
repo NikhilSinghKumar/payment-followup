@@ -31,6 +31,8 @@ export const AUTH_MESSAGES = {
   INVALID_CREDENTIALS: "Invalid email or password.",
   ACCOUNT_DISABLED: "Your account has been disabled.",
   LOGIN_REQUIRED: "Please login to continue.",
-  EMAIL_PASSWORD_REQUIRED: "Email and password are required.",
+  EMAIL_REQUIRED: "Email is required.",
+  PASSWORD_REQUIRED: "Password is required.",
   INVALID_EMAIL_OR_PASSWORD: "Email or Password is required.",
+  LOGIN_CREDENTIALS_REQUIRED: "Login credentials are required",
 };
