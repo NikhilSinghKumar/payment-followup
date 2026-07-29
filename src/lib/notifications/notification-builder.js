@@ -30,14 +30,25 @@ function buildInvoiceVariables(data) {
   return {
     companyName: data.companyName,
     clientName: data.clientName,
+
     invoiceNumber: data.invoiceNumber,
     invoiceDate: data.invoiceDate,
     dueDate: data.dueDate,
+
     invoiceAmount: data.invoiceAmount,
-    outstandingAmount: data.outstandingAmount,
-    paidAmount: data.paidAmount,
+
+    // map from invoice summary
+    paidAmount: data.paid,
+    outstandingAmount: data.due,
+    overdueDays: data.dueDays,
+
     paymentAmount: data.paymentAmount,
-    overdueDays: data.overdueDays,
+
+    senderCompany: data.senderCompany,
+    senderEmail: data.senderEmail,
+    senderPhone: data.senderPhone,
+    // senderWebsite: data.website,
+    senderLogo: data.senderLogo,
   };
 }
 

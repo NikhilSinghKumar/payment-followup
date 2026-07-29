@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "seed:notifications": "tsx scripts/seed-notifications.ts"
   },
   "dependencies": {
     "@radix-ui/react-slider": "^1.4.4",

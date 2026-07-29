@@ -13,14 +13,30 @@ export async function seedNotificationTemplates(): Promise<void> {
       body: `
 Dear {{companyName}},
 
-Your invoice {{invoiceNumber}} has been submitted successfully.
+We hope you are doing well.
 
-Invoice Amount: ₹{{invoiceAmount}}
+Please find below the details of the invoice recently issued by {{senderCompany}}.
 
-Thank you for your business.
+----------------------------------------
+Invoice Summary
+----------------------------------------
+Invoice Number      : {{invoiceNumber}}
+Invoice Date        : {{invoiceDate}}
+Due Date            : {{dueDate}}
+Invoice Amount      : ₹{{invoiceAmount}}
+----------------------------------------
 
-Regards,
+Kindly process the payment on or before the due date to avoid any late payment reminders.
+
+Should you have any questions regarding this invoice, please feel free to contact us.
+
+Thank you for your continued business and support.
+
+Warm Regards,
+
 {{senderCompany}}
+Email: {{senderEmail}}
+Phone: {{senderPhone}}
 `,
       isDefault: true,
       isActive: true,
@@ -30,37 +46,36 @@ Regards,
       companyId: null,
       type: "DUE_REMINDER",
       name: "Due Reminder",
-      subject: "Payment Reminder - Invoice {{invoiceNumber}}",
+      subject: "Gentle Payment Reminder - Invoice {{invoiceNumber}}",
       body: `
 Dear {{companyName}},
 
-This is a reminder that Invoice {{invoiceNumber}} is due on {{dueDate}}.
+We hope this message finds you well.
 
-Outstanding Amount: ₹{{outstandingAmount}}
+This is a gentle reminder that payment for the following invoice is approaching its due date.
 
-Regards,
-{{senderCompany}}
-`,
-      isDefault: true,
-      isActive: true,
-    },
+----------------------------------------
+Invoice Summary
+----------------------------------------
+Invoice Number      : {{invoiceNumber}}
+Invoice Date        : {{invoiceDate}}
+Due Date            : {{dueDate}}
+Invoice Amount      : ₹{{invoiceAmount}}
+Paid Amount         : ₹{{paidAmount}}
+Outstanding Amount  : ₹{{outstandingAmount}}
+----------------------------------------
 
-    {
-      companyId: null,
-      type: "INTERNAL_DUE_TODAY",
-      name: "Invoice Due Today",
-      subject: "Invoice {{invoiceNumber}} is Due Today",
-      body: `
-Dear {{companyName}},
+We kindly request you to arrange payment on or before the due date.
 
-Invoice {{invoiceNumber}} is due today.
+If payment has already been initiated, please ignore this reminder.
 
-Outstanding Amount: ₹{{outstandingAmount}}
-
-Please arrange payment today.
+Thank you for your cooperation.
 
 Regards,
+
 {{senderCompany}}
+Email: {{senderEmail}}
+Phone: {{senderPhone}}
 `,
       isDefault: true,
       isActive: true,
@@ -70,18 +85,34 @@ Regards,
       companyId: null,
       type: "OVERDUE_REMINDER",
       name: "Overdue Reminder",
-      subject: "Overdue Invoice {{invoiceNumber}}",
+      subject: "Gentle reminder about Overdue Invoice {{invoiceNumber}}",
       body: `
 Dear {{companyName}},
 
-Invoice {{invoiceNumber}} is overdue by {{overdueDays}} day(s).
+Our records indicate that the following invoice remains unpaid.
 
-Outstanding Amount: ₹{{outstandingAmount}}
+----------------------------------------
+Invoice Summary
+----------------------------------------
+Invoice Number      : {{invoiceNumber}}
+Invoice Date        : {{invoiceDate}}
+Due Date            : {{dueDate}}
+Invoice Amount      : ₹{{invoiceAmount}}
+Paid Amount         : ₹{{paidAmount}}
+Outstanding Amount  : ₹{{outstandingAmount}}
+----------------------------------------
 
-Kindly clear the outstanding payment.
+We kindly request you to arrange payment at the earliest convenience.
+
+If payment has already been made, please share the payment details so that we may update our records.
+
+We appreciate your immediate attention to this matter.
 
 Regards,
+
 {{senderCompany}}
+Email: {{senderEmail}}
+Phone: {{senderPhone}}
 `,
       isDefault: true,
       isActive: true,
@@ -95,14 +126,30 @@ Regards,
       body: `
 Dear {{companyName}},
 
-We have received your payment of ₹{{paymentAmount}}.
+Thank you for your payment.
 
-Invoice: {{invoiceNumber}}
+We have successfully received your payment against the following invoice.
 
-Thank you.
+----------------------------------------
+Invoice Summary
+----------------------------------------
+Invoice Number      : {{invoiceNumber}}
+Invoice Date        : {{invoiceDate}}
+Due Date            : {{dueDate}}
+Invoice Amount      : ₹{{invoiceAmount}}
+Paid Amount         : ₹{{paidAmount}}
+Outstanding Amount  : ₹{{outstandingAmount}}
+----------------------------------------
 
-Regards,
+Your payment has been recorded in our system.
+
+We sincerely appreciate your timely payment and continued business with us.
+
+Warm Regards,
+
 {{senderCompany}}
+Email: {{senderEmail}}
+Phone: {{senderPhone}}
 `,
       isDefault: true,
       isActive: true,
@@ -116,12 +163,30 @@ Regards,
       body: `
 Dear {{companyName}},
 
-Invoice {{invoiceNumber}} has been fully paid.
+We are pleased to inform you that full payment has been received for the invoice below.
 
-Thank you for your payment.
+----------------------------------------
+Invoice Summary
+----------------------------------------
+Invoice Number      : {{invoiceNumber}}
+Invoice Date        : {{invoiceDate}}
+Due Date            : {{dueDate}}
+Invoice Amount      : ₹{{invoiceAmount}}
+Paid Amount         : ₹{{paidAmount}}
+Outstanding Amount  : ₹{{outstandingAmount}}
+----------------------------------------
 
-Regards,
+There is no outstanding balance pending against this invoice.
+
+Thank you for your continued trust and partnership with us.
+
+We look forward to serving you again.
+
+Warm Regards,
+
 {{senderCompany}}
+Email: {{senderEmail}}
+Phone: {{senderPhone}}
 `,
       isDefault: true,
       isActive: true,
@@ -135,12 +200,28 @@ Regards,
       body: `
 Dear {{companyName}},
 
-Despite repeated reminders, Invoice {{invoiceNumber}} remains unpaid.
+Despite our previous payment reminders, the following invoice remains unpaid.
 
-Please clear the outstanding dues to avoid suspension of services.
+Invoice Number      : {{invoiceNumber}}
+Invoice Date        : {{invoiceDate}}
+Due Date            : {{dueDate}}
+Paid Amount         : ₹{{paidAmount}}
+Outstanding Amount  : ₹{{outstandingAmount}}
+Days Overdue        : {{overdueDays}}
+
+This serves as our final payment reminder.
+
+We kindly request that the outstanding amount be cleared immediately to avoid temporary suspension of logistics services associated with your account.
+
+If payment has already been initiated, please share the transaction details for verification.
+
+We appreciate your immediate cooperation.
 
 Regards,
+
 {{senderCompany}}
+Email: {{senderEmail}}
+Phone: {{senderPhone}}
 `,
       isDefault: true,
       isActive: true,
@@ -154,12 +235,28 @@ Regards,
       body: `
 Dear {{companyName}},
 
-Your services have been suspended due to prolonged non-payment.
+We regret to inform you that your account has been placed under temporary service suspension due to prolonged non-payment of the invoice listed below.
 
-Please contact us after clearing your dues.
+Invoice Number      : {{invoiceNumber}}
+Invoice Date        : {{invoiceDate}}
+Due Date            : {{dueDate}}
+Paid Amount         : ₹{{paidAmount}}
+Outstanding Amount  : ₹{{outstandingAmount}}
+Days Overdue        : {{overdueDays}}
+
+Services will remain suspended until the outstanding dues are cleared and payment confirmation is received.
+
+Once payment has been verified, services will be restored as per our standard process.
+
+Should you require any clarification or wish to discuss your account, please contact our accounts team.
+
+Thank you for your understanding.
 
 Regards,
+
 {{senderCompany}}
+Email: {{senderEmail}}
+Phone: {{senderPhone}}
 `,
       isDefault: true,
       isActive: true,

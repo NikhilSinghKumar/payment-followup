@@ -1,6 +1,6 @@
 import { db } from "@/db";
 
-import { invoices, clients, paymentAllocations } from "@/db/schema";
+import { invoices, clients, companies, paymentAllocations } from "@/db/schema";
 
 import { and, eq, isNull, sql } from "drizzle-orm";
 
@@ -34,6 +34,13 @@ async function getNotificationCandidates() {
       companyCode: clients.companyCode,
       email: clients.email,
 
+      // Sender
+      senderCompany: companies.companyName,
+      senderEmail: companies.email,
+      senderPhone: companies.phone,
+      // senderWebsite: companies.website,
+      senderLogo: companies.logo,
+
       paid: sql`
         COALESCE(
           SUM(${paymentAllocations.allocatedAmount}),
@@ -44,7 +51,7 @@ async function getNotificationCandidates() {
     .from(invoices)
 
     .leftJoin(clients, eq(clients.id, invoices.clientId))
-
+    .leftJoin(companies, eq(companies.id, invoices.companyId))
     .leftJoin(
       paymentAllocations,
       and(
@@ -74,6 +81,11 @@ async function getNotificationCandidates() {
       clients.companyName,
       clients.companyCode,
       clients.email,
+      companies.companyName,
+      companies.email,
+      companies.phone,
+      // companies.website,
+      companies.logo,
     );
 
   return enrichInvoices(data);
