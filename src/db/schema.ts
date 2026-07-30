@@ -1506,6 +1506,7 @@ export const notificationSettings = pgTable(
 export const templateTypeEnum = pgEnum("template_type", [
   "BILL_SUBMITTED",
   "DUE_REMINDER",
+  "DUE_TODAY",
   "OVERDUE_REMINDER",
   "FINAL_REMINDER",
   "PAYMENT_RECEIVED",

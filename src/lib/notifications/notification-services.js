@@ -3,6 +3,7 @@ import { createNotification } from "./notification-repository";
 import { createLog, markFailed, updateStatus } from "./notification-logger";
 import { isNotificationEnabled } from "./notification-preferences";
 import { renderTemplate } from "./notification-template";
+import { renderEmail } from "./email-renderer";
 
 import { sendEmail, EMAIL_PROVIDER } from "@/lib/email";
 
@@ -40,6 +41,13 @@ export const dueReminder = (data) =>
   );
 
 export const dueToday = (data) =>
+  sendNotification(
+    NOTIFICATION_TYPES.INVOICE_DUE,
+    TEMPLATE_TYPES.DUE_TODAY,
+    data,
+  );
+
+export const internalDueToday = (data) =>
   sendNotification(
     NOTIFICATION_TYPES.INVOICE_DUE,
     TEMPLATE_TYPES.INTERNAL_DUE_TODAY,
@@ -177,11 +185,18 @@ async function processNotification(notificationType, templateType, data) {
   // Send Email
   // ------------------------------------------
 
+  const html = renderEmail({
+    type: notificationType,
+    body: emailContent.body,
+    variables: notification.templateVariables,
+    actionUrl: notification.actionUrl,
+  });
+
   try {
     result = await sendEmail({
       to: data.email,
       subject: emailContent.subject,
-      html: emailContent.body,
+      html,
     });
 
     await updateStatus(log.id, NOTIFICATION_STATUS.SENT, {

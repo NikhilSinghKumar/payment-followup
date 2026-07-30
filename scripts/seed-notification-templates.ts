@@ -2,8 +2,6 @@ import { db } from "../src/db";
 import { notificationTemplates } from "../src/db/schema";
 
 export async function seedNotificationTemplates(): Promise<void> {
-  console.log("🌱 Seeding Notification Templates...");
-
   await db.insert(notificationTemplates).values([
     {
       companyId: null,
@@ -11,71 +9,60 @@ export async function seedNotificationTemplates(): Promise<void> {
       name: "Bill Submitted",
       subject: "Invoice {{invoiceNumber}} Submitted",
       body: `
-Dear {{companyName}},
+Your invoice has been successfully submitted.
 
-We hope you are doing well.
+Please review the invoice summary below and arrange payment on or before the due date.
 
-Please find below the details of the invoice recently issued by {{senderCompany}}.
-
-----------------------------------------
-Invoice Summary
-----------------------------------------
-Invoice Number      : {{invoiceNumber}}
-Invoice Date        : {{invoiceDate}}
-Due Date            : {{dueDate}}
-Invoice Amount      : ₹{{invoiceAmount}}
-----------------------------------------
-
-Kindly process the payment on or before the due date to avoid any late payment reminders.
-
-Should you have any questions regarding this invoice, please feel free to contact us.
-
-Thank you for your continued business and support.
-
-Warm Regards,
-
-{{senderCompany}}
-Email: {{senderEmail}}
-Phone: {{senderPhone}}
+If you have any questions, please contact our accounts team.
 `,
       isDefault: true,
       isActive: true,
     },
-
     {
       companyId: null,
       type: "DUE_REMINDER",
       name: "Due Reminder",
       subject: "Gentle Payment Reminder - Invoice {{invoiceNumber}}",
       body: `
-Dear {{companyName}},
+This is a friendly reminder that payment for the invoice below is approaching its due date.
 
-We hope this message finds you well.
+We kindly request you to arrange payment before the due date to avoid any inconvenience.
 
-This is a gentle reminder that payment for the following invoice is approaching its due date.
+Thank you for your continued business. 
 
-----------------------------------------
-Invoice Summary
-----------------------------------------
-Invoice Number      : {{invoiceNumber}}
-Invoice Date        : {{invoiceDate}}
-Due Date            : {{dueDate}}
-Invoice Amount      : ₹{{invoiceAmount}}
-Paid Amount         : ₹{{paidAmount}}
-Outstanding Amount  : ₹{{outstandingAmount}}
-----------------------------------------
+If payment has already been made, please disregard this reminder.
 
-We kindly request you to arrange payment on or before the due date.
+`,
+      isDefault: true,
+      isActive: true,
+    },
+    {
+      companyId: null,
+      type: "INTERNAL_DUE_TODAY",
+      name: "Internal Due Today",
+      subject: "Action Required: Invoice {{invoiceNumber}} Due Today",
+      body: `
+This invoice is due for payment today and requires your immediate attention.
 
-If payment has already been initiated, please ignore this reminder.
+Please follow up with the customer to confirm the payment status and record any updates in the system.
 
-Thank you for your cooperation.
 
-Regards,
+`,
+      isDefault: true,
+      isActive: true,
+    },
+    {
+      companyId: null,
+      type: "DUE_TODAY",
+      name: "Due Today",
+      subject: "Payment Due Today - Invoice {{invoiceNumber}}",
+      body: `
+This is a reminder that payment for the invoice below is due today.
 
-{{senderCompany}}
-Email: {{senderEmail}}
-Phone: {{senderPhone}}
+Kindly arrange payment at your earliest convenience to ensure uninterrupted services and avoid the invoice becoming overdue.
+
+If payment has already been initiated or done, please disregard this reminder. Thank you for your prompt attention.
+
 `,
       isDefault: true,
       isActive: true,
@@ -85,34 +72,17 @@ Phone: {{senderPhone}}
       companyId: null,
       type: "OVERDUE_REMINDER",
       name: "Overdue Reminder",
-      subject: "Gentle reminder about Overdue Invoice {{invoiceNumber}}",
+      subject: "Overdue Payment Reminder - Invoice {{invoiceNumber}}",
       body: `
-Dear {{companyName}},
+This is a reminder that the invoice below is due today.
 
-Our records indicate that the following invoice remains unpaid.
+Kindly arrange payment at your earliest convenience to avoid overdue charges or further reminders.
 
-----------------------------------------
-Invoice Summary
-----------------------------------------
-Invoice Number      : {{invoiceNumber}}
-Invoice Date        : {{invoiceDate}}
-Due Date            : {{dueDate}}
-Invoice Amount      : ₹{{invoiceAmount}}
-Paid Amount         : ₹{{paidAmount}}
-Outstanding Amount  : ₹{{outstandingAmount}}
-----------------------------------------
+We appreciate your prompt attention.
 
-We kindly request you to arrange payment at the earliest convenience.
+If payment has already been made, please disregard this reminder.
 
-If payment has already been made, please share the payment details so that we may update our records.
-
-We appreciate your immediate attention to this matter.
-
-Regards,
-
-{{senderCompany}}
-Email: {{senderEmail}}
-Phone: {{senderPhone}}
+If you have any questions or require any assistance, please contact our accounts team.
 `,
       isDefault: true,
       isActive: true,
@@ -122,34 +92,14 @@ Phone: {{senderPhone}}
       companyId: null,
       type: "PAYMENT_RECEIVED",
       name: "Payment Received",
-      subject: "Payment Received for Invoice {{invoiceNumber}}",
+      subject: "Payment Received - Invoice {{invoiceNumber}}",
       body: `
-Dear {{companyName}},
-
 Thank you for your payment.
 
-We have successfully received your payment against the following invoice.
+We have successfully received your payment and updated our records.
 
-----------------------------------------
-Invoice Summary
-----------------------------------------
-Invoice Number      : {{invoiceNumber}}
-Invoice Date        : {{invoiceDate}}
-Due Date            : {{dueDate}}
-Invoice Amount      : ₹{{invoiceAmount}}
-Paid Amount         : ₹{{paidAmount}}
-Outstanding Amount  : ₹{{outstandingAmount}}
-----------------------------------------
+We sincerely appreciate your prompt payment and continued trust in our services.
 
-Your payment has been recorded in our system.
-
-We sincerely appreciate your timely payment and continued business with us.
-
-Warm Regards,
-
-{{senderCompany}}
-Email: {{senderEmail}}
-Phone: {{senderPhone}}
 `,
       isDefault: true,
       isActive: true,
@@ -161,32 +111,12 @@ Phone: {{senderPhone}}
       name: "Payment Cleared",
       subject: "Invoice {{invoiceNumber}} Paid Successfully",
       body: `
-Dear {{companyName}},
+We are pleased to inform you that the invoice below has been fully settled.
 
-We are pleased to inform you that full payment has been received for the invoice below.
+Thank you for completing the payment.
 
-----------------------------------------
-Invoice Summary
-----------------------------------------
-Invoice Number      : {{invoiceNumber}}
-Invoice Date        : {{invoiceDate}}
-Due Date            : {{dueDate}}
-Invoice Amount      : ₹{{invoiceAmount}}
-Paid Amount         : ₹{{paidAmount}}
-Outstanding Amount  : ₹{{outstandingAmount}}
-----------------------------------------
+We look forward to continuing to serve you and appreciate your valued business.
 
-There is no outstanding balance pending against this invoice.
-
-Thank you for your continued trust and partnership with us.
-
-We look forward to serving you again.
-
-Warm Regards,
-
-{{senderCompany}}
-Email: {{senderEmail}}
-Phone: {{senderPhone}}
 `,
       isDefault: true,
       isActive: true,
@@ -196,32 +126,17 @@ Phone: {{senderPhone}}
       companyId: null,
       type: "SERVICE_SUSPENSION_NOTICE",
       name: "Service Suspension Notice",
-      subject: "Final Payment Reminder",
+      subject: "Service Suspension Notice",
       body: `
-Dear {{companyName}},
+Despite previous reminders, payment for the invoice below remains outstanding.
 
-Despite our previous payment reminders, the following invoice remains unpaid.
+As per our payment policy, your account has been temporarily placed under service suspension.
 
-Invoice Number      : {{invoiceNumber}}
-Invoice Date        : {{invoiceDate}}
-Due Date            : {{dueDate}}
-Paid Amount         : ₹{{paidAmount}}
-Outstanding Amount  : ₹{{outstandingAmount}}
-Days Overdue        : {{overdueDays}}
+Services will be restored promptly once payment has been received and verified.
 
-This serves as our final payment reminder.
+If payment has already been made, please disregard this reminder.
 
-We kindly request that the outstanding amount be cleared immediately to avoid temporary suspension of logistics services associated with your account.
 
-If payment has already been initiated, please share the transaction details for verification.
-
-We appreciate your immediate cooperation.
-
-Regards,
-
-{{senderCompany}}
-Email: {{senderEmail}}
-Phone: {{senderPhone}}
 `,
       isDefault: true,
       isActive: true,
@@ -231,37 +146,18 @@ Phone: {{senderPhone}}
       companyId: null,
       type: "SERVICE_SUSPENSION_ALERT",
       name: "Service Suspension Alert",
-      subject: "Services Suspended",
+      subject: "Immediate Action Required",
       body: `
-Dear {{companyName}},
+The outstanding balance on the invoice below has exceeded the permitted credit period.
 
-We regret to inform you that your account has been placed under temporary service suspension due to prolonged non-payment of the invoice listed below.
+Your account remains under service suspension until the outstanding amount has been cleared.
 
-Invoice Number      : {{invoiceNumber}}
-Invoice Date        : {{invoiceDate}}
-Due Date            : {{dueDate}}
-Paid Amount         : ₹{{paidAmount}}
-Outstanding Amount  : ₹{{outstandingAmount}}
-Days Overdue        : {{overdueDays}}
+If payment has already been made, please disregard this reminder.
 
-Services will remain suspended until the outstanding dues are cleared and payment confirmation is received.
 
-Once payment has been verified, services will be restored as per our standard process.
-
-Should you require any clarification or wish to discuss your account, please contact our accounts team.
-
-Thank you for your understanding.
-
-Regards,
-
-{{senderCompany}}
-Email: {{senderEmail}}
-Phone: {{senderPhone}}
 `,
       isDefault: true,
       isActive: true,
     },
   ]);
-
-  console.log("✅ Notification Templates Seeded");
 }
