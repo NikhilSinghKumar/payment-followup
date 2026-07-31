@@ -1,6 +1,13 @@
 import { db } from "@/db";
 
-import { invoices, clients, companies, paymentAllocations } from "@/db/schema";
+import {
+  invoices,
+  clients,
+  companies,
+  paymentAllocations,
+  clientContacts,
+  clientContactEmails,
+} from "@/db/schema";
 
 import { and, eq, isNull, sql } from "drizzle-orm";
 
@@ -32,7 +39,7 @@ async function getNotificationCandidates() {
 
       companyName: clients.companyName,
       companyCode: clients.companyCode,
-      email: clients.email,
+      email: clientContactEmails.email,
 
       // Sender
       senderCompany: companies.companyName,
@@ -49,8 +56,24 @@ async function getNotificationCandidates() {
       `,
     })
     .from(invoices)
-
     .leftJoin(clients, eq(clients.id, invoices.clientId))
+
+    .leftJoin(
+      clientContacts,
+      and(
+        eq(clientContacts.clientId, clients.id),
+        isNull(clientContacts.deletedAt),
+        eq(clientContacts.isPrimary, true), // optional but recommended
+      ),
+    )
+    .leftJoin(
+      clientContactEmails,
+      and(
+        eq(clientContactEmails.contactId, clientContacts.id),
+        isNull(clientContactEmails.deletedAt),
+        eq(clientContactEmails.isPrimary, true), // optional
+      ),
+    )
     .leftJoin(companies, eq(companies.id, invoices.companyId))
     .leftJoin(
       paymentAllocations,
@@ -60,7 +83,13 @@ async function getNotificationCandidates() {
       ),
     )
 
-    .where(and(isNull(invoices.deletedAt), isNull(clients.deletedAt)))
+    .where(
+      and(
+        isNull(invoices.deletedAt),
+        isNull(clients.deletedAt),
+        eq(clients.companyCode, "AMAZON"),
+      ),
+    )
 
     .groupBy(
       invoices.id,
@@ -80,7 +109,7 @@ async function getNotificationCandidates() {
 
       clients.companyName,
       clients.companyCode,
-      clients.email,
+      clientContactEmails.email,
       companies.companyName,
       companies.email,
       companies.phone,

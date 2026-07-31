@@ -245,7 +245,7 @@ ${
         style="
           display:block;
           border:0;
-          margin-top:8px;
+          margin-top:4px;
         "
       />
     `
