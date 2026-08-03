@@ -9,13 +9,13 @@ export async function seedNotificationTemplates(): Promise<void> {
       name: "Bill Submitted",
       subject: "Invoice {{invoiceNumber}} Submitted",
       body: `
-I hope this email finds you well.
+Your invoice has been successfully submitted for your review and payment.
 
-Your invoice has been successfully submitted.
+Please review the invoice summary below and kindly arrange payment on or before the due date.
 
-Please review the invoice summary below and arrange payment on or before the due date.
+If you have any questions or require any clarification regarding the invoice, please contact our Accounts Team.
 
-If you have any questions, please contact our accounts team.
+Thank you for your continued business.
 `,
       isDefault: true,
       isActive: true,
@@ -26,8 +26,6 @@ If you have any questions, please contact our accounts team.
       name: "Due Reminder",
       subject: "Gentle Payment Reminder - Invoice {{invoiceNumber}}",
       body: `
-I hope this email finds you well. 
-
 This is a friendly reminder that payment for the invoice below is approaching its due date.
 
 We kindly request you to arrange payment before the due date to avoid any inconvenience.
@@ -49,8 +47,6 @@ If payment has already been made, please disregard this reminder.
 This invoice is due for payment today and requires your immediate attention.
 
 Please follow up with the customer to confirm the payment status and record any updates in the system.
-
-
 `,
       isDefault: true,
       isActive: true,
@@ -61,13 +57,14 @@ Please follow up with the customer to confirm the payment status and record any 
       name: "Due Today",
       subject: "Payment Due Today - Invoice {{invoiceNumber}}",
       body: `
-I hope this email finds you well.
 
 This is a reminder that payment for the invoice below is due today.
 
 Kindly arrange payment at your earliest convenience to ensure uninterrupted services and avoid the invoice becoming overdue.
 
-If payment has already been initiated or done, please disregard this reminder. Thank you for your prompt attention.
+If payment has already been initiated or done, please disregard this reminder. 
+
+Thank you for your prompt attention.
 
 `,
       isDefault: true,
@@ -80,15 +77,16 @@ If payment has already been initiated or done, please disregard this reminder. T
       name: "Overdue Reminder",
       subject: "Overdue Payment Reminder - Invoice {{invoiceNumber}}",
       body: `
-I hope this email finds you well.
 
 This is a reminder that the invoice below is due today.
 
-Kindly arrange payment at your earliest convenience to avoid overdue charges or further reminders.
+Kindly arrange payment at your earliest convenience to avoid further reminders.
 
 We appreciate your prompt attention.
 
 If payment has already been made, please disregard this reminder.
+
+Thank you for your continued business.
 
 If you have any questions or require any assistance, please contact our accounts team.
 `,
@@ -136,7 +134,6 @@ We look forward to continuing to serve you and appreciate your valued business.
       name: "Service Suspension Notice",
       subject: "Service Suspension Notice",
       body: `
-I hope this email finds you well.
 
 Despite previous reminders, payment for the invoice below remains outstanding.
 

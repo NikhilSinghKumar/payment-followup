@@ -37,7 +37,7 @@ async function getNotificationCandidates() {
 
       status: invoices.status,
 
-      companyName: clients.companyName,
+      clientName: clients.companyName,
       companyCode: clients.companyCode,
       email: clientContactEmails.email,
 

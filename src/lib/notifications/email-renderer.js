@@ -74,7 +74,7 @@ export function renderEmail({ type, body, variables, actionUrl }) {
   const config = CONFIG[type];
 
   const content = `
-    ${renderGreeting(variables.companyName)}
+    ${renderGreeting(variables.clientName)}
 
     ${renderStatusBanner({
       title: config.banner,

@@ -51,7 +51,7 @@ export default function OverviewTab({ invoice }) {
 
         <section className="rounded-xl border border-zinc-200 bg-zinc-50 h-fit">
           <div className="border-b border-zinc-200 bg-zinc-100 px-4 py-3">
-            <h3 className="font-semibold text-zinc-800">Amount Summary</h3>
+            <h3 className="font-semibold text-zinc-800">Invoice Amount</h3>
           </div>
 
           <div className="p-3 space-y-1">

@@ -99,6 +99,12 @@ export async function createInvoice(formData) {
     otherCharges,
   });
 
+  const invoiceStatus = calculateInvoiceStatus({
+    netPayable: calculatedInvoice.netPayableAmount,
+    paid: 0,
+    dueDate,
+  });
+
   // =====================================
   // DUPLICATE CHECK
   // =====================================
@@ -155,7 +161,7 @@ export async function createInvoice(formData) {
       tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
 
       paidAmount: "0",
-      outstandingAmount: netPayableAmount,
+      outstandingAmount: calculatedInvoice.netPayableAmount,
 
       status: "pending",
 
