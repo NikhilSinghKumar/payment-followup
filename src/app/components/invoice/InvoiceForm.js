@@ -8,6 +8,7 @@ import InvoiceSummary from "./InvoiceSummary";
 export default function InvoiceForm({
   client,
   clients = [],
+  subClients = [],
   action,
   invoice = {},
   submitLabel = "Save Invoice",
@@ -21,7 +22,11 @@ export default function InvoiceForm({
       : "",
   });
 
+  const initialSubClient =
+    subClients.find((sub) => sub.id === invoice?.subClientId) || null;
+
   const [selectedClient, setSelectedClient] = useState(client);
+  const [selectedSubClient, setSelectedSubClient] = useState(initialSubClient);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -38,6 +43,15 @@ export default function InvoiceForm({
     const client = clients.find((c) => c.id === id);
 
     setSelectedClient(client || null);
+    setSelectedSubClient(null);
+  }
+
+  function handleClientSelect(client) {
+    setSelectedClient(client || null);
+
+    // Important:
+    // changing parent client clears previous subclient
+    setSelectedSubClient(null);
   }
 
   return (
@@ -48,12 +62,15 @@ export default function InvoiceForm({
           <InvoiceBasicFields
             client={client}
             clients={clients}
+            subClients={subClients}
             invoice={invoice}
             values={values}
             onChange={handleChange}
             handleClientChange={handleClientChange}
             selectedClient={selectedClient}
             setSelectedClient={setSelectedClient}
+            selectedSubClient={selectedSubClient}
+            setSelectedSubClient={setSelectedSubClient}
           />
         </div>
 
@@ -61,8 +78,14 @@ export default function InvoiceForm({
         <div>
           <InvoiceSummary
             invoiceAmount={values.invoiceAmount}
-            gstNumber={selectedClient?.gstNumber}
-            tdsApplicable={selectedClient?.tdsApplicable}
+            gstNumber={
+              selectedSubClient?.gstNumber ?? selectedClient?.gstNumber
+            }
+            tdsApplicable={
+              selectedSubClient
+                ? selectedSubClient.tdsApplicable
+                : selectedClient?.tdsApplicable
+            }
             deductionAmount={values.deductionAmount}
             otherCharges={values.otherCharges}
           />

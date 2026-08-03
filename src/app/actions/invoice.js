@@ -4,6 +4,7 @@ import { db } from "@/db";
 import {
   invoices,
   clients,
+  clientSubClients,
   payments,
   paymentAllocations,
   followups,
@@ -26,8 +27,17 @@ export async function createInvoice(formData) {
   // =====================================
 
   const companyCode = formData.get("companyCode")?.trim();
+
+  const subClientIdValue = formData.get("subClientId");
+
+  const subClientId =
+    subClientIdValue && subClientIdValue !== ""
+      ? Number(subClientIdValue)
+      : null;
+
   const invoiceNumber = formData.get("invoiceNumber")?.trim();
   const notes = formData.get("notes")?.trim();
+
   const invoiceAmount = parseFloat(formData.get("invoiceAmount"));
 
   const deductionAmount = parseFloat(formData.get("deductionAmount") || 0);
@@ -38,11 +48,15 @@ export async function createInvoice(formData) {
     ? new Date(formData.get("invoiceDate"))
     : null;
 
-  const financialYear = getFinancialYear(invoiceDate);
+  const financialYear = invoiceDate ? getFinancialYear(invoiceDate) : null;
 
   const dueDate = formData.get("dueDate")
     ? new Date(formData.get("dueDate"))
     : null;
+
+  // =====================================
+  // CURRENT USER
+  // =====================================
 
   const currentUser = await getCurrentUser();
 
@@ -57,7 +71,7 @@ export async function createInvoice(formData) {
   const companyId = currentUser.companyId;
 
   // =====================================
-  // VALIDATION
+  // BASIC VALIDATION
   // =====================================
 
   if (
@@ -65,10 +79,22 @@ export async function createInvoice(formData) {
     !invoiceNumber ||
     !financialYear ||
     !invoiceDate ||
+    isNaN(invoiceDate.getTime()) ||
+    !dueDate ||
+    isNaN(dueDate.getTime()) ||
     isNaN(invoiceAmount)
   ) {
     return {
       error: "Invalid input",
+    };
+  }
+
+  if (
+    subClientId !== null &&
+    (!Number.isInteger(subClientId) || subClientId <= 0)
+  ) {
+    return {
+      error: "Invalid sub client",
     };
   }
 
@@ -79,7 +105,12 @@ export async function createInvoice(formData) {
   const client = await db
     .select()
     .from(clients)
-    .where(eq(clients.companyCode, companyCode))
+    .where(
+      and(
+        eq(clients.companyCode, companyCode),
+        eq(clients.companyId, companyId),
+      ),
+    )
     .limit(1);
 
   if (!client.length) {
@@ -89,7 +120,69 @@ export async function createInvoice(formData) {
   }
 
   const clientId = client[0].id;
-  const taxSettings = await getClientTaxSettings(clientId);
+
+  // =====================================
+  // SUB CLIENT VALIDATION
+  // =====================================
+
+  let selectedSubClient = null;
+
+  if (subClientId !== null) {
+    const subClient = await db
+      .select()
+      .from(clientSubClients)
+      .where(
+        and(
+          eq(clientSubClients.id, subClientId),
+
+          // Very important:
+          // selected sub client must belong
+          // to the selected parent client.
+          eq(clientSubClients.clientId, clientId),
+
+          // Don't allow deleted sub clients.
+          isNull(clientSubClients.deletedAt),
+
+          // Only active sub clients.
+          eq(clientSubClients.isActive, true),
+        ),
+      )
+      .limit(1);
+
+    if (!subClient.length) {
+      return {
+        error:
+          "Selected sub client does not belong to this client or is inactive.",
+      };
+    }
+
+    selectedSubClient = subClient[0];
+  }
+
+  // =====================================
+  // TAX SETTINGS
+  // =====================================
+
+  let taxSettings;
+
+  if (selectedSubClient) {
+    // Invoice belongs to a sub client.
+    // Use the sub client's tax settings.
+
+    taxSettings = {
+      gstNumber: selectedSubClient.gstNumber,
+      tdsApplicable: selectedSubClient.tdsApplicable,
+    };
+  } else {
+    // Invoice belongs directly to parent client.
+    // Use existing parent client tax settings.
+
+    taxSettings = await getClientTaxSettings(clientId);
+  }
+
+  // =====================================
+  // CALCULATE INVOICE
+  // =====================================
 
   const calculatedInvoice = calculateInvoice({
     invoiceAmount,
@@ -98,6 +191,10 @@ export async function createInvoice(formData) {
     deductionAmount,
     otherCharges,
   });
+
+  // =====================================
+  // INVOICE STATUS
+  // =====================================
 
   const invoiceStatus = calculateInvoiceStatus({
     netPayable: calculatedInvoice.netPayableAmount,
@@ -108,6 +205,12 @@ export async function createInvoice(formData) {
   // =====================================
   // DUPLICATE CHECK
   // =====================================
+
+  // Invoice number remains unique for:
+  //
+  // Client + Financial Year + Invoice Number
+  //
+  // subClientId is intentionally NOT included.
 
   const existing = await db
     .select()
@@ -123,19 +226,26 @@ export async function createInvoice(formData) {
 
   if (existing.length) {
     return {
-      error: "Invoice number already exists",
+      error:
+        "Invoice number already exists for this client and financial year.",
     };
   }
 
   // =====================================
-  // INSERT
+  // INSERT INVOICE
   // =====================================
 
   const [invoice] = await db
     .insert(invoices)
     .values({
       companyId,
+
+      // Parent client is always required.
       clientId,
+
+      // Optional.
+      subClientId: selectedSubClient ? selectedSubClient.id : null,
+
       financialYear,
 
       invoiceNumber,
@@ -147,29 +257,40 @@ export async function createInvoice(formData) {
       basicAmount: calculatedInvoice.basicAmount,
 
       cgstAmount: calculatedInvoice.cgstAmount,
+
       sgstAmount: calculatedInvoice.sgstAmount,
+
       igstAmount: calculatedInvoice.igstAmount,
 
       tdsAmount: calculatedInvoice.tdsAmount,
 
       deductionAmount: calculatedInvoice.deductionAmount,
+
       otherCharges: calculatedInvoice.otherCharges,
 
       netPayableAmount: calculatedInvoice.netPayableAmount,
 
+      // Snapshot of whichever entity was used:
+      // parent client or sub client.
       gstNumberUsed: calculatedInvoice.gstNumberUsed,
+
       tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
 
       paidAmount: "0",
+
       outstandingAmount: calculatedInvoice.netPayableAmount,
 
-      status: "pending",
+      status: invoiceStatus?.status || "pending",
 
       notes,
     })
     .returning({
       id: invoices.id,
     });
+
+  // =====================================
+  // PROCESS NOTIFICATIONS
+  // =====================================
 
   await processInvoiceEvents(invoice.id);
 

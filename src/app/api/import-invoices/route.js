@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { invoices, clients } from "@/db/schema";
+import { invoices, clients, clientSubClients } from "@/db/schema";
 import { calculateInvoice } from "@/lib/invoice-calculator";
 import { getClientTaxSettings } from "@/lib/client-tax-settings";
 import { getFinancialYear } from "@/lib/financial-year";
@@ -60,6 +60,7 @@ export async function POST(req) {
         //------------------------------------------
 
         const companyCode = row.company_code?.trim() || "";
+        const subClientCode = row.sub_client_code?.trim() || "";
 
         const invoiceNumber = row.invoice_number?.trim() || "";
 
@@ -91,7 +92,9 @@ export async function POST(req) {
 
         const rowErrors = [];
 
-        if (!companyCode) rowErrors.push("Company Code is required");
+        if (!companyCode) rowErrors.push("Client Code is required");
+
+        if (!subClientCode) rowErrors.push("Subclient code is required");
 
         if (!invoiceNumber) rowErrors.push("Invoice Number is required");
 
@@ -150,6 +153,35 @@ export async function POST(req) {
         }
 
         const clientId = client[0].id;
+        let selectedSubClient = null;
+
+        if (subClientCode) {
+          const subClient = await db
+            .select()
+            .from(clientSubClients)
+            .where(
+              and(
+                eq(clientSubClients.clientId, clientId),
+                eq(clientSubClients.companyCode, subClientCode),
+              ),
+            )
+            .limit(1);
+
+          if (!subClient.length) {
+            skipped++;
+
+            errors.push({
+              row: csvRow,
+              companyCode,
+              invoiceNumber,
+              reason: `Sub Client '${subClientCode}' not found under Client '${companyCode}'`,
+            });
+
+            continue;
+          }
+
+          selectedSubClient = subClient[0];
+        }
 
         //------------------------------------------
         // Duplicate Check
@@ -184,7 +216,16 @@ export async function POST(req) {
         // Tax Settings
         //------------------------------------------
 
-        const taxSettings = await getClientTaxSettings(clientId);
+        let taxSettings;
+
+        if (selectedSubClient) {
+          taxSettings = {
+            gstNumber: selectedSubClient.gstNumber,
+            tdsApplicable: selectedSubClient.tdsApplicable,
+          };
+        } else {
+          taxSettings = await getClientTaxSettings(clientId);
+        }
 
         //------------------------------------------
         // Calculate Invoice
@@ -212,6 +253,7 @@ export async function POST(req) {
           companyId,
 
           clientId,
+          subClientId: selectedSubClient ? selectedSubClient.id : null,
 
           financialYear,
 

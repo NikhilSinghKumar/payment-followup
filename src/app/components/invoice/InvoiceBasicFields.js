@@ -4,13 +4,20 @@ import ClientCombobox from "@/app/components/ui/ClientCombobox";
 export default function InvoiceBasicFields({
   client,
   clients,
+  subClients = [],
   invoice = {},
   values,
   onChange,
   handleClientChange,
   selectedClient,
   setSelectedClient,
+  selectedSubClient,
+  setSelectedSubClient,
 }) {
+  const availableSubClients = selectedClient
+    ? subClients.filter((sub) => sub.clientId === selectedClient.id)
+    : [];
+
   return (
     <div className="space-y-4">
       {/* Hidden Fields */}
@@ -41,11 +48,42 @@ export default function InvoiceBasicFields({
         </select> */}
       </div>
       {client && <input type="hidden" name="clientId" value={client.id} />}
-      <input
-        type="hidden"
-        name="subClientId"
-        value={invoice?.subClientId ?? ""}
-      />
+
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-zinc-600">Sub Client</label>
+
+        <select
+          name="subClientId"
+          value={selectedSubClient?.id || ""}
+          onChange={(e) => {
+            const id = Number(e.target.value);
+
+            const subClient = availableSubClients.find((sub) => sub.id === id);
+
+            setSelectedSubClient(subClient || null);
+          }}
+          disabled={!selectedClient || availableSubClients.length === 0}
+          className="input-primary disabled:bg-zinc-100 disabled:text-zinc-400 disabled:cursor-not-allowed"
+        >
+          <option value="">
+            {availableSubClients.length ? "Select Subclient" : "No Sub Clients"}
+          </option>
+
+          {availableSubClients.map((sub) => (
+            <option key={sub.id} value={sub.id}>
+              {sub.companyName}
+              {sub.companyCode ? ` (${sub.companyCode})` : ""}
+            </option>
+          ))}
+        </select>
+
+        {selectedClient && availableSubClients.length > 0 && (
+          <p className="text-xs text-zinc-400">
+            Optional — leave as Direct / Main Client if the invoice does not
+            belong to a sub client.
+          </p>
+        )}
+      </div>
       {/* ===================================== */}
       {/* ROW 1 */}
       {/* ===================================== */}
@@ -71,7 +109,9 @@ export default function InvoiceBasicFields({
 
           <input
             name="gstNumber"
-            value={selectedClient?.gstNumber || ""}
+            value={
+              selectedSubClient?.gstNumber || selectedClient?.gstNumber || ""
+            }
             readOnly
             className="input-primary bg-zinc-100 cursor-not-allowed"
           />
@@ -183,25 +223,6 @@ export default function InvoiceBasicFields({
             onChange={onChange}
           />
         </div>
-      </div>
-
-      {/* ===================================== */}
-      {/* ROW 3 */}
-      {/* ===================================== */}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Notes */}
-        {/* <div className="space-y-1">
-          <label className="text-sm font-medium text-zinc-600">Notes</label>
-
-          <textarea
-            rows={3}
-            name="notes"
-            defaultValue={invoice?.notes ?? ""}
-            placeholder="Remarks, payment reference, GST remarks, etc."
-            className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none resize-y focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div> */}
       </div>
     </div>
   );

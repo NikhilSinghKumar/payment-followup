@@ -2,9 +2,10 @@
 
 import { db } from "@/db";
 import { revalidatePath } from "next/cache";
-import { clientSubClients } from "@/db/schema";
+import { clients, clientSubClients } from "@/db/schema";
 import { ilike, or, and, sql, eq, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/auth";
 
 // =====================================================
 // CREATE SUB CLIENT
@@ -47,6 +48,38 @@ export async function createSubClient(clientId, prevState, formData) {
       error: "Failed to create sub client",
     };
   }
+}
+
+// GET SUBCLIENT
+
+export async function getSubClients() {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser.user || !currentUser.companyId) {
+    return [];
+  }
+
+  const companyId = currentUser.companyId;
+
+  return await db
+    .select({
+      id: clientSubClients.id,
+      clientId: clientSubClients.clientId,
+      companyName: clientSubClients.companyName,
+      companyCode: clientSubClients.companyCode,
+      gstNumber: clientSubClients.gstNumber,
+      tdsApplicable: clientSubClients.tdsApplicable,
+      isActive: clientSubClients.isActive,
+    })
+    .from(clientSubClients)
+    .innerJoin(clients, eq(clientSubClients.clientId, clients.id))
+    .where(
+      and(
+        eq(clients.companyId, companyId),
+        eq(clientSubClients.isActive, true),
+        isNull(clientSubClients.deletedAt),
+      ),
+    );
 }
 
 // =====================================================
