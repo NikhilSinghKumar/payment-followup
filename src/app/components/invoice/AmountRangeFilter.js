@@ -8,7 +8,7 @@ import {
 
 import AmountRangeSlider from "./AmountRangeSlider";
 
-export default function AmountRangeFilter() {
+export default function AmountRangeFilter({ maxAmount }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -18,7 +18,7 @@ export default function AmountRangeFilter() {
       </PopoverTrigger>
 
       <PopoverContent className="w-80 p-4">
-        <AmountRangeSlider />
+        <AmountRangeSlider maxAmount={maxAmount} />
       </PopoverContent>
     </Popover>
   );

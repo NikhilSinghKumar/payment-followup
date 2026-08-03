@@ -14,6 +14,7 @@ import { revalidatePath } from "next/cache";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
+import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
 
 // =====================================
 // SUMMARY
@@ -298,39 +299,64 @@ export async function addInvoicePayment(invoiceId, formData) {
 
   const invoiceData = invoice[0];
 
+  const outstanding = Number(invoiceData.outstandingAmount);
+
+  if (amount > outstanding) {
+    return {
+      error: `Payment amount cannot exceed the outstanding amount of ₹${outstanding.toLocaleString(
+        "en-IN",
+        {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        },
+      )}`,
+    };
+  }
   // =====================================
   // CREATE PAYMENT
   // =====================================
 
   try {
-    const insertedPayment = await db
-      .insert(payments)
-      .values({
-        companyId: currentUser.companyId,
+    await db.transaction(async (tx) => {
+      // =====================================
+      // CREATE PAYMENT
+      // =====================================
+
+      const insertedPayment = await tx
+        .insert(payments)
+        .values({
+          companyId: currentUser.companyId,
+          invoiceId,
+          clientId: invoiceData.clientId,
+          amount: String(amount),
+          paymentDate,
+          receiptNumber,
+          method,
+          reference,
+          notes,
+        })
+        .returning({
+          id: payments.id,
+        });
+
+      const paymentId = insertedPayment[0].id;
+
+      // =====================================
+      // CREATE PAYMENT ALLOCATION
+      // =====================================
+
+      await tx.insert(paymentAllocations).values({
+        paymentId,
         invoiceId,
-        clientId: invoiceData.clientId,
-        amount: String(amount),
-        paymentDate,
-        receiptNumber,
-        method,
-        reference,
-        notes,
-      })
-      .returning({
-        id: payments.id,
+        allocatedAmount: String(amount),
       });
-
-    const paymentId = insertedPayment[0].id;
-
-    // =====================================
-    // CREATE PAYMENT ALLOCATION
-    // =====================================
-
-    await db.insert(paymentAllocations).values({
-      paymentId,
-      invoiceId,
-      allocatedAmount: String(amount),
     });
+
+    // =====================================
+    // UPDATE INVOICE FINANCIALS
+    // =====================================
+
+    await updateInvoiceFinancials(invoiceId);
   } catch (err) {
     console.error(err);
     throw err;
@@ -340,39 +366,12 @@ export async function addInvoicePayment(invoiceId, formData) {
   // UPDATE INVOICE STATUS
   // =====================================
 
-  const allocations = await db
-    .select({
-      total: sql`
-        COALESCE(
-          SUM(${paymentAllocations.allocatedAmount}),
-          0
-        )
-      `,
-    })
-    .from(paymentAllocations)
-    .where(eq(paymentAllocations.invoiceId, invoiceId));
-
-  const totalPaid = Number(allocations[0]?.total || 0);
-
-  const paymentSummary = calculateInvoiceStatus({
-    netPayable: invoice.netPayableAmount,
-    paid: totalPaid,
-    dueDate: invoice.dueDate,
-  });
-
-  await db
-    .update(invoices)
-    .set({
-      status: paymentSummary.status,
-      updatedAt: new Date(),
-    })
-    .where(eq(invoices.id, invoiceId));
-
   // =====================================
   // REFRESH PAGE
   // =====================================
 
   revalidatePath(`/invoices/${invoiceId}`);
+  revalidatePath(`/clients/${invoiceData.clientId}`);
 
   return {
     success: true,

@@ -7,6 +7,7 @@ import { parse } from "csv-parse/sync";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
 import { parseImportDate } from "@/lib/date-parser";
+import { calculateInvoiceStatus } from "@/lib/invoice-status";
 
 export async function POST(req) {
   try {
@@ -197,6 +198,12 @@ export async function POST(req) {
           otherCharges,
         });
 
+        const invoiceStatus = calculateInvoiceStatus({
+          netPayable: calculatedInvoice.netPayableAmount,
+          paid: 0,
+          dueDate,
+        });
+
         //------------------------------------------
         // Insert
         //------------------------------------------
@@ -233,12 +240,14 @@ export async function POST(req) {
           otherCharges: calculatedInvoice.otherCharges,
 
           netPayableAmount: calculatedInvoice.netPayableAmount,
+          paidAmount: "0",
+          outstandingAmount: calculatedInvoice.netPayableAmount,
 
           gstNumberUsed: calculatedInvoice.gstNumberUsed,
 
           tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
 
-          status: "pending",
+          status: invoiceStatus.status,
 
           notes,
         });

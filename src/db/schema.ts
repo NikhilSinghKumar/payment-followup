@@ -883,6 +883,17 @@ export const invoices = pgTable(
     // TDS setting used while creating invoice
     tdsApplicableUsed: boolean("tds_applicable_used").notNull().default(false),
 
+    // paid
+    paidAmount: numeric("paid_amount", {
+      precision: 12,
+      scale: 2,
+    }).default("0"),
+
+    outstandingAmount: numeric("outstanding_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+
     // =====================================
     // STATUS
     // =====================================
@@ -947,6 +958,10 @@ export const invoices = pgTable(
 
       netPayableIdx: index("invoice_net_payable_idx").on(
         table.netPayableAmount,
+      ),
+
+      outstandingAmountIdx: index("invoice_outstanding_amount_idx").on(
+        table.outstandingAmount,
       ),
     };
   },

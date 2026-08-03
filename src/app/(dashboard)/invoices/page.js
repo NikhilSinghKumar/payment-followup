@@ -1,4 +1,8 @@
-import { getInvoices, getFinancialYears } from "../../actions/invoice";
+import {
+  getInvoices,
+  getFinancialYears,
+  getMaxOutstandingAmount,
+} from "../../actions/invoice";
 import Link from "next/link";
 import ImportInvoices from "../../components/ImportInvoices";
 import SearchBox from "../../components/SearchBox";
@@ -24,6 +28,7 @@ export default async function InvoicePage({ searchParams }) {
 
   const minAmount = resolvedParams?.minAmount || "";
   const maxAmount = resolvedParams?.maxAmount || "";
+  const maxOutstanding = await getMaxOutstandingAmount();
 
   const data = await getInvoices(
     query,
@@ -78,7 +83,7 @@ export default async function InvoicePage({ searchParams }) {
       <div className="flex justify-center items-center gap-2 mb-6">
         <AlphabetDropdown />
         <FilterDropdown />
-        <AmountRangeFilter />
+        <AmountRangeFilter maxAmount={maxOutstanding} />
         <AgingFilterDropdown />
         <MonthFilterDropdown />
         <FinancialYearFilterDropdown years={years} />
@@ -94,7 +99,7 @@ export default async function InvoicePage({ searchParams }) {
             <SortDropdown />
           </div>
           <div className="text-center ">Paid</div>
-          <div className="text-center">Due</div>
+          <div className="text-center">Outstanding</div>
           <div className="text-center">Due Date</div>
           <div className="text-center">Status</div>
 
@@ -140,12 +145,12 @@ export default async function InvoicePage({ searchParams }) {
 
                 {/* Paid */}
                 <div className="font-medium text-center text-emerald-600 whitespace-nowrap">
-                  ₹{Number(inv.paid).toLocaleString("en-IN")}
+                  ₹{Number(inv.paidAmount).toLocaleString("en-IN")}
                 </div>
 
                 {/* Due */}
                 <div className="font-medium text-center text-red-600 whitespace-nowrap">
-                  ₹{Number(inv.due).toLocaleString("en-IN")}
+                  ₹{Number(inv.outstandingAmount).toLocaleString("en-IN")}
                 </div>
 
                 {/* Due Date */}
@@ -167,15 +172,13 @@ export default async function InvoicePage({ searchParams }) {
                           ? "bg-emerald-100 text-emerald-700"
                           : inv.status === "partial"
                             ? "bg-amber-100 text-amber-700"
-                            : inv.status === "pending" && isOverdue
+                            : inv.status === "overdue"
                               ? "bg-red-100 text-red-700"
                               : "bg-blue-100 text-blue-700"
                       }
                     `}
                   >
-                    {inv.status === "pending" && isOverdue
-                      ? "Overdue"
-                      : inv.status}
+                    {inv.status}
                   </span>
 
                   {inv.status !== "paid" && (

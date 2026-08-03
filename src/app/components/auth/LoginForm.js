@@ -36,7 +36,7 @@ export default function LoginForm() {
   useEffect(() => {
     if (state.success) {
       setPassword("");
-      router.replace("/clients");
+      router.replace("/dashboard");
     }
   }, [state.success, router]);
 

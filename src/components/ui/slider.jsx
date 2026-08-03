@@ -13,38 +13,46 @@ function Slider({
   max = 100,
   ...props
 }) {
-  const _values = React.useMemo(
-    () =>
-      Array.isArray(value)
-        ? value
-        : Array.isArray(defaultValue)
-          ? defaultValue
-          : [min, max],
-    [value, defaultValue, min, max],
-  );
+  const values = value ?? defaultValue ?? [min, max];
 
   return (
     <SliderPrimitive.Root
       data-slot="slider"
-      defaultValue={defaultValue}
       value={value}
+      defaultValue={defaultValue}
       min={min}
       max={max}
       className={cn(
-        "relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col",
+        "relative flex w-full touch-none select-none items-center",
+        "data-disabled:opacity-50",
         className,
       )}
       {...props}
     >
-      <SliderPrimitive.Track className="relative grow overflow-hidden rounded-full bg-zinc-300 h-0.5">
-        <SliderPrimitive.Range className="absolute h-full bg-blue-600" />
+      <SliderPrimitive.Track
+        data-slot="slider-track"
+        className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-zinc-200"
+      >
+        <SliderPrimitive.Range
+          data-slot="slider-range"
+          className="absolute h-full bg-blue-600"
+        />
       </SliderPrimitive.Track>
 
-      {Array.from({ length: _values.length }, (_, index) => (
+      {values.map((_, index) => (
         <SliderPrimitive.Thumb
-          data-slot="slider-thumb"
           key={index}
-          className="relative block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
+          data-slot="slider-thumb"
+          className={cn(
+            "block size-4 shrink-0 rounded-full",
+            "border-2 border-blue-600 bg-white",
+            "shadow-sm",
+            "transition-shadow",
+            "hover:ring-4 hover:ring-blue-100",
+            "focus-visible:outline-none",
+            "focus-visible:ring-4 focus-visible:ring-blue-100",
+            "disabled:pointer-events-none disabled:opacity-50",
+          )}
         />
       ))}
     </SliderPrimitive.Root>

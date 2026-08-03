@@ -66,24 +66,6 @@ export default async function ClientDetailPage({ params, searchParams }) {
     .groupBy(invoiceAwbs.invoiceId)
     .as("awb_counts");
 
-  const paymentTotals = db
-    .select({
-      invoiceId: paymentAllocations.invoiceId,
-
-      paid: sql`
-    COALESCE(
-      SUM(${paymentAllocations.allocatedAmount}),
-      0
-    )
-  `
-        .mapWith(Number)
-        .as("paid_amount"),
-    })
-    .from(paymentAllocations)
-    .where(isNull(paymentAllocations.deletedAt))
-    .groupBy(paymentAllocations.invoiceId)
-    .as("payment_totals");
-
   // =====================================
   // INVOICE SUMMARY
   // =====================================
@@ -100,6 +82,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
 
       netPayableAmount: invoices.netPayableAmount,
 
+      paidAmount: invoices.paidAmount,
+      outstandingAmount: invoices.outstandingAmount,
+
       status: invoices.status,
 
       dueDate: invoices.dueDate,
@@ -107,17 +92,11 @@ export default async function ClientDetailPage({ params, searchParams }) {
       awbCount: sql`
       COALESCE(${awbCounts.awbCount}, 0)
     `.mapWith(Number),
-
-      paid: sql`
-      COALESCE(${paymentTotals.paid}, 0)
-    `.mapWith(Number),
     })
 
     .from(invoices)
 
     .leftJoin(awbCounts, eq(awbCounts.invoiceId, invoices.id))
-
-    .leftJoin(paymentTotals, eq(paymentTotals.invoiceId, invoices.id))
 
     .where(and(eq(invoices.clientId, clientId), isNull(invoices.deletedAt)))
 
@@ -152,7 +131,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
   );
 
   const totalPaid = normalizedInvoiceData.reduce(
-    (sum, item) => sum + Number(item.paid || 0),
+    (sum, item) => sum + Number(item.paidAmount || 0),
     0,
   );
 

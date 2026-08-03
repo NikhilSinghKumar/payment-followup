@@ -17,138 +17,8 @@ import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { eq, sql, ilike, isNull, or, and, ne, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/auth";
-
-export async function getInvoices(
-  search,
-  status,
-  sort = "high",
-  aging = "",
-  financialYear = "",
-  month = "",
-  minAmount = "",
-  maxAmount = "",
-  alphabet = "",
-) {
-  const conditions = [isNull(invoices.deletedAt)];
-  if (financialYear) {
-    conditions.push(eq(invoices.financialYear, financialYear));
-  }
-
-  // SEARCH
-  if (search) {
-    conditions.push(
-      or(
-        ilike(clients.companyName, `%${search}%`),
-        ilike(clients.companyCode, `%${search}%`),
-        ilike(invoices.invoiceNumber, `%${search}%`),
-      ),
-    );
-  }
-
-  if (alphabet) {
-    conditions.push(ilike(clients.companyName, `${alphabet}%`));
-  }
-
-  const query = db
-    .select({
-      id: invoices.id,
-      invoiceNumber: invoices.invoiceNumber,
-      invoiceAmount: invoices.invoiceAmount,
-
-      netPayableAmount: invoices.netPayableAmount,
-      invoiceDate: invoices.invoiceDate,
-      dueDate: invoices.dueDate,
-      financialYear: invoices.financialYear,
-      companyName: clients.companyName,
-      companyCode: clients.companyCode,
-      gstNumber: clients.gstNumber,
-
-      paid: sql`
-        COALESCE(SUM(${payments.amount}), 0)
-      `,
-    })
-    .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
-    .leftJoin(payments, eq(payments.invoiceId, invoices.id))
-    .where(and(...conditions));
-
-  const data = await query
-    .groupBy(
-      invoices.id,
-      invoices.invoiceDate,
-      clients.companyName,
-      clients.companyCode,
-      clients.gstNumber,
-      invoices.financialYear,
-    )
-    .orderBy(invoices.id);
-
-  const invoiceList = enrichInvoices(data);
-
-  // COMPUTE STATUS
-  return invoiceList
-    .filter((inv) => {
-      if (!aging) return true;
-
-      if (inv.dueDays <= 0) return false;
-
-      switch (aging) {
-        case "0-30":
-          return inv.dueDays <= 30;
-
-        case "31-60":
-          return inv.dueDays >= 31 && inv.dueDays <= 60;
-
-        case "61-90":
-          return inv.dueDays >= 61 && inv.dueDays <= 90;
-
-        case "91-180":
-          return inv.dueDays >= 91 && inv.dueDays <= 180;
-
-        case "180+":
-          return inv.dueDays > 180;
-
-        default:
-          return true;
-      }
-    })
-    .filter((inv) => {
-      if (!status) return true;
-
-      return inv.status === status;
-    })
-    .filter((inv) => {
-      if (minAmount && Number(inv.due) < Number(minAmount)) {
-        return false;
-      }
-
-      if (maxAmount && Number(inv.due) > Number(maxAmount)) {
-        return false;
-      }
-
-      return true;
-    })
-    .filter((inv) => {
-      if (!month) return true;
-
-      if (!inv.dueDate) return false;
-
-      return new Date(inv.invoiceDate).getMonth() + 1 === Number(month);
-    })
-    .sort((a, b) => {
-      // If aging filter is selected, sort by overdue days (highest → lowest)
-      if (aging) {
-        return b.dueDays - a.dueDays;
-      }
-
-      // Otherwise sort by due amount
-      if (sort === "low") {
-        return a.due - b.due;
-      }
-
-      return b.due - a.due;
-    });
-}
+import { processInvoiceEvents } from "@/lib/notifications/event-services";
+import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
 
 export async function createInvoice(formData) {
   // =====================================
@@ -255,41 +125,173 @@ export async function createInvoice(formData) {
   // INSERT
   // =====================================
 
-  await db.insert(invoices).values({
-    companyId,
-    clientId,
-    financialYear,
+  const [invoice] = await db
+    .insert(invoices)
+    .values({
+      companyId,
+      clientId,
+      financialYear,
 
-    invoiceNumber,
-    invoiceDate,
-    dueDate,
+      invoiceNumber,
+      invoiceDate,
+      dueDate,
 
-    invoiceAmount: calculatedInvoice.invoiceAmount,
+      invoiceAmount: calculatedInvoice.invoiceAmount,
 
-    basicAmount: calculatedInvoice.basicAmount,
+      basicAmount: calculatedInvoice.basicAmount,
 
-    cgstAmount: calculatedInvoice.cgstAmount,
-    sgstAmount: calculatedInvoice.sgstAmount,
-    igstAmount: calculatedInvoice.igstAmount,
+      cgstAmount: calculatedInvoice.cgstAmount,
+      sgstAmount: calculatedInvoice.sgstAmount,
+      igstAmount: calculatedInvoice.igstAmount,
 
-    tdsAmount: calculatedInvoice.tdsAmount,
+      tdsAmount: calculatedInvoice.tdsAmount,
 
-    deductionAmount: calculatedInvoice.deductionAmount,
-    otherCharges: calculatedInvoice.otherCharges,
+      deductionAmount: calculatedInvoice.deductionAmount,
+      otherCharges: calculatedInvoice.otherCharges,
 
-    netPayableAmount: calculatedInvoice.netPayableAmount,
+      netPayableAmount: calculatedInvoice.netPayableAmount,
 
-    gstNumberUsed: calculatedInvoice.gstNumberUsed,
-    tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
+      gstNumberUsed: calculatedInvoice.gstNumberUsed,
+      tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
 
-    status: "pending",
+      paidAmount: "0",
+      outstandingAmount: netPayableAmount,
 
-    notes,
-  });
+      status: "pending",
+
+      notes,
+    })
+    .returning({
+      id: invoices.id,
+    });
+
+  await processInvoiceEvents(invoice.id);
 
   return {
     success: true,
   };
+}
+
+export async function getInvoices(
+  search,
+  status,
+  sort = "high",
+  aging = "",
+  financialYear = "",
+  month = "",
+  minAmount = "",
+  maxAmount = "",
+  alphabet = "",
+) {
+  const conditions = [isNull(invoices.deletedAt)];
+  if (financialYear) {
+    conditions.push(eq(invoices.financialYear, financialYear));
+  }
+
+  // SEARCH
+  if (search) {
+    conditions.push(
+      or(
+        ilike(clients.companyName, `%${search}%`),
+        ilike(clients.companyCode, `%${search}%`),
+        ilike(invoices.invoiceNumber, `%${search}%`),
+      ),
+    );
+  }
+
+  if (alphabet) {
+    conditions.push(ilike(clients.companyName, `${alphabet}%`));
+  }
+
+  const query = db
+    .select({
+      id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      invoiceAmount: invoices.invoiceAmount,
+
+      netPayableAmount: invoices.netPayableAmount,
+      invoiceDate: invoices.invoiceDate,
+      dueDate: invoices.dueDate,
+      financialYear: invoices.financialYear,
+      companyName: clients.companyName,
+      companyCode: clients.companyCode,
+      gstNumber: clients.gstNumber,
+
+      paidAmount: invoices.paidAmount,
+      outstandingAmount: invoices.outstandingAmount,
+      status: invoices.status,
+    })
+    .from(invoices)
+    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .where(and(...conditions));
+
+  const data = await query.orderBy(invoices.id);
+
+  const invoiceList = enrichInvoices(data);
+
+  // COMPUTE STATUS
+  return invoiceList
+    .filter((inv) => {
+      if (!aging) return true;
+
+      if (inv.dueDays <= 0) return false;
+
+      switch (aging) {
+        case "0-30":
+          return inv.dueDays <= 30;
+
+        case "31-60":
+          return inv.dueDays >= 31 && inv.dueDays <= 60;
+
+        case "61-90":
+          return inv.dueDays >= 61 && inv.dueDays <= 90;
+
+        case "91-180":
+          return inv.dueDays >= 91 && inv.dueDays <= 180;
+
+        case "180+":
+          return inv.dueDays > 180;
+
+        default:
+          return true;
+      }
+    })
+    .filter((inv) => {
+      if (!status) return true;
+
+      return inv.status === status;
+    })
+    .filter((inv) => {
+      if (minAmount && Number(inv.outstandingAmount) < Number(minAmount)) {
+        return false;
+      }
+
+      if (maxAmount && Number(inv.outstandingAmount) > Number(maxAmount)) {
+        return false;
+      }
+
+      return true;
+    })
+    .filter((inv) => {
+      if (!month) return true;
+
+      if (!inv.dueDate) return false;
+
+      return new Date(inv.invoiceDate).getMonth() + 1 === Number(month);
+    })
+    .sort((a, b) => {
+      // If aging filter is selected, sort by overdue days (highest → lowest)
+      if (aging) {
+        return b.dueDays - a.dueDays;
+      }
+
+      // Otherwise sort by due amount
+      if (sort === "low") {
+        return Number(a.outstandingAmount) - Number(b.outstandingAmount);
+      }
+
+      return Number(b.outstandingAmount) - Number(a.outstandingAmount);
+    });
 }
 
 // Get Invoice by ID
@@ -434,12 +436,6 @@ export async function updateInvoice(id, formData) {
     };
   }
 
-  const invoiceStatus = calculateInvoiceStatus({
-    netPayable: calculatedInvoice.netPayableAmount,
-    paid,
-    dueDate,
-  });
-
   // =====================================
   // UPDATE
   // =====================================
@@ -464,10 +460,11 @@ export async function updateInvoice(id, formData) {
       gstNumberUsed: calculatedInvoice.gstNumberUsed,
       tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
       notes,
-      status: invoiceStatus.status,
       updatedAt: new Date(),
     })
     .where(eq(invoices.id, id));
+
+  await updateInvoiceFinancials(id);
 
   revalidatePath("/invoices");
   revalidatePath(`/invoices/${id}`);
@@ -555,4 +552,28 @@ export async function getFinancialYears() {
     .filter(Boolean)
     .sort()
     .reverse();
+}
+
+export async function getMaxOutstandingAmount() {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser?.user || !currentUser?.companyId) {
+    throw new Error("Unauthorized");
+  }
+
+  const [result] = await db
+    .select({
+      maxOutstanding: sql`
+        COALESCE(MAX(${invoices.outstandingAmount}), 0)
+      `,
+    })
+    .from(invoices)
+    .where(
+      and(
+        eq(invoices.companyId, currentUser.companyId),
+        isNull(invoices.deletedAt),
+      ),
+    );
+
+  return Number(result?.maxOutstanding || 0);
 }

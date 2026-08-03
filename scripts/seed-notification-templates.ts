@@ -9,6 +9,8 @@ export async function seedNotificationTemplates(): Promise<void> {
       name: "Bill Submitted",
       subject: "Invoice {{invoiceNumber}} Submitted",
       body: `
+I hope this email finds you well.
+
 Your invoice has been successfully submitted.
 
 Please review the invoice summary below and arrange payment on or before the due date.
@@ -24,6 +26,8 @@ If you have any questions, please contact our accounts team.
       name: "Due Reminder",
       subject: "Gentle Payment Reminder - Invoice {{invoiceNumber}}",
       body: `
+I hope this email finds you well. 
+
 This is a friendly reminder that payment for the invoice below is approaching its due date.
 
 We kindly request you to arrange payment before the due date to avoid any inconvenience.
@@ -57,6 +61,8 @@ Please follow up with the customer to confirm the payment status and record any 
       name: "Due Today",
       subject: "Payment Due Today - Invoice {{invoiceNumber}}",
       body: `
+I hope this email finds you well.
+
 This is a reminder that payment for the invoice below is due today.
 
 Kindly arrange payment at your earliest convenience to ensure uninterrupted services and avoid the invoice becoming overdue.
@@ -74,6 +80,8 @@ If payment has already been initiated or done, please disregard this reminder. T
       name: "Overdue Reminder",
       subject: "Overdue Payment Reminder - Invoice {{invoiceNumber}}",
       body: `
+I hope this email finds you well.
+
 This is a reminder that the invoice below is due today.
 
 Kindly arrange payment at your earliest convenience to avoid overdue charges or further reminders.
@@ -93,7 +101,7 @@ If you have any questions or require any assistance, please contact our accounts
       type: "PAYMENT_RECEIVED",
       name: "Payment Received",
       subject: "Payment Received - Invoice {{invoiceNumber}}",
-      body: `
+      body: `      
 Thank you for your payment.
 
 We have successfully received your payment and updated our records.
@@ -128,6 +136,8 @@ We look forward to continuing to serve you and appreciate your valued business.
       name: "Service Suspension Notice",
       subject: "Service Suspension Notice",
       body: `
+I hope this email finds you well.
+
 Despite previous reminders, payment for the invoice below remains outstanding.
 
 As per our payment policy, your account has been temporarily placed under service suspension.

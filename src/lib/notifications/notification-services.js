@@ -93,7 +93,11 @@ export const serviceSuspensionAlert = (data) =>
 // Core Notification Processor
 // ======================================================
 
-async function processNotification(notificationType, templateType, data) {
+export async function processNotification(
+  notificationType,
+  templateType,
+  data,
+) {
   // ------------------------------------------
   // Build Notification Payload
   // ------------------------------------------
@@ -134,11 +138,15 @@ async function processNotification(notificationType, templateType, data) {
   // User Preference
   // ------------------------------------------
 
-  const emailEnabled = await isNotificationEnabled(
-    data.userId,
-    notificationType,
-    DELIVERY_CHANNELS.EMAIL,
-  );
+  let emailEnabled = true;
+
+  if (data.userId) {
+    emailEnabled = await isNotificationEnabled(
+      data.userId,
+      notificationType,
+      DELIVERY_CHANNELS.EMAIL,
+    );
+  }
 
   if (!emailEnabled) {
     return {
