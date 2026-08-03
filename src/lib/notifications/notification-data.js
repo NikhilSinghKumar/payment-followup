@@ -8,12 +8,14 @@ import {
   companies,
   clientContacts,
   clientContactEmails,
+  payments,
+  paymentAllocations,
 } from "@/db/schema";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
 
-export async function getInvoiceNotificationData(invoiceId) {
+export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
   // =====================================
   // LOAD INVOICE + CLIENT + COMPANY
   // =====================================
@@ -52,10 +54,44 @@ export async function getInvoiceNotificationData(invoiceId) {
 
   const invoice = result[0];
 
+  const allocationResult = await db
+    .select({
+      totalPaid: sql`
+      COALESCE(
+        SUM(${paymentAllocations.allocatedAmount}),
+        0
+      )
+    `,
+    })
+    .from(paymentAllocations)
+    .where(
+      and(
+        eq(paymentAllocations.invoiceId, invoiceId),
+        isNull(paymentAllocations.deletedAt),
+      ),
+    );
+
+  const totalPaid = Number(allocationResult[0]?.totalPaid || 0);
+
+  const paymentResult = paymentId
+    ? await db
+        .select({
+          amount: payments.amount,
+          paymentDate: payments.paymentDate,
+        })
+        .from(payments)
+        .where(eq(payments.id, paymentId))
+        .limit(1)
+    : [];
+
+  const payment = paymentResult[0] ?? null;
+
+  console.log("[Payment Query]", payment);
+
   // Payment Summary
   const paymentSummary = calculateInvoiceStatus({
     netPayable: invoice.netPayableAmount,
-    paid: 0,
+    paid: totalPaid,
     dueDate: invoice.dueDate,
   });
 
@@ -66,7 +102,6 @@ export async function getInvoiceNotificationData(invoiceId) {
   const contacts = await db
     .select({
       contactId: clientContacts.id,
-      userId: clientContacts.id, // placeholder until notification users are finalized
     })
     .from(clientContacts)
     .where(
@@ -117,7 +152,7 @@ export async function getInvoiceNotificationData(invoiceId) {
     clientId: invoice.clientId,
     invoiceId: invoice.invoiceId,
 
-    paymentId: null,
+    paymentId,
 
     // Recipient
     email: emails[0].email,
@@ -133,12 +168,17 @@ export async function getInvoiceNotificationData(invoiceId) {
     invoiceAmount: Number(invoice.invoiceAmount),
     netPayableAmount: Number(invoice.netPayableAmount),
 
-    status: invoice.status,
+    status: paymentSummary.status,
 
     // Invoice payment summary
     paid: paymentSummary.paid,
     due: paymentSummary.due,
     dueDays: paymentSummary.dueDays,
+    // Payment
+    paymentAmount: payment ? Number(payment.amount) : 0,
+    paymentDate: payment?.paymentDate,
+    totalPaid: paymentSummary.paid,
+    outstandingAmount: paymentSummary.due,
 
     // Sender company
     senderCompany: invoice.senderCompany,

@@ -104,6 +104,8 @@ export async function updatePayment(paymentId, invoiceId, prevState, formData) {
       })
       .where(eq(invoices.id, invoiceId));
 
+    await processPaymentEvents(invoiceId, paymentId);
+
     // =====================================
     // REFRESH
     // =====================================

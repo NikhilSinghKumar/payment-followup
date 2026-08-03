@@ -15,6 +15,7 @@ import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
 import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
+import { processPaymentEvents } from "@/lib/notifications/event-services";
 
 // =====================================
 // SUMMARY
@@ -317,11 +318,8 @@ export async function addInvoicePayment(invoiceId, formData) {
   // =====================================
 
   try {
+    let paymentId;
     await db.transaction(async (tx) => {
-      // =====================================
-      // CREATE PAYMENT
-      // =====================================
-
       const insertedPayment = await tx
         .insert(payments)
         .values({
@@ -339,11 +337,7 @@ export async function addInvoicePayment(invoiceId, formData) {
           id: payments.id,
         });
 
-      const paymentId = insertedPayment[0].id;
-
-      // =====================================
-      // CREATE PAYMENT ALLOCATION
-      // =====================================
+      paymentId = insertedPayment[0].id;
 
       await tx.insert(paymentAllocations).values({
         paymentId,
@@ -352,11 +346,11 @@ export async function addInvoicePayment(invoiceId, formData) {
       });
     });
 
-    // =====================================
-    // UPDATE INVOICE FINANCIALS
-    // =====================================
+    // transaction committed
 
     await updateInvoiceFinancials(invoiceId);
+
+    await processPaymentEvents(invoiceId, paymentId);
   } catch (err) {
     console.error(err);
     throw err;

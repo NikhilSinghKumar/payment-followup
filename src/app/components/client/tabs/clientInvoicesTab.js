@@ -12,17 +12,7 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center justify-end gap-2">
-          <DownloadInvoiceSample />
-
-          <ImportInvoices clientId={clientId} />
-
           <ExportInvoices clientId={clientId} />
-          <Link
-            href={`/invoices/new?clientId=${clientId}`}
-            className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
-          >
-            + New Invoice
-          </Link>
         </div>
       </div>
 
