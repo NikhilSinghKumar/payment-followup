@@ -27,11 +27,8 @@ export async function processInvoiceEvents(invoiceId) {
 // ======================================================
 
 export async function processPaymentEvents(invoiceId, paymentId) {
-  console.log("[Payment Event] Started", { invoiceId, paymentId });
 
   const data = await getInvoiceNotificationData(invoiceId, paymentId);
-
-  console.log("[Payment Event] Data:", data);
 
   if (!data) return;
 

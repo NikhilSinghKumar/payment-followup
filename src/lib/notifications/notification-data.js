@@ -86,8 +86,6 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
 
   const payment = paymentResult[0] ?? null;
 
-  console.log("[Payment Query]", payment);
-
   // Payment Summary
   const paymentSummary = calculateInvoiceStatus({
     netPayable: invoice.netPayableAmount,
