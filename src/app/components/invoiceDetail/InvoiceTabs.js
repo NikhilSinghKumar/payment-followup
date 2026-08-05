@@ -27,18 +27,18 @@ export default function InvoiceTabs({
       key: "awbs",
       label: `AWBs (${awbs.length})`,
     },
-    {
-      key: "payments",
-      label: `Payments (${payments.length})`,
-    },
-    {
-      key: "followups",
-      label: `Followups (${followups.length})`,
-    },
-    {
-      key: "activity",
-      label: "Activity",
-    },
+    // {
+    //   key: "payments",
+    //   label: `Payments (${payments.length})`,
+    // },
+    // {
+    //   key: "followups",
+    //   label: `Followups (${followups.length})`,
+    // },
+    // {
+    //   key: "activity",
+    //   label: "Activity",
+    // },
   ];
 
   return (
