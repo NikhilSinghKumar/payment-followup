@@ -21,10 +21,10 @@ const tabs = [
     key: "invoices",
     label: "Invoices",
   },
-  // {
-  //   key: "payments",
-  //   label: "Payments",
-  // },
+  {
+    key: "payments",
+    label: "Payments",
+  },
   {
     key: "followups",
     label: "Followups",

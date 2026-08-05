@@ -4,6 +4,7 @@ import {
   clients,
   invoices,
   invoiceAwbs,
+  payments,
   paymentAllocations,
 } from "@/db/schema";
 import { getClientById } from "@/app/actions/client";
@@ -21,6 +22,7 @@ import { getClientLocationsByClientId } from "@/app/actions/clientLocations";
 import { getClientContactsByClientId } from "@/app/actions/clientContacts";
 import { getSubClientsByClientId } from "@/app/actions/sub-client";
 import { getFollowupsByClient } from "@/app/actions/followup";
+import { getPaymentsByClient } from "@/app/actions/payment";
 
 export default async function ClientDetailPage({ params, searchParams }) {
   const { id } = await params;
@@ -33,9 +35,14 @@ export default async function ClientDetailPage({ params, searchParams }) {
   const activeTab = resolvedSearchParams?.tab || "overview";
 
   let clientFollowups = [];
+  let clientPayments = [];
 
   if (activeTab === "followups") {
     clientFollowups = await getFollowupsByClient(clientId);
+  }
+
+  if (activeTab === "payments") {
+    clientPayments = await getPaymentsByClient(clientId);
   }
 
   const clientLocations = await getClientLocationsByClientId(clientId);
@@ -113,6 +120,30 @@ export default async function ClientDetailPage({ params, searchParams }) {
   const normalizedInvoiceData = enrichInvoices(invoiceData);
 
   // =====================================
+  // CLIENT PAYMENT SUMMARY
+  // =====================================
+
+  const paymentSummary = await db
+    .select({
+      paymentsReceived: sql`
+      COALESCE(
+        SUM(${payments.amount}),
+        0
+      )
+    `.mapWith(Number),
+    })
+    .from(payments)
+    .where(
+      and(
+        eq(payments.clientId, clientId),
+        isNull(payments.deletedAt),
+        eq(payments.isVoided, false),
+      ),
+    );
+
+  const paymentsReceived = Number(paymentSummary[0]?.paymentsReceived || 0);
+
+  // =====================================
   // SUMMARY TOTALS
   // =====================================
 
@@ -137,10 +168,12 @@ export default async function ClientDetailPage({ params, searchParams }) {
     0,
   );
 
-  const totalPaid = normalizedInvoiceData.reduce(
+  const totalAllocated = normalizedInvoiceData.reduce(
     (sum, item) => sum + Number(item.paidAmount || 0),
     0,
   );
+
+  const unallocatedAmount = Math.max(paymentsReceived - totalAllocated, 0);
 
   return (
     <div className="bg-zinc-50">
@@ -189,14 +222,14 @@ export default async function ClientDetailPage({ params, searchParams }) {
         {/* SUMMARY CARDS */}
         {/* ===================================== */}
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-7">
           {/* Total Invoices */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Total Invoices
             </p>
 
-            <h2 className="mt-2 text-2xl font-semibold text-zinc-800">
+            <h2 className="mt-2 text-xl font-semibold text-zinc-800">
               {totalInvoices}
             </h2>
           </div>
@@ -207,7 +240,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
               Invoice Amount
             </p>
 
-            <h2 className="mt-2 text-2xl font-semibold text-zinc-800">
+            <h2 className="mt-2 text-xl font-semibold text-zinc-800">
               ₹{totalAmount.toLocaleString()}
             </h2>
           </div>
@@ -218,29 +251,40 @@ export default async function ClientDetailPage({ params, searchParams }) {
               Net Payable
             </p>
 
-            <h2 className="mt-2 text-2xl font-semibold text-blue-600">
+            <h2 className="mt-2 text-xl font-semibold text-blue-600">
               ₹{totalNetPayable.toLocaleString("en-IN")}
             </h2>
           </div>
 
-          {/* Total Paid */}
+          {/* Payments Received */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Total Paid
+              Payments Received
             </p>
 
-            <h2 className="mt-2 text-2xl font-semibold text-emerald-500">
-              ₹{totalPaid.toLocaleString("en-IN")}
+            <h2 className="mt-2 text-xl font-semibold text-emerald-500">
+              ₹{paymentsReceived.toLocaleString("en-IN")}
+            </h2>
+          </div>
+
+          {/* Unallocated Payment */}
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Unallocated
+            </p>
+
+            <h2 className="mt-2 text-xl font-semibold text-violet-600">
+              ₹{unallocatedAmount.toLocaleString("en-IN")}
             </h2>
           </div>
 
           {/* Outstanding */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Outstanding
+              Invoice Outstanding
             </p>
 
-            <h2 className="mt-2 text-2xl font-semibold text-orange-600">
+            <h2 className="mt-2 text-xl font-semibold text-orange-600">
               ₹{totalOutstanding.toLocaleString()}
             </h2>
           </div>
@@ -251,7 +295,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
               Overdue Invoices
             </p>
 
-            <h2 className="mt-2 text-2xl font-semibold text-red-500">
+            <h2 className="mt-2 text-xl font-semibold text-red-500">
               {overdueInvoices}
             </h2>
           </div>
@@ -290,7 +334,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
           <ClientContactsTab clientId={clientId} contacts={contacts} />
         )}
 
-        {activeTab === "payments" && <ClientPaymentsTab payments={[]} />}
+        {activeTab === "payments" && (
+          <ClientPaymentsTab clientId={clientId} payments={clientPayments} />
+        )}
 
         {activeTab === "followups" && (
           <ClientFollowupsTab clientId={clientId} followups={clientFollowups} />

@@ -33,11 +33,11 @@ export const SIDEBAR_NAVIGATION = [
         icon: FileText,
       },
 
-      // {
-      //   title: "Payments",
-      //   href: "/payments",
-      //   icon: IndianRupee,
-      // },
+      {
+        title: "Payments",
+        href: "/payments",
+        icon: IndianRupee,
+      },
 
       {
         title: "Followups",
