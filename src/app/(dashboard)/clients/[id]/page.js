@@ -20,6 +20,7 @@ import ClientFollowupsTab from "@/app/components/client/tabs/clientFollowupsTab"
 import { getClientLocationsByClientId } from "@/app/actions/clientLocations";
 import { getClientContactsByClientId } from "@/app/actions/clientContacts";
 import { getSubClientsByClientId } from "@/app/actions/sub-client";
+import { getFollowupsByClient } from "@/app/actions/followup";
 
 export default async function ClientDetailPage({ params, searchParams }) {
   const { id } = await params;
@@ -30,6 +31,12 @@ export default async function ClientDetailPage({ params, searchParams }) {
   const contacts = await getClientContactsByClientId(clientId);
 
   const activeTab = resolvedSearchParams?.tab || "overview";
+
+  let clientFollowups = [];
+
+  if (activeTab === "followups") {
+    clientFollowups = await getFollowupsByClient(clientId);
+  }
 
   const clientLocations = await getClientLocationsByClientId(clientId);
   const subClients = await getSubClientsByClientId(clientId);
@@ -285,7 +292,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
 
         {activeTab === "payments" && <ClientPaymentsTab payments={[]} />}
 
-        {activeTab === "followups" && <ClientFollowupsTab followups={[]} />}
+        {activeTab === "followups" && (
+          <ClientFollowupsTab clientId={clientId} followups={clientFollowups} />
+        )}
       </div>
     </div>
   );

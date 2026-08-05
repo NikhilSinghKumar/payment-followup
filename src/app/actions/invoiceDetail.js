@@ -9,6 +9,7 @@ import {
   payments,
   paymentAllocations,
   followups,
+  followupInvoices,
 } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
@@ -183,9 +184,22 @@ export async function getInvoicePayments(invoiceId) {
 
 export async function getInvoiceFollowups(invoiceId) {
   return await db
-    .select()
-    .from(followups)
-    .where(and(eq(followups.invoiceId, invoiceId), isNull(followups.deletedAt)))
+    .select({
+      id: followups.id,
+      clientId: followups.clientId,
+      note: followups.note,
+      followupDate: followups.followupDate,
+      nextFollowupDate: followups.nextFollowupDate,
+      createdAt: followups.createdAt,
+    })
+    .from(followupInvoices)
+    .innerJoin(followups, eq(followupInvoices.followupId, followups.id))
+    .where(
+      and(
+        eq(followupInvoices.invoiceId, Number(invoiceId)),
+        isNull(followups.deletedAt),
+      ),
+    )
     .orderBy(desc(followups.createdAt));
 }
 

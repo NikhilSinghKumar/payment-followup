@@ -1,145 +1,244 @@
-export default function ClientFollowupsTab({ followups = [] }) {
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+export default function ClientFollowupsTab({ clientId, followups = [] }) {
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [selectedInvoices, setSelectedInvoices] = useState([]);
+
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = useState("");
+
+  function handleViewInvoices(invoices) {
+    setSelectedInvoices(invoices);
+    setInvoiceDialogOpen(true);
+  }
+
+  function handleViewNote(note) {
+    setSelectedNote(note || "");
+    setNoteDialogOpen(true);
+  }
+
   return (
-    <div className="space-y-4">
-      {/* ===================================== */}
-      {/* HEADER */}
-      {/* ===================================== */}
+    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+      {/* Empty State */}
+      {followups.length === 0 ? (
+        <div className="px-6 py-14 text-center">
+          <p className="text-sm font-medium text-zinc-700">
+            No follow-ups found
+          </p>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-800">Followups</h2>
-
-          <p className="mt-1 text-sm text-zinc-500">
-            Track communication, payment commitments, and client responses.
+          <p className="mt-1 text-sm text-zinc-400">
+            No payment follow-up has been recorded for this client yet.
           </p>
         </div>
-
-        <button className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md">
-          + Add Followup
-        </button>
-      </div>
-
-      {/* ===================================== */}
-      {/* EMPTY STATE */}
-      {/* ===================================== */}
-
-      {followups.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-12 text-center shadow-sm">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100 text-2xl">
-            📝
-          </div>
-
-          <h3 className="mt-4 text-lg font-semibold text-zinc-800">
-            No followups added
-          </h3>
-        </div>
       ) : (
-        /* ===================================== */
-        /* TIMELINE */
-        /* ===================================== */
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="border-b border-zinc-200 bg-zinc-50">
+              <tr>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Related Invoices
+                </th>
 
-        <div className="space-y-4">
-          {followups.map((item, index) => {
-            return (
-              <div
-                key={item.id}
-                className="relative rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm"
-              >
-                {/* TIMELINE LINE */}
-                {index !== followups.length - 1 && (
-                  <div className="absolute left-[27px] top-[72px] h-[calc(100%-48px)] w-px bg-zinc-200"></div>
-                )}
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Follow-up Date
+                </th>
 
-                <div className="flex gap-4">
-                  {/* ICON */}
-                  <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-sm font-semibold text-white shadow-sm">
-                    F
-                  </div>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Next Follow-up
+                </th>
 
-                  {/* CONTENT */}
-                  <div className="min-w-0 flex-1">
-                    {/* TOP */}
-                    <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-medium text-zinc-800">
-                            {item.title || "Followup"}
-                          </h3>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Remarks
+                </th>
+              </tr>
+            </thead>
 
-                          {item.type && (
-                            <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
-                              {item.type}
-                            </span>
-                          )}
-                        </div>
+            <tbody className="divide-y divide-zinc-100">
+              {followups.map((followup) => {
+                const relatedInvoices =
+                  followup.followupInvoices?.map((item) => item.invoice) ?? [];
 
-                        <p className="mt-1 text-sm text-zinc-500">
-                          {item.createdBy || "System"}
+                return (
+                  <tr
+                    key={followup.id}
+                    className="transition hover:bg-zinc-50/70"
+                  >
+                    {/* Related Invoices */}
+                    <td className="px-5 py-4">
+                      <InvoiceLinks
+                        invoices={relatedInvoices}
+                        onViewAll={handleViewInvoices}
+                      />
+                    </td>
+
+                    {/* Follow-up Date */}
+                    <td className="whitespace-nowrap px-5 py-4 text-sm text-zinc-700">
+                      {formatDate(followup.followupDate)}
+                    </td>
+
+                    {/* Next Follow-up */}
+                    <td className="whitespace-nowrap px-5 py-4 text-sm text-zinc-700">
+                      {formatDate(followup.nextFollowupDate)}
+                    </td>
+
+                    {/* Remarks */}
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <p className="max-w-[350px] truncate text-sm text-zinc-600">
+                          {followup.note || "—"}
                         </p>
+
+                        {followup.note && (
+                          <button
+                            type="button"
+                            onClick={() => handleViewNote(followup.note)}
+                            className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-700"
+                          >
+                            View
+                          </button>
+                        )}
                       </div>
-
-                      {/* DATE */}
-                      <div className="text-sm text-zinc-500">
-                        {item.createdAt
-                          ? new Date(item.createdAt).toLocaleString()
-                          : "-"}
-                      </div>
-                    </div>
-
-                    {/* NOTE */}
-                    <div className="mt-4 rounded-xl bg-zinc-50 p-4">
-                      <p className="whitespace-pre-line text-sm leading-6 text-zinc-700">
-                        {item.note}
-                      </p>
-                    </div>
-
-                    {/* FOOTER */}
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      {/* NEXT FOLLOWUP */}
-                      {item.followupDate && (
-                        <div className="rounded-lg bg-orange-50 px-3 py-2 text-xs font-medium text-orange-700">
-                          Next Followup:{" "}
-                          {new Date(item.followupDate).toLocaleDateString()}
-                        </div>
-                      )}
-
-                      {/* RESPONSE */}
-                      {item.responseStatus && (
-                        <div className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
-                          {item.responseStatus}
-                        </div>
-                      )}
-
-                      {/* PROMISE */}
-                      {item.promisedDate && (
-                        <div className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">
-                          Payment Promise:{" "}
-                          {new Date(item.promisedDate).toLocaleDateString()}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ACTIONS */}
-                    <div className="mt-4 flex gap-2">
-                      <button className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100">
-                        Edit
-                      </button>
-
-                      <button className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100">
-                        Add Reply
-                      </button>
-
-                      <button className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100">
-                        Mark Done
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
+      )}
+
+      {/* ========================================= */}
+      {/* RELATED INVOICES DIALOG */}
+      {/* ========================================= */}
+
+      <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
+        <DialogContent className="max-w-lg bg-white text-zinc-900 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle>Related Invoices</DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-2">
+            <p className="mb-3 text-sm text-zinc-500">
+              {selectedInvoices.length}{" "}
+              {selectedInvoices.length === 1 ? "invoice was" : "invoices were"}{" "}
+              included in this follow-up.
+            </p>
+
+            <div className="overflow-hidden rounded-xl border border-zinc-200">
+              <div className="divide-y divide-zinc-100">
+                {selectedInvoices.map((invoice) => (
+                  <Link
+                    key={invoice.id}
+                    href={`/invoices/${invoice.id}`}
+                    className="
+                      flex items-center justify-between
+                      px-4 py-3
+                      transition hover:bg-zinc-50
+                    "
+                  >
+                    <span className="text-sm font-medium text-zinc-700">
+                      {invoice.invoiceNumber}
+                    </span>
+
+                    <span className="text-xs font-medium text-blue-600">
+                      View invoice
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ========================================= */}
+      {/* REMARKS DIALOG */}
+      {/* ========================================= */}
+
+      <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
+        <DialogContent className="max-w-lg bg-white text-zinc-900 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle>Follow-up Remarks</DialogTitle>
+          </DialogHeader>
+
+          <div className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">
+            {selectedNote || "No remarks recorded."}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/**
+ * ======================================================
+ * RELATED INVOICES
+ * ======================================================
+ */
+
+function InvoiceLinks({ invoices = [], onViewAll }) {
+  // Client-level follow-up with no specific invoice
+  if (invoices.length === 0) {
+    return <span className="text-sm text-zinc-400">General follow-up</span>;
+  }
+
+  const firstInvoice = invoices[0];
+  const remainingCount = invoices.length - 1;
+
+  return (
+    <div className="flex items-center gap-1.5">
+      {/* First Invoice */}
+      <Link
+        href={`/invoices/${firstInvoice.id}`}
+        title={firstInvoice.invoiceNumber}
+        className="inline-block max-w-[160px]
+          truncate rounded-md
+          bg-blue-50 px-2 py-1
+          text-xs font-medium text-blue-700
+          transition hover:bg-blue-100
+        "
+      >
+        {firstInvoice.invoiceNumber}
+      </Link>
+
+      {/* Remaining Invoice Count */}
+      {remainingCount > 0 && (
+        <button
+          type="button"
+          onClick={() => onViewAll(invoices)}
+          className="
+            shrink-0 whitespace-nowrap
+            rounded-md bg-zinc-100
+            px-2 py-1
+            text-xs font-medium text-zinc-600
+            transition
+            hover:bg-zinc-200
+            hover:text-zinc-800
+          "
+        >
+          +{remainingCount} more
+        </button>
       )}
     </div>
   );
+}
+
+function formatDate(date) {
+  if (!date) return "—";
+
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }

@@ -25,10 +25,10 @@ const tabs = [
   //   key: "payments",
   //   label: "Payments",
   // },
-  // {
-  //   key: "followups",
-  //   label: "Followups",
-  // },
+  {
+    key: "followups",
+    label: "Followups",
+  },
 ];
 
 export default function ClientTabs({ clientId, activeTab = "overview" }) {

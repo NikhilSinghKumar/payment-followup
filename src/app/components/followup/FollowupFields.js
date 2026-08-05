@@ -101,8 +101,7 @@ export default function FollowupFields({ values, onChange, disabled = false }) {
             onChange={onChange}
             disabled={disabled}
             placeholder="Add notes about the payment discussion, commitment, or response..."
-            className="
-              w-full resize-none rounded-lg border border-zinc-200
+            className="w-full resize-none rounded-lg border border-zinc-200
               bg-white py-2.5 pl-9 pr-3
               text-sm text-zinc-900 shadow-sm
               outline-none transition

@@ -11,6 +11,7 @@ import {
   paymentAllocations,
   clientSubClients,
   followups,
+  followupInvoices,
   invoiceAwbs,
   users,
   sessions,
@@ -76,6 +77,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   contacts: many(clientContacts),
   invoices: many(invoices),
   payments: many(payments),
+  followups: many(followups),
   subClients: many(clientSubClients),
   notifications: many(notifications),
   notificationLogs: many(notificationLogs),
@@ -170,7 +172,7 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   }),
 
   payments: many(payments),
-  followups: many(followups),
+  followupInvoices: many(followupInvoices),
   awbs: many(invoiceAwbs),
   notifications: many(notifications),
   notificationLogs: many(notificationLogs),
@@ -212,17 +214,34 @@ export const paymentAllocationsRelations = relations(
   }),
 );
 
-export const followupsRelations = relations(followups, ({ one }) => ({
+export const followupsRelations = relations(followups, ({ one, many }) => ({
   company: one(companies, {
     fields: [followups.companyId],
     references: [companies.id],
   }),
 
-  invoice: one(invoices, {
-    fields: [followups.invoiceId],
-    references: [invoices.id],
+  client: one(clients, {
+    fields: [followups.clientId],
+    references: [clients.id],
   }),
+
+  followupInvoices: many(followupInvoices),
 }));
+
+export const followupInvoicesRelations = relations(
+  followupInvoices,
+  ({ one }) => ({
+    followup: one(followups, {
+      fields: [followupInvoices.followupId],
+      references: [followups.id],
+    }),
+
+    invoice: one(invoices, {
+      fields: [followupInvoices.invoiceId],
+      references: [invoices.id],
+    }),
+  }),
+);
 
 export const invoiceAwbsRelations = relations(invoiceAwbs, ({ one }) => ({
   invoice: one(invoices, {

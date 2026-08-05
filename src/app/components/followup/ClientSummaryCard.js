@@ -2,7 +2,7 @@ export default function ClientSummaryCard({ summary }) {
   if (!summary) return null;
 
   return (
-    <div className="rounded-lg border bg-white p-5">
+    <div className="rounded-lg border border-zinc-200 bg-white p-5">
       <h3 className="mb-4 text-lg font-semibold">Client Summary</h3>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

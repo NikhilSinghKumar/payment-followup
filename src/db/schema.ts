@@ -1232,18 +1232,27 @@ export const paymentAllocations = pgTable(
 // =========================
 // FOLLOWUPS
 // =========================
+// =========================
+// FOLLOWUPS
+// =========================
+
 export const followups = pgTable(
   "followups",
   {
     id: serial("id").primaryKey(),
+
     companyId: integer("company_id")
       .notNull()
       .references(() => companies.id, {
         onDelete: "cascade",
       }),
-    invoiceId: integer("invoice_id")
-      .references(() => invoices.id)
-      .notNull(),
+
+    // Follow-up belongs primarily to a client
+    clientId: integer("client_id")
+      .notNull()
+      .references(() => clients.id, {
+        onDelete: "cascade",
+      }),
 
     note: text("note").notNull(),
 
@@ -1254,26 +1263,58 @@ export const followups = pgTable(
     nextFollowupDate: timestamp("next_followup_date", {
       withTimezone: true,
     }),
+
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),
+
     deletedAt: timestamp("deleted_at", {
       withTimezone: true,
     }),
   },
-  (table) => {
-    return {
-      // =========================
-      // INDEXES
-      // =========================
+  (table) => ({
+    clientIdx: index("followup_client_idx").on(table.clientId),
 
-      invoiceIdx: index("followup_invoice_idx").on(table.invoiceId),
-
-      followupDateIdx: index("followup_date_idx").on(table.followupDate),
-    };
-  },
+    followupDateIdx: index("followup_date_idx").on(table.followupDate),
+  }),
 );
 
+// =========================
+// FOLLOWUP INVOICES
+// =========================
+
+export const followupInvoices = pgTable(
+  "followup_invoices",
+  {
+    id: serial("id").primaryKey(),
+
+    followupId: integer("followup_id")
+      .notNull()
+      .references(() => followups.id, {
+        onDelete: "cascade",
+      }),
+
+    invoiceId: integer("invoice_id")
+      .notNull()
+      .references(() => invoices.id, {
+        onDelete: "cascade",
+      }),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+  },
+  (table) => ({
+    uniqueFollowupInvoice: uniqueIndex("unique_followup_invoice").on(
+      table.followupId,
+      table.invoiceId,
+    ),
+
+    followupIdx: index("followup_invoice_followup_idx").on(table.followupId),
+
+    invoiceIdx: index("followup_invoice_invoice_idx").on(table.invoiceId),
+  }),
+);
 // =========================
 // NOTIFICATIONS
 // =========================
