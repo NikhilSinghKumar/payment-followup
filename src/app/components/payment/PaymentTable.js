@@ -291,10 +291,6 @@ export default function PaymentTable({ payments = [] }) {
                           <p className="text-sm font-semibold text-blue-600">
                             {formatCurrency(allocation.allocatedAmount)}
                           </p>
-
-                          <p className="mt-0.5 text-xs text-zinc-400">
-                            View invoice
-                          </p>
                         </div>
                       </Link>
                     ))}

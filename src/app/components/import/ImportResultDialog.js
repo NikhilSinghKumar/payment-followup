@@ -17,6 +17,10 @@ export default function ImportResultDialog({
   onOpenChange,
   title = "Import Result",
   result,
+
+  // Configurable per import type
+  errorFilename = "Import_Errors.csv",
+  errorColumns,
 }) {
   if (!result) return null;
 
@@ -30,32 +34,32 @@ export default function ImportResultDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl">
+      <DialogContent className="max-w-6xl bg-white text-zinc-900 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold">{title}</DialogTitle>
 
           <DialogDescription className="text-sm text-zinc-500">
-            Import completed successfully. Review the summary below and fix any
-            failed rows before importing again.
+            Import completed. Review the summary below and fix any failed rows
+            before importing again.
           </DialogDescription>
         </DialogHeader>
 
         {/* Summary */}
         <ImportSummaryCard summary={summary} />
 
-        {/* Download Button */}
+        {/* Download Error Report */}
         {errors.length > 0 && (
           <div className="flex justify-end">
             <DownloadErrorReport
               errors={errors}
-              filename="Invoice_Import_Errors.csv"
+              filename={errorFilename}
+              columns={errorColumns}
             />
           </div>
         )}
 
         {/* Error Table */}
-
-        <ImportErrorTable errors={errors} />
+        <ImportErrorTable errors={errors} columns={errorColumns} />
       </DialogContent>
     </Dialog>
   );

@@ -119,6 +119,13 @@ export default function ImportInvoices() {
         onOpenChange={setDialogOpen}
         title="Invoice Import Result"
         result={result}
+        errorFilename="Invoice_Import_Errors.csv"
+        errorColumns={[
+          { key: "row", label: "Row" },
+          { key: "companyCode", label: "Client Code" },
+          { key: "invoiceNumber", label: "Invoice Number" },
+          { key: "reason", label: "Reason" },
+        ]}
       />
     </>
   );

@@ -10,9 +10,9 @@ export default function AwbsTab({ invoiceId, awbs }) {
   return (
     <div className="space-y-4">
       {/* TOOLBAR */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-end gap-3">
         {/* SEARCH */}
-        <input placeholder="Search AWB..." className="input-primary max-w-sm" />
+        {/* <input placeholder="Search AWB..." className="input-primary max-w-sm" /> */}
 
         {/* ACTIONS */}
         <div className="flex gap-2">
