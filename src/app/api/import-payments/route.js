@@ -1,11 +1,12 @@
 import { db } from "@/db";
-import { clients, payments } from "@/db/schema";
+import { clients, invoices, payments, paymentAllocations } from "@/db/schema";
 
 import { parse } from "csv-parse/sync";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, inArray } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth/auth";
 import { parseImportDate } from "@/lib/date-parser";
+import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
 
 const VALID_METHODS = ["cash", "bank", "upi", "cheque", "adjustment"];
 
@@ -71,23 +72,37 @@ export async function POST(req) {
         // Read CSV
         // ---------------------------------
 
-        const clientCode = row.client_code?.trim() || "";
+        const clientCode = row.client_code ?? row["Client Code"] ?? "";
 
-        const paymentDate = parseImportDate(row.payment_date);
+        const invoiceCell = row.invoices ?? row["Invoice Number"] ?? "";
+
+        const invoiceNumbers = invoiceCell
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean);
+
+        const paymentDate = parseImportDate(
+          row.payment_date ?? row["Payment Date"] ?? row["Date"],
+        );
 
         const amount = parseFloat(
-          String(row.amount || "0")
+          String(row.amount ?? row.Amount ?? "0")
             .replace(/,/g, "")
             .trim(),
         );
 
-        const method = row.method?.trim().toLowerCase() || "";
+        const method = (row.method ?? row.Method ?? "").trim().toLowerCase();
 
-        const reference = row.reference?.trim() || "";
+        const receiptNumber = (
+          row.receipt_number ??
+          row.Receipt ??
+          row["Receipt Number"] ??
+          ""
+        ).trim();
 
-        const receiptNumber = row.receipt_number?.trim() || "";
+        const reference = (row.reference ?? row.Reference ?? "").trim();
 
-        const notes = row.notes?.trim() || "";
+        const notes = (row.notes ?? row.Notes ?? "").trim();
 
         // ---------------------------------
         // Validation
@@ -162,6 +177,50 @@ export async function POST(req) {
         const clientData = client[0];
 
         // =====================================
+        // FIND & VALIDATE INVOICES
+        // =====================================
+
+        let invoiceRows = [];
+
+        if (invoiceNumbers.length > 0) {
+          invoiceRows = await db
+            .select({
+              id: invoices.id,
+              invoiceNumber: invoices.invoiceNumber,
+              outstandingAmount: invoices.outstandingAmount,
+            })
+            .from(invoices)
+            .where(
+              and(
+                eq(invoices.companyId, companyId),
+                eq(invoices.clientId, clientData.id),
+                inArray(invoices.invoiceNumber, invoiceNumbers),
+                isNull(invoices.deletedAt),
+              ),
+            );
+
+          // Preserve the order entered in the CSV
+          invoiceRows = invoiceNumbers
+            .map((invoiceNumber) =>
+              invoiceRows.find((i) => i.invoiceNumber === invoiceNumber),
+            )
+            .filter(Boolean);
+
+          if (invoiceRows.length !== invoiceNumbers.length) {
+            skipped++;
+
+            errors.push({
+              row: csvRow,
+              clientCode,
+              reference,
+              reason: "One or more invoice numbers are invalid.",
+            });
+
+            continue;
+          }
+        }
+
+        // =====================================
         // DUPLICATE RECEIPT CHECK
         // =====================================
 
@@ -232,29 +291,79 @@ export async function POST(req) {
         // INSERT PAYMENT
         // =====================================
 
-        await db.insert(payments).values({
-          companyId,
+        let affectedInvoiceIds = [];
 
-          clientId: clientData.id,
+        await db.transaction(async (tx) => {
+          // =====================================
+          // CREATE PAYMENT
+          // =====================================
 
-          // Legacy invoice relationship
-          invoiceId: null,
+          const [payment] = await tx
+            .insert(payments)
+            .values({
+              companyId,
 
-          amount: amount.toFixed(2),
+              clientId: clientData.id,
 
-          paymentDate,
+              invoiceId: null,
 
-          receiptNumber: receiptNumber || null,
+              amount: amount.toFixed(2),
 
-          method,
+              paymentDate,
 
-          reference: reference || null,
+              receiptNumber: receiptNumber || null,
 
-          notes,
+              method,
 
-          createdBy: userId,
-          updatedBy: userId,
+              reference: reference || null,
+
+              notes,
+
+              createdBy: userId,
+              updatedBy: userId,
+            })
+            .returning({
+              id: payments.id,
+            });
+
+          // =====================================
+          // CREATE ALLOCATIONS
+          // =====================================
+
+          let remaining = amount;
+
+          for (const invoice of invoiceRows) {
+            if (remaining <= 0) break;
+
+            const outstanding = Number(invoice.outstandingAmount);
+
+            if (outstanding <= 0) continue;
+
+            const allocation = Math.min(remaining, outstanding);
+
+            await tx.insert(paymentAllocations).values({
+              paymentId: payment.id,
+
+              invoiceId: invoice.id,
+
+              allocatedAmount: allocation.toFixed(2),
+
+              createdBy: userId,
+            });
+
+            affectedInvoiceIds.push(invoice.id);
+
+            remaining -= allocation;
+          }
         });
+
+        // =====================================
+        // UPDATE INVOICE FINANCIALS
+        // =====================================
+
+        for (const invoiceId of affectedInvoiceIds) {
+          await updateInvoiceFinancials(invoiceId);
+        }
 
         inserted++;
       } catch (err) {

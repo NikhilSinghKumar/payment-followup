@@ -68,16 +68,16 @@ export default function PaymentTable({ payments = [] }) {
                   Payment
                 </th>
 
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                {/* <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Allocated
-                </th>
+                </th> */}
 
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Unallocated
+                  Credit
                 </th>
 
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Related Invoices
+                  Invoices
                 </th>
 
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -146,9 +146,9 @@ export default function PaymentTable({ payments = [] }) {
 
                     {/* Allocated */}
 
-                    <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-medium text-zinc-700">
+                    {/* <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-medium text-zinc-700">
                       {formatCurrency(payment.allocatedAmount)}
-                    </td>
+                    </td> */}
 
                     {/* Unallocated */}
 
@@ -327,12 +327,7 @@ function InvoiceAllocations({ allocations = [], onViewAll }) {
     <div className="flex items-center gap-2">
       <Link
         href={`/invoices/${first.invoice?.id}`}
-        className="
-          inline-flex whitespace-nowrap rounded-md
-          bg-blue-50 px-2 py-1
-          text-xs font-medium text-blue-700
-          transition hover:bg-blue-100
-        "
+        className="inline-flex whitespace-nowrap rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
       >
         {first.invoice?.invoiceNumber || "Invoice"}
       </Link>

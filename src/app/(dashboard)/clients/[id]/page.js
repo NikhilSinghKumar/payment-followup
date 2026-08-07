@@ -270,7 +270,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
           {/* Unallocated Payment */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Unallocated
+              Credit
             </p>
 
             <h2 className="mt-2 text-xl font-semibold text-violet-600">

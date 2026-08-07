@@ -3,7 +3,6 @@ import { ArrowUpRight } from "lucide-react";
 export default function KPICard({
   title,
   value,
-  subtitle,
   icon: Icon,
   iconBg = "bg-blue-100 dark:bg-blue-900/30",
   iconColor = "text-blue-600 dark:text-blue-400",

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { invoices, payments } from "@/db/schema";
+import { invoices, payments, paymentAllocations } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/auth";
 import { and, eq, isNull, gt, sql } from "drizzle-orm";
 
@@ -88,7 +88,11 @@ export async function getDashboardData() {
         eq(payments.companyId, companyId),
         isNull(payments.deletedAt),
         eq(payments.isVoided, false),
-        sql`DATE(${payments.paymentDate}) = CURRENT_DATE`,
+        sql`
+            DATE(${payments.paymentDate} AT TIME ZONE 'Asia/Kolkata')
+            =
+            DATE(NOW() AT TIME ZONE 'Asia/Kolkata')
+          `,
       ),
     );
 
@@ -136,6 +140,50 @@ export async function getDashboardData() {
     );
 
   // =====================================
+  // UNALLOCATED PAYMENTS
+  // =====================================
+
+  const allocationTotals = db
+    .select({
+      paymentId: paymentAllocations.paymentId,
+
+      allocatedAmount: sql`
+      COALESCE(
+        SUM(${paymentAllocations.allocatedAmount}),
+        0
+      )
+    `.as("allocated_amount"),
+    })
+    .from(paymentAllocations)
+    .where(isNull(paymentAllocations.deletedAt))
+    .groupBy(paymentAllocations.paymentId)
+    .as("allocation_totals");
+
+  const [unallocatedResult] = await db
+    .select({
+      total: sql`
+      COALESCE(
+        SUM(
+          GREATEST(
+            ${payments.amount} - COALESCE(${allocationTotals.allocatedAmount}, 0),
+            0
+          )
+        ),
+        0
+      )
+    `,
+    })
+    .from(payments)
+    .leftJoin(allocationTotals, eq(allocationTotals.paymentId, payments.id))
+    .where(
+      and(
+        eq(payments.companyId, companyId),
+        isNull(payments.deletedAt),
+        eq(payments.isVoided, false),
+      ),
+    );
+
+  // =====================================
   // RETURN
   // =====================================
 
@@ -148,7 +196,10 @@ export async function getDashboardData() {
       todayCollection: Number(todayCollectionResult.total || 0),
 
       monthCollection: Number(monthCollectionResult.total || 0),
+
       totalCollection: Number(totalCollectionResult.total || 0),
+
+      unallocatedPayments: Number(unallocatedResult.total || 0),
     },
   };
 }

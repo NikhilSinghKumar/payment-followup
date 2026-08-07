@@ -220,16 +220,6 @@ export default function PaymentForm({ clients = [] }) {
           {/* ========================================= */}
 
           <section>
-            <div className="mb-4">
-              <h3 className="text-base font-semibold text-zinc-800">
-                Payment Details
-              </h3>
-
-              <p className="mt-1 text-sm text-zinc-500">
-                Enter the payment received from the client.
-              </p>
-            </div>
-
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* Amount */}
 
@@ -254,17 +244,7 @@ export default function PaymentForm({ clients = [] }) {
                     disabled={!selectedClient}
                     required
                     placeholder="0.00"
-                    className="h-10 w-full rounded-lg
-                      border border-zinc-300
-                      bg-white pl-8 pr-3
-                      text-sm text-zinc-800
-                      outline-none transition
-                      placeholder:text-zinc-400
-                      focus:border-blue-500
-                      focus:ring-2 focus:ring-blue-500/10
-                      disabled:cursor-not-allowed
-                      disabled:bg-zinc-100
-                    "
+                    className="h-10 w-full rounded-lg border border-zinc-300 bg-white pl-8 pr-3 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-zinc-100"
                   />
                 </div>
               </div>
@@ -429,10 +409,6 @@ export default function PaymentForm({ clients = [] }) {
                 <h3 className="text-base font-semibold text-zinc-800">
                   Payment Allocation
                 </h3>
-
-                <p className="mt-1 text-sm text-zinc-500">
-                  Allocate this payment against the client outstanding invoices.
-                </p>
               </div>
 
               {invoices.length > 0 && (
