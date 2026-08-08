@@ -16,6 +16,7 @@ import { getCurrentUser } from "@/lib/auth/auth";
 import { enrichInvoices } from "@/lib/invoice-summary";
 import { calculateClientSummary } from "@/lib/client-summary";
 import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
+import { processPaymentEvents } from "@/lib/notifications/event-services";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -386,6 +387,11 @@ export async function createPayment(formData) {
 
   for (const allocation of allocations) {
     await updateInvoiceFinancials(allocation.invoiceId);
+    for (const allocation of allocations) {
+      await updateInvoiceFinancials(allocation.invoiceId);
+
+      await processPaymentEvents(allocation.invoiceId, paymentId);
+    }
   }
 
   // ======================================================

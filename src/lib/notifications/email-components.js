@@ -76,6 +76,7 @@ export function renderInvoiceSummary({
   invoiceAmount,
   paidAmount,
   outstandingAmount,
+  showPaymentDetails = true,
 }) {
   return `
 <table
@@ -126,6 +127,9 @@ Invoice Summary
 <td>₹${invoiceAmount}</td>
 </tr>
 
+${
+  showPaymentDetails
+    ? `
 <tr>
 <td><strong>Paid Amount</strong></td>
 <td>₹${paidAmount}</td>
@@ -142,6 +146,9 @@ color:#DC2626;
 ₹${outstandingAmount}
 </td>
 </tr>
+`
+    : ""
+}
 
 </table>
 `;

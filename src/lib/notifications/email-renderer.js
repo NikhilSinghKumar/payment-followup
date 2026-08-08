@@ -18,13 +18,15 @@ const CONFIG = {
     color: "#2563EB",
     background: "#DBEAFE",
     banner: "Invoice Submitted Successfully",
+    showPaymentDetails: false,
   },
 
   [NOTIFICATION_TYPES.DUE_REMINDER]: {
     title: "Payment Reminder",
-    color: "#F59E0B",
-    background: "#FEF3C7",
+    color: "#2563EB",
+    background: "#DBEAFE",
     banner: "Payment Due Soon",
+    showPaymentDetails: true,
   },
 
   [NOTIFICATION_TYPES.INVOICE_DUE]: {
@@ -32,41 +34,47 @@ const CONFIG = {
     color: "#EA580C",
     background: "#FED7AA",
     banner: "Payment Due Today",
+    showPaymentDetails: true,
   },
 
   [NOTIFICATION_TYPES.OVERDUE_REMINDER]: {
     title: "Overdue Reminder",
-    color: "#DC2626",
-    background: "#FEE2E2",
+    color: "#2563EB",
+    background: "#DBEAFE",
     banner: "Payment Overdue",
+    showPaymentDetails: true,
   },
 
   [NOTIFICATION_TYPES.PAYMENT_RECEIVED]: {
     title: "Payment Received",
-    color: "#16A34A",
-    background: "#DCFCE7",
+    color: "#2563EB",
+    background: "#DBEAFE",
     banner: "Payment Received",
+    showPaymentDetails: true,
   },
 
   [NOTIFICATION_TYPES.PAYMENT_CLEARED]: {
     title: "Invoice Paid",
-    color: "#15803D",
-    background: "#DCFCE7",
+    color: "#2563EB",
+    background: "#DBEAFE",
     banner: "Invoice Fully Paid",
+    showPaymentDetails: true,
   },
 
   [NOTIFICATION_TYPES.SERVICE_SUSPENSION_NOTICE]: {
     title: "Service Suspension",
-    color: "#B91C1C",
-    background: "#FEE2E2",
+    color: "#2563EB",
+    background: "#DBEAFE",
     banner: "Service Suspended",
+    showPaymentDetails: true,
   },
 
   [NOTIFICATION_TYPES.SERVICE_SUSPENSION_ALERT]: {
     title: "Immediate Attention Required",
-    color: "#991B1B",
-    background: "#FECACA",
+    color: "#2563EB",
+    background: "#DBEAFE",
     banner: "Immediate Action Required",
+    showPaymentDetails: true,
   },
 };
 
@@ -91,6 +99,7 @@ export function renderEmail({ type, body, variables, actionUrl }) {
       invoiceAmount: variables.invoiceAmount,
       paidAmount: variables.paidAmount,
       outstandingAmount: variables.outstandingAmount,
+      showPaymentDetails: config.showPaymentDetails,
     })}
 
     ${
