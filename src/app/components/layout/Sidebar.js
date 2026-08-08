@@ -12,7 +12,7 @@ export default function Sidebar() {
       {/* Logo */}
 
       <Link href="/dashboard" className="border-b px-6 py-6">
-        <h1 className="text-2xl font-bold text-blue-600">PAYFOLO</h1>
+        <h1 className="text-2xl font-bold text-blue-600">PAFEX</h1>
 
         <p className="text-sm text-slate-500">Payment Follow-up</p>
       </Link>
