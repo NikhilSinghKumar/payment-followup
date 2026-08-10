@@ -16,10 +16,10 @@ export async function GET() {
     const info = await transporter.sendMail({
       from: `"PAFEX" <${process.env.SMTP_USER}>`,
       to: "nikhilsk369@gmail.com",
-      subject: "Payfolo Email Test",
+      subject: "Pafex Email Test",
       text: "Congratulations! SMTP is working.",
       html: `
-        <h2>Payfolo SMTP Test</h2>
+        <h2>Pafex SMTP Test</h2>
         <p>Your email configuration is working successfully.</p>
       `,
     });

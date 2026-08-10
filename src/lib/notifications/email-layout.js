@@ -1,6 +1,6 @@
 /**
  * ------------------------------------------------------------------
- * Payfolo Email Layout
+ * Pafex Email Layout
  * ------------------------------------------------------------------
  * Shared HTML layout for all notification emails.
  *

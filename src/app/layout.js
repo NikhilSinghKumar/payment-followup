@@ -12,8 +12,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "PAYFOLO",
-  description: "Next Payment Follow up App",
+  title: "PAFEX",
+  description: "Next Payment Follow-up App",
 };
 
 export default function RootLayout({ children }) {
@@ -27,7 +27,10 @@ export default function RootLayout({ children }) {
 
         <footer>
           <div className="mb-2 flex flex-col text-sm text-zinc-500 md:flex-row md:items-center md:justify-center">
-            <p>© {new Date().getFullYear()} Payfolo. All rights reserved.</p>
+            <p>
+              © {new Date().getFullYear()} PAFEX Payment Follow-up. All rights
+              reserved.
+            </p>
           </div>
         </footer>
       </body>
