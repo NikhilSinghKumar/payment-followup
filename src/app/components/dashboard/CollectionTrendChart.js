@@ -76,9 +76,9 @@ export default function CollectionTrendChart({
           </p>
         </div>
 
-        <div className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+        {/* <div className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
           {granularity === "month" ? "Monthly" : "Daily"}
-        </div>
+        </div> */}
       </div>
 
       {/* CHART */}
