@@ -75,10 +75,6 @@ export default function AgingChart({ data = [] }) {
           <h2 className="text-base font-semibold text-zinc-900 dark:text-white">
             Receivable Aging
           </h2>
-
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            Outstanding amount by overdue age
-          </p>
         </div>
 
         <div className="text-right">
@@ -122,9 +118,9 @@ export default function AgingChart({ data = [] }) {
               dataKey="bucket"
               tickLine={false}
               axisLine={false}
-              width={85}
+              width={40}
               tick={{
-                fontSize: 12,
+                fontSize: 11,
               }}
             />
 
@@ -151,7 +147,7 @@ export default function AgingChart({ data = [] }) {
       </div>
 
       {/* SUMMARY */}
-      <div className="mt-4 grid grid-cols-2 gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800 sm:grid-cols-5">
+      {/* <div className="mt-4 grid grid-cols-2 gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800 sm:grid-cols-5">
         {chartData.map((item) => (
           <div key={item.bucket}>
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -163,7 +159,7 @@ export default function AgingChart({ data = [] }) {
             </p>
           </div>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }

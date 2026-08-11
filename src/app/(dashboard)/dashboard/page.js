@@ -23,25 +23,26 @@ export default async function DashboardPage({ searchParams }) {
   return (
     <div className="space-y-6">
       {/* HEADER */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <DashboardPeriodFilter
-          period={dashboard.period}
-          startDate={dashboard.startDate}
-          endDate={dashboard.endDate}
-        />
-      </div>
 
       {/* CURRENT SNAPSHOT KPIs */}
       <DashboardStats summary={dashboard.summary} />
+      <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <DashboardPeriodFilter
+            period={dashboard.period}
+            startDate={dashboard.startDate}
+            endDate={dashboard.endDate}
+          />
+        </div>
+      </div>
 
       <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <AgingChart data={dashboard.agingData} />
         <CollectionTrendChart
           data={dashboard.collectionTrend}
           periodLabel={dashboard.periodLabel}
           granularity={dashboard.trendGranularity}
         />
-
-        <AgingChart data={dashboard.agingData} />
       </div>
     </div>
   );

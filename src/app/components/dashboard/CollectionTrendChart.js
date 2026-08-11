@@ -72,7 +72,7 @@ export default function CollectionTrendChart({
           </h2>
 
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            Collection trend for {periodLabel}
+            {periodLabel}
           </p>
         </div>
 
@@ -88,8 +88,8 @@ export default function CollectionTrendChart({
             data={chartData}
             margin={{
               top: 10,
-              right: 10,
-              left: 10,
+              right: 15,
+              left: 5,
               bottom: 5,
             }}
           >
@@ -109,10 +109,10 @@ export default function CollectionTrendChart({
               tickLine={false}
               axisLine={false}
               tick={{
-                fontSize: 12,
+                fontSize: 11,
               }}
               tickFormatter={formatCompactCurrency}
-              width={75}
+              width={40}
             />
 
             <Tooltip
