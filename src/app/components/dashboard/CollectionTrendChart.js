@@ -112,7 +112,7 @@ export default function CollectionTrendChart({
                 fontSize: 11,
               }}
               tickFormatter={formatCompactCurrency}
-              width={40}
+              width={50}
             />
 
             <Tooltip
