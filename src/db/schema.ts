@@ -1232,9 +1232,6 @@ export const paymentAllocations = pgTable(
 // =========================
 // FOLLOWUPS
 // =========================
-// =========================
-// FOLLOWUPS
-// =========================
 
 export const followups = pgTable(
   "followups",

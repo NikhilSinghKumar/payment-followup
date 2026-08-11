@@ -281,10 +281,6 @@ export default function PaymentTable({ payments = [] }) {
                           <p className="text-sm font-medium text-zinc-800">
                             {allocation.invoice?.invoiceNumber || "Invoice"}
                           </p>
-
-                          <p className="mt-0.5 text-xs text-zinc-400">
-                            Allocated amount
-                          </p>
                         </div>
 
                         <div className="text-right">
