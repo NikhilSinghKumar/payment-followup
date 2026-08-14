@@ -1,5 +1,13 @@
+import { db } from "@/db";
+
+import { companyUsers } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+
 import { buildNotification } from "./notification-builder";
-import { createNotification } from "./notification-repository";
+import {
+  createNotification,
+  createNotifications,
+} from "./notification-repository";
 import { createLog, markFailed, updateStatus } from "./notification-logger";
 import { isNotificationEnabled } from "./notification-preferences";
 import { renderTemplate } from "./notification-template";
@@ -20,6 +28,57 @@ import {
 
 async function sendNotification(notificationType, templateType, data) {
   return processNotification(notificationType, templateType, data);
+}
+
+async function sendInternalNotification(notificationType, data) {
+  const notification = buildNotification(notificationType, data);
+
+  if (!notification) {
+    throw new Error(`Failed to build notification: ${notificationType}`);
+  }
+
+  // Find active users belonging to this company
+  const companyUsersList = await db
+    .select({
+      userId: companyUsers.userId,
+    })
+    .from(companyUsers)
+    .where(
+      and(
+        eq(companyUsers.companyId, data.companyId),
+        eq(companyUsers.isActive, true),
+      ),
+    );
+
+  if (!companyUsersList.length) {
+    return {
+      success: true,
+      skipped: true,
+      reason: "No active company users found",
+    };
+  }
+
+  // Create one in-app notification for each company user
+  const notificationsData = companyUsersList.map((companyUser) => ({
+    companyId: data.companyId,
+
+    userId: companyUser.userId,
+
+    clientId: data.clientId ?? null,
+    invoiceId: data.invoiceId ?? null,
+    paymentId: data.paymentId ?? null,
+
+    ...notification,
+  }));
+
+  const savedNotifications = await createNotifications(notificationsData);
+
+  return {
+    success: true,
+    internal: true,
+    count: savedNotifications.length,
+    notifications: savedNotifications,
+  };
 }
 
 // ======================================================
@@ -61,6 +120,27 @@ export const overdueReminder = (data) =>
     data,
   );
 
+export const clientDueReminder = (data) =>
+  sendNotification(
+    NOTIFICATION_TYPES.DUE_REMINDER,
+    TEMPLATE_TYPES.DUE_REMINDER,
+    data,
+  );
+
+export const clientOverdueReminder = (data) =>
+  sendNotification(
+    NOTIFICATION_TYPES.OVERDUE_REMINDER,
+    TEMPLATE_TYPES.OVERDUE_REMINDER,
+    data,
+  );
+
+export const clientPaymentReminder = (data) =>
+  sendNotification(
+    NOTIFICATION_TYPES.DUE_REMINDER,
+    TEMPLATE_TYPES.DUE_REMINDER,
+    data,
+  );
+
 export const paymentReceived = (data) =>
   sendNotification(
     NOTIFICATION_TYPES.PAYMENT_RECEIVED,
@@ -83,11 +163,7 @@ export const serviceSuspensionNotice = (data) =>
   );
 
 export const serviceSuspensionAlert = (data) =>
-  sendNotification(
-    NOTIFICATION_TYPES.SERVICE_SUSPENSION_ALERT,
-    TEMPLATE_TYPES.SERVICE_SUSPENSION_ALERT,
-    data,
-  );
+  sendInternalNotification(NOTIFICATION_TYPES.SERVICE_SUSPENSION_ALERT, data);
 
 // ======================================================
 // Core Notification Processor

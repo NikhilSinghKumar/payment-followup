@@ -4,6 +4,7 @@ import {
   renderParagraph,
   renderStatusBanner,
   renderInvoiceSummary,
+  renderClientOutstandingInvoices,
   renderAlertBox,
   renderButton,
   renderSignature,
@@ -81,6 +82,38 @@ const CONFIG = {
 export function renderEmail({ type, body, variables, actionUrl }) {
   const config = CONFIG[type];
 
+  if (!config) {
+    throw new Error(`Unsupported email notification type: ${type}`);
+  }
+
+  // ======================================================
+  // Client-level payment reminder
+  // ======================================================
+
+  const isClientPaymentReminder =
+    type === NOTIFICATION_TYPES.DUE_REMINDER ||
+    type === NOTIFICATION_TYPES.OVERDUE_REMINDER;
+
+  // ======================================================
+  // Invoice Summary
+  // ======================================================
+
+  const invoiceSummary = isClientPaymentReminder
+    ? renderClientOutstandingInvoices(variables.invoices)
+    : renderInvoiceSummary({
+        invoiceNumber: variables.invoiceNumber,
+        invoiceDate: variables.invoiceDate,
+        dueDate: variables.dueDate,
+        invoiceAmount: variables.invoiceAmount,
+        paidAmount: variables.paidAmount,
+        outstandingAmount: variables.outstandingAmount,
+        showPaymentDetails: config.showPaymentDetails,
+      });
+
+  // ======================================================
+  // Content
+  // ======================================================
+
   const content = `
     ${renderGreeting(variables.clientName)}
 
@@ -92,18 +125,10 @@ export function renderEmail({ type, body, variables, actionUrl }) {
 
     ${renderParagraph(body)}
 
-    ${renderInvoiceSummary({
-      invoiceNumber: variables.invoiceNumber,
-      invoiceDate: variables.invoiceDate,
-      dueDate: variables.dueDate,
-      invoiceAmount: variables.invoiceAmount,
-      paidAmount: variables.paidAmount,
-      outstandingAmount: variables.outstandingAmount,
-      showPaymentDetails: config.showPaymentDetails,
-    })}
+    ${invoiceSummary}
 
     ${
-      variables.overdueDays > 0
+      !isClientPaymentReminder && variables.overdueDays > 0
         ? renderAlertBox(
             `This invoice is overdue by ${formatDateDifference(
               variables.dueDate,
@@ -112,8 +137,6 @@ export function renderEmail({ type, body, variables, actionUrl }) {
         : ""
     }
 
-
-
     ${renderSignature({
       senderCompany: variables.senderCompany,
       senderEmail: variables.senderEmail,
@@ -121,6 +144,10 @@ export function renderEmail({ type, body, variables, actionUrl }) {
       senderLogo: variables.senderLogo,
     })}
   `;
+
+  // ======================================================
+  // Email Layout
+  // ======================================================
 
   return renderEmailLayout({
     title: config.title,

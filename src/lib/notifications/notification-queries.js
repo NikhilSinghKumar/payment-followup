@@ -167,3 +167,26 @@ export async function getServiceSuspensionInvoices() {
     (invoice) => invoice.shouldBlockClient && !invoice.isPaid,
   );
 }
+
+export async function getServiceSuspensionClients() {
+  const invoices = await getNotificationCandidates();
+
+  const qualifyingInvoices = invoices.filter(
+    (invoice) => invoice.shouldBlockClient && !invoice.isPaid,
+  );
+
+  const clientsMap = new Map();
+
+  for (const invoice of qualifyingInvoices) {
+    if (!clientsMap.has(invoice.clientId)) {
+      clientsMap.set(invoice.clientId, {
+        ...invoice,
+
+        // Client-level notification
+        invoiceId: null,
+      });
+    }
+  }
+
+  return Array.from(clientsMap.values());
+}

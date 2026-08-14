@@ -52,6 +52,21 @@ function buildInvoiceVariables(data) {
   };
 }
 
+function buildClientVariables(data) {
+  return {
+    clientId: data.clientId,
+    clientName: data.clientName,
+
+    totalOutstanding: Number(data.totalOutstanding || 0),
+    invoiceCount: Number(data.invoiceCount || 0),
+
+    senderCompany: data.senderCompany,
+    senderEmail: data.senderEmail,
+    senderPhone: data.senderPhone,
+    senderLogo: data.senderLogo,
+  };
+}
+
 function buildBillSubmitted(data) {
   return buildBaseNotification(
     NOTIFICATION_TYPES.BILL_SUBMITTED,
@@ -65,8 +80,8 @@ function buildDueReminder(data) {
   return buildBaseNotification(
     NOTIFICATION_TYPES.DUE_REMINDER,
     data,
-    `Invoice ${data.invoiceNumber} is due on ${data.dueDate}.`,
-    buildInvoiceVariables(data),
+    `Payment reminder for ${data.clientName}.`,
+    buildClientPaymentReminderVariables(data),
   );
 }
 
@@ -83,8 +98,8 @@ function buildOverdueReminder(data) {
   return buildBaseNotification(
     NOTIFICATION_TYPES.OVERDUE_REMINDER,
     data,
-    `Invoice ${data.invoiceNumber} is overdue by ${data.overdueDays} day(s).`,
-    buildInvoiceVariables(data),
+    `Payment reminder for ${data.clientName}.`,
+    buildClientPaymentReminderVariables(data),
   );
 }
 
@@ -110,8 +125,8 @@ function buildServiceSuspensionNotice(data) {
   return buildBaseNotification(
     NOTIFICATION_TYPES.SERVICE_SUSPENSION_NOTICE,
     data,
-    `Client ${data.clientName} is recommended for service suspension.`,
-    buildInvoiceVariables(data),
+    `Your account with ${data.senderCompany} is recommended for service suspension due to continued non-payment.`,
+    buildClientVariables(data),
   );
 }
 
@@ -120,7 +135,7 @@ function buildServiceSuspensionAlert(data) {
     NOTIFICATION_TYPES.SERVICE_SUSPENSION_ALERT,
     data,
     `Client ${data.clientName} should now be blocked due to continued non-payment.`,
-    buildInvoiceVariables(data),
+    buildClientVariables(data),
   );
 }
 
@@ -153,4 +168,75 @@ export function buildNotification(type, data = {}) {
     default:
       throw new Error(`Unsupported notification type: ${type}`);
   }
+}
+
+/**
+ * ======================================================
+ * Client Payment Reminder Variables
+ * ======================================================
+ *
+ * Converts client-level reminder data into the variables
+ * required by the email template.
+ */
+export function buildClientPaymentReminderVariables(data) {
+  return {
+    // ====================================================
+    // Client
+    // ====================================================
+
+    clientId: data.clientId,
+    clientName: data.clientName,
+    email: data.email,
+
+    // ====================================================
+    // Account Summary
+    // ====================================================
+
+    totalOutstanding: Number(data.totalOutstanding || 0),
+    invoiceCount: Number(data.invoiceCount || 0),
+
+    // ====================================================
+    // Outstanding Invoices
+    // ====================================================
+
+    invoices: (data.invoices || []).map((invoice) => ({
+      invoiceId: invoice.invoiceId,
+
+      invoiceNumber: invoice.invoiceNumber,
+
+      invoiceDate: invoice.invoiceDate,
+      dueDate: invoice.dueDate,
+
+      invoiceAmount: Number(invoice.invoiceAmount || 0),
+
+      paidAmount: Number(invoice.paidAmount || 0),
+
+      outstandingAmount: Number(invoice.outstandingAmount || 0),
+
+      // ----------------------------------------------
+      // Credit Terms
+      // ----------------------------------------------
+
+      creditDays: Number(invoice.creditDays || 0),
+
+      // ----------------------------------------------
+      // Aging / Status
+      // ----------------------------------------------
+
+      agingDays: Number(invoice.agingDays || 0),
+
+      agingStatus: invoice.agingStatus || "",
+
+      agingColor: invoice.agingColor || "#16A34A",
+    })),
+
+    // ====================================================
+    // Sender Company
+    // ====================================================
+
+    senderCompany: data.senderCompany,
+    senderEmail: data.senderEmail,
+    senderPhone: data.senderPhone,
+    senderLogo: data.senderLogo,
+  };
 }
