@@ -14,11 +14,10 @@ export function calculateClientSummary(invoices) {
     ),
 
     overdueAmount: invoices.reduce(
-      (sum, inv) =>
-        inv.status === "overdue" ? sum + Number(inv.due || 0) : sum,
+      (sum, inv) => (inv.isOverdue ? sum + Number(inv.due || 0) : sum),
       0,
     ),
 
-    overdueInvoices: invoices.filter((inv) => inv.status === "overdue").length,
+    overdueInvoices: invoices.filter((inv) => inv.isOverdue).length,
   };
 }
