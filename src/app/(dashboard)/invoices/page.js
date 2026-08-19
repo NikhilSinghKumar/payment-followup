@@ -7,14 +7,13 @@ import Link from "next/link";
 import ImportInvoices from "../../components/ImportInvoices";
 import SearchBox from "../../components/SearchBox";
 import FilterDropdown from "../../components/FilterDropdown";
-import DeleteInvoiceButton from "../../components/DeleteInvoiceButton";
-import SortDropdown from "../../components/invoice/SortDropdown";
 import AgingFilterDropdown from "../../components/invoice/AgingFilterDropdown";
 import FinancialYearFilterDropdown from "../../components/invoice/FinancialYearFilterDropdown";
 import MonthFilterDropdown from "../../components/invoice/MonthFilterDropdown";
 import AmountRangeFilter from "../../components/invoice/AmountRangeFilter";
 import AlphabetDropdown from "../../components/invoice/AlphabetDropdown";
 import ExportInvoicesButton from "../../components/invoice/ExportInvoicesButton";
+import InvoicesTableClient from "../../components/invoice/InvoicesTableClient";
 
 export default async function InvoicePage({ searchParams }) {
   const resolvedParams = await searchParams;
@@ -44,22 +43,12 @@ export default async function InvoicePage({ searchParams }) {
 
   const years = await getFinancialYears();
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   return (
     <div className="bg-zinc-50">
       <div className="flex items-center justify-center mb-2">
         <div className="flex items-center gap-2">
           <SearchBox />
           <ImportInvoices />
-
-          {/* <Link
-            href="/invoices/new"
-            className="h-[40px] px-4 flex items-center rounded-lg text-white text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.03]"
-          >
-            + Add Invoice
-          </Link> */}
 
           <a
             href="/api/import-invoice-sample"
@@ -89,155 +78,8 @@ export default async function InvoicePage({ searchParams }) {
         <FinancialYearFilterDropdown years={years} />
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
-        {/* Header */}
-        <div className="grid grid-cols-[60px_2.4fr_1fr_1.3fr_1fr_1fr_110px_130px_180px] items-center px-5 py-2 bg-zinc-50 border-b border-zinc-200 text-sm font-semibold text-zinc-600">
-          <div>S.N.</div>
-          <div className="">Company</div>
-          <div className="text-center">Invoice No.</div>
-          <div className="text-center pl-4">
-            <SortDropdown />
-          </div>
-          <div className="text-center ">Paid</div>
-          <div className="text-center">Outstanding</div>
-          <div className="text-center">Due Date</div>
-          <div className="text-center">Status</div>
-
-          <div className="text-center">Actions</div>
-        </div>
-
-        {/* Rows */}
-        {data.length > 0 ? (
-          data.map((inv, index) => {
-            let isOverdue = false;
-            let formattedDate = "—";
-
-            if (inv.dueDate) {
-              const due = new Date(inv.dueDate);
-              due.setHours(0, 0, 0, 0);
-
-              isOverdue = due < today;
-              formattedDate = due.toLocaleDateString("en-IN");
-            }
-
-            return (
-              <div
-                key={inv.id}
-                className="grid grid-cols-[60px_2.4fr_1fr_1.3fr_1fr_1fr_110px_130px_180px] items-center px-5 py-1 text-sm border-b border-zinc-100 hover:bg-zinc-50 transition-colors"
-              >
-                <div className="font-medium text-zinc-800 truncate pr-4">
-                  {index + 1}
-                </div>
-                {/* Company */}
-                <div className="font-medium text-zinc-800 truncate pr-4">
-                  {inv.companyName ?? "Unknown"}
-                </div>
-
-                {/* Invoice Number */}
-                <div className="font-medium text-center text-zinc-800 whitespace-nowrap">
-                  {inv.invoiceNumber ?? "—"}
-                </div>
-
-                {/* Amount */}
-                <div className="font-medium text-center text-zinc-800 whitespace-nowrap">
-                  ₹{Number(inv.invoiceAmount).toLocaleString("en-IN")}
-                </div>
-
-                {/* Paid */}
-                <div className="font-medium text-center text-emerald-600 whitespace-nowrap">
-                  ₹{Number(inv.paidAmount).toLocaleString("en-IN")}
-                </div>
-
-                {/* Due */}
-                <div className="font-medium text-center text-red-600 whitespace-nowrap">
-                  ₹{Number(inv.outstandingAmount).toLocaleString("en-IN")}
-                </div>
-
-                {/* Due Date */}
-                <div className="text-center text-zinc-700 whitespace-nowrap">
-                  {formattedDate}
-                </div>
-
-                {/* Status */}
-                <div className="flex flex-col items-center gap-1">
-                  <span
-                    className={`
-                      inline-flex items-center justify-center
-                      min-w-[90px]
-                      px-3 py-1
-                      rounded-full
-                      text-xs font-semibold capitalize
-                      ${
-                        inv.status === "paid"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : inv.status === "partial"
-                            ? "bg-amber-100 text-amber-700"
-                            : inv.status === "overdue"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-blue-100 text-blue-700"
-                      }
-                    `}
-                  >
-                    {inv.status}
-                  </span>
-
-                  {inv.status !== "paid" && (
-                    <span className="text-xs text-zinc-500">
-                      {inv.dueDays > 0
-                        ? `${inv.dueDays}d`
-                        : inv.dueDays < 0
-                          ? `Due in ${Math.abs(inv.dueDays)}d`
-                          : "Today"}
-                    </span>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-center gap-2">
-                  {/* View */}
-                  <Link
-                    href={`/invoices/${inv.id}`}
-                    className="
-                h-8 px-3
-                inline-flex items-center justify-center
-                rounded-lg
-                text-xs font-medium
-                bg-blue-50 text-blue-700
-                hover:bg-blue-100
-                transition
-              "
-                  >
-                    View
-                  </Link>
-
-                  {/* Edit */}
-                  <Link
-                    href={`/invoices/${inv.id}/edit`}
-                    className="
-                    h-8 px-3
-                    inline-flex items-center justify-center
-                    rounded-lg
-                    text-xs font-medium
-                    bg-amber-50 text-amber-700
-                    hover:bg-amber-100
-                    transition
-                  "
-                  >
-                    Edit
-                  </Link>
-
-                  {/* Delete */}
-                  {/* <DeleteInvoiceButton invoiceId={inv.id} /> */}
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="p-10 text-center text-zinc-400">
-            No invoices found.
-          </div>
-        )}
-      </div>
+      {/* Invoices Interactive Table with Multi-Select & Bulk Reminders */}
+      <InvoicesTableClient invoices={data} />
     </div>
   );
 }

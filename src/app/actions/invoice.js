@@ -333,6 +333,7 @@ export async function getInvoices(
   const query = db
     .select({
       id: invoices.id,
+      clientId: invoices.clientId,
       invoiceNumber: invoices.invoiceNumber,
       invoiceAmount: invoices.invoiceAmount,
 
