@@ -332,9 +332,7 @@ function InvoiceAllocations({ allocations = [], onViewAll }) {
         <button
           type="button"
           onClick={onViewAll}
-          className="whitespace-nowrap text-xs font-medium
-            text-blue-600 hover:text-blue-700
-          "
+          className="whitespace-nowrap text-xs font-medium text-blue-600 hover:text-blue-700"
         >
           +{remaining} more
         </button>
