@@ -234,12 +234,7 @@ function InvoiceLinks({ invoices = [], onViewAll }) {
       <Link
         href={`/invoices/${firstInvoice.id}`}
         title={firstInvoice.invoiceNumber}
-        className="inline-block max-w-[140px]
-          truncate rounded-md
-          bg-blue-50 px-2 py-1
-          text-xs font-medium text-blue-700
-          transition hover:bg-blue-100
-        "
+        className="inline-block max-w-[140px] truncate rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
       >
         {firstInvoice.invoiceNumber}
       </Link>

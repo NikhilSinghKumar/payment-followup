@@ -4,7 +4,7 @@ import { getClients } from "@/app/actions/client";
 export default async function NewFollowupPage() {
   const clients = await getClients();
   return (
-    <div className="space-y-6">
+    <div className="w-full py-1">
       <FollowupForm clients={clients} />
     </div>
   );
