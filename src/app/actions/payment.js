@@ -8,6 +8,7 @@ import {
   clientSubClients,
   payments,
   paymentAllocations,
+  invoiceAwbs,
 } from "@/db/schema";
 
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
@@ -108,10 +109,15 @@ export async function getInvoicesForPayment(clientId) {
   // Summary should represent the entire client
   const clientSummary = calculateClientSummary(invoiceList);
 
-  // Only invoices where money is still due
+  // Deduplicate and filter open invoices
+  const seenIds = new Set();
   const openInvoices = invoiceList
     .filter((invoice) => Number(invoice.due || 0) > 0)
-
+    .filter((invoice) => {
+      if (seenIds.has(invoice.id)) return false;
+      seenIds.add(invoice.id);
+      return true;
+    })
     .sort((a, b) => {
       // Overdue invoices first
       if (a.isOverdue && !b.isOverdue) return -1;
@@ -123,9 +129,49 @@ export async function getInvoicesForPayment(clientId) {
       );
     });
 
+  // Fetch AWBs for open invoices
+  const invoiceIds = openInvoices.map((inv) => inv.id);
+  const awbMap = {};
+
+  if (invoiceIds.length > 0) {
+    const awbRows = await db
+      .select({
+        id: invoiceAwbs.id,
+        invoiceId: invoiceAwbs.invoiceId,
+        awbNumber: invoiceAwbs.awbNumber,
+        shipmentDate: invoiceAwbs.shipmentDate,
+        origin: invoiceAwbs.origin,
+        destination: invoiceAwbs.destination,
+        weight: invoiceAwbs.weight,
+        amount: invoiceAwbs.amount,
+        remarks: invoiceAwbs.remarks,
+      })
+      .from(invoiceAwbs)
+      .where(
+        and(
+          inArray(invoiceAwbs.invoiceId, invoiceIds),
+          isNull(invoiceAwbs.deletedAt),
+        ),
+      );
+
+    for (const row of awbRows) {
+      if (!awbMap[row.invoiceId]) {
+        awbMap[row.invoiceId] = [];
+      }
+      if (row.awbNumber) {
+        awbMap[row.invoiceId].push(row);
+      }
+    }
+  }
+
+  const invoicesWithAwbs = openInvoices.map((inv) => ({
+    ...inv,
+    awbs: awbMap[inv.id] || [],
+  }));
+
   return {
     clientSummary,
-    invoices: openInvoices,
+    invoices: invoicesWithAwbs,
   };
 }
 
@@ -413,11 +459,33 @@ export async function createPayment(formData) {
  * GET GLOBAL PAYMENTS
  * ======================================================
  */
-export async function getPayments() {
+export async function getPayments(
+  queryOrOptions = {},
+  maybeDate,
+  maybeStartDate,
+  maybeEndDate,
+) {
   const currentUser = await getCurrentUser();
 
   if (!currentUser?.companyId) {
     throw new Error("Unauthorized");
+  }
+
+  let query = "";
+  let date = "";
+  let startDate = "";
+  let endDate = "";
+
+  if (typeof queryOrOptions === "object" && queryOrOptions !== null) {
+    query = queryOrOptions.query ?? queryOrOptions.q ?? "";
+    date = queryOrOptions.date ?? "";
+    startDate = queryOrOptions.startDate ?? "";
+    endDate = queryOrOptions.endDate ?? "";
+  } else {
+    query = queryOrOptions || "";
+    date = maybeDate || "";
+    startDate = maybeStartDate || "";
+    endDate = maybeEndDate || "";
   }
 
   const rows = await db.query.payments.findMany({
@@ -451,7 +519,7 @@ export async function getPayments() {
     orderBy: [desc(payments.paymentDate)],
   });
 
-  return rows.map((payment) => {
+  let results = rows.map((payment) => {
     const allocatedAmount =
       payment.allocations?.reduce(
         (sum, allocation) => sum + Number(allocation.allocatedAmount || 0),
@@ -468,6 +536,48 @@ export async function getPayments() {
       unallocatedAmount: Math.max(paymentAmount - allocatedAmount, 0),
     };
   });
+
+  // Filter by search query (companyName, companyCode, receiptNumber, reference)
+  if (query && query.trim()) {
+    const q = query.trim().toLowerCase();
+    results = results.filter((payment) => {
+      const companyName = payment.client?.companyName?.toLowerCase() || "";
+      const companyCode = payment.client?.companyCode?.toLowerCase() || "";
+      const receiptNumber = payment.receiptNumber?.toLowerCase() || "";
+      const reference = payment.reference?.toLowerCase() || "";
+
+      return (
+        companyName.includes(q) ||
+        companyCode.includes(q) ||
+        receiptNumber.includes(q) ||
+        reference.includes(q)
+      );
+    });
+  }
+
+  // Filter by date or date range
+  if (date) {
+    results = results.filter((payment) => {
+      if (!payment.paymentDate) return false;
+      const paymentDateStr = new Date(payment.paymentDate)
+        .toISOString()
+        .slice(0, 10);
+      return paymentDateStr === date;
+    });
+  } else if (startDate || endDate) {
+    results = results.filter((payment) => {
+      if (!payment.paymentDate) return false;
+      const paymentDateStr = new Date(payment.paymentDate)
+        .toISOString()
+        .slice(0, 10);
+
+      if (startDate && paymentDateStr < startDate) return false;
+      if (endDate && paymentDateStr > endDate) return false;
+      return true;
+    });
+  }
+
+  return results;
 }
 
 /**

@@ -1,20 +1,29 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
+import {
+  Check,
+  Package,
+  ArrowLeft,
+  Building2,
+  CalendarDays,
+  CreditCard,
+  Hash,
+  FileText,
+} from "lucide-react";
 
 import ClientCombobox from "@/app/components/ui/ClientCombobox";
-import ClientSummaryCard from "@/app/components/followup/ClientSummaryCard";
-
+import AwbDetailsPopover from "@/app/components/payment/AwbDetailsPopover";
 import { createPayment, getInvoicesForPayment } from "@/app/actions/payment";
 
 export default function PaymentForm({ clients = [] }) {
   const [selectedClient, setSelectedClient] = useState(null);
-
   const [clientSummary, setClientSummary] = useState(null);
-
   const [invoices, setInvoices] = useState([]);
-
-  const [allocations, setAllocations] = useState({});
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const [values, setValues] = useState({
     amount: "",
@@ -25,15 +34,44 @@ export default function PaymentForm({ clients = [] }) {
     notes: "",
   });
 
-  // ======================================================
-  // PAYMENT AMOUNT
-  // ======================================================
-
   const paymentAmount = Number(values.amount || 0);
 
-  // ======================================================
-  // TOTAL ALLOCATED
-  // ======================================================
+  // Calculate selected total due
+  const selectedInvoicesList = invoices.filter((inv) =>
+    selectedInvoiceIds.includes(inv.id),
+  );
+
+  const selectedInvoicesDueSum = selectedInvoicesList.reduce(
+    (sum, inv) => sum + Number(inv.due || 0),
+    0,
+  );
+
+  // Compute allocations based on selected invoices and payment amount
+  // If payment amount is specified, we allocate up to payment amount across selected invoices
+  // If payment amount is empty or matches selected due, each checked invoice receives its due amount
+  const allocations = useMemo(() => {
+    const allocMap = {};
+    if (selectedInvoiceIds.length === 0) return allocMap;
+
+    let available = paymentAmount > 0 ? paymentAmount : selectedInvoicesDueSum;
+
+    for (const inv of invoices) {
+      if (!selectedInvoiceIds.includes(inv.id)) continue;
+      const due = Number(inv.due || 0);
+      if (due <= 0) continue;
+
+      if (paymentAmount > 0) {
+        const allocated = Math.min(due, available);
+        if (allocated > 0) {
+          allocMap[inv.id] = allocated;
+          available -= allocated;
+        }
+      } else {
+        allocMap[inv.id] = due;
+      }
+    }
+    return allocMap;
+  }, [selectedInvoiceIds, paymentAmount, invoices, selectedInvoicesDueSum]);
 
   const totalAllocated = useMemo(() => {
     return Object.values(allocations).reduce(
@@ -42,37 +80,21 @@ export default function PaymentForm({ clients = [] }) {
     );
   }, [allocations]);
 
-  // ======================================================
-  // UNALLOCATED
-  // ======================================================
-
   const unallocatedAmount = Math.max(paymentAmount - totalAllocated, 0);
-
-  // ======================================================
-  // FIELD CHANGE
-  // ======================================================
 
   function handleChange(e) {
     const { name, value } = e.target;
-
     setValues((prev) => ({
       ...prev,
       [name]: value,
     }));
   }
 
-  // ======================================================
-  // CLIENT CHANGE
-  // ======================================================
-
   async function handleClientChange(client) {
     setSelectedClient(client);
-
     setClientSummary(null);
     setInvoices([]);
-    setAllocations({});
-
-    // Reset payment amount when client changes
+    setSelectedInvoiceIds([]);
     setValues((prev) => ({
       ...prev,
       amount: "",
@@ -80,183 +102,148 @@ export default function PaymentForm({ clients = [] }) {
 
     if (!client) return;
 
-    const result = await getInvoicesForPayment(client.id);
-
-    setClientSummary(result.clientSummary);
-    setInvoices(result.invoices);
+    try {
+      setLoadingInvoices(true);
+      const result = await getInvoicesForPayment(client.id);
+      setClientSummary(result.clientSummary);
+      setInvoices(result.invoices || []);
+    } finally {
+      setLoadingInvoices(false);
+    }
   }
 
-  // ======================================================
-  // ALLOCATION CHANGE
-  // ======================================================
+  function toggleInvoice(invoiceId) {
+    setSelectedInvoiceIds((current) => {
+      const isCurrentlySelected = current.includes(invoiceId);
+      const next = isCurrentlySelected
+        ? current.filter((id) => id !== invoiceId)
+        : [...current, invoiceId];
 
-  function handleAllocationChange(invoiceId, value) {
-    if (value === "") {
-      setAllocations((prev) => ({
-        ...prev,
-        [invoiceId]: "",
-      }));
+      // If user hasn't explicitly entered a payment amount yet, auto-fill with the selected sum
+      if (!values.amount || Number(values.amount) === selectedInvoicesDueSum) {
+        const nextList = invoices.filter((inv) => next.includes(inv.id));
+        const nextSum = nextList.reduce(
+          (sum, inv) => sum + Number(inv.due || 0),
+          0,
+        );
+        setValues((prev) => ({
+          ...prev,
+          amount: nextSum > 0 ? String(nextSum) : "",
+        }));
+      }
 
-      return;
-    }
+      return next;
+    });
+  }
 
-    const amount = Number(value);
-
-    if (!Number.isFinite(amount) || amount < 0) {
-      return;
-    }
-
-    const invoice = invoices.find((item) => item.id === invoiceId);
-
-    if (!invoice) return;
-
-    const outstanding = Number(invoice.due || 0);
-
-    // Do not allow allocation above invoice outstanding
-    const safeAmount = Math.min(amount, outstanding);
-
-    setAllocations((prev) => ({
+  function selectAllInvoices() {
+    const allIds = invoices.map((inv) => inv.id);
+    setSelectedInvoiceIds(allIds);
+    const sum = invoices.reduce((s, inv) => s + Number(inv.due || 0), 0);
+    setValues((prev) => ({
       ...prev,
-      [invoiceId]: safeAmount,
+      amount: sum > 0 ? String(sum) : prev.amount,
     }));
   }
 
-  // ======================================================
-  // AUTO ALLOCATE
-  // ======================================================
+  function clearInvoices() {
+    setSelectedInvoiceIds([]);
+  }
 
-  function handleAutoAllocate() {
+  function handleAutoAllocateOldest() {
     if (paymentAmount <= 0) return;
-
     let remaining = paymentAmount;
-
-    const nextAllocations = {};
-
-    // invoices already arrive overdue / oldest first
-    for (const invoice of invoices) {
+    const selected = [];
+    for (const inv of invoices) {
       if (remaining <= 0) break;
-
-      const outstanding = Number(invoice.due || 0);
-
-      if (outstanding <= 0) continue;
-
-      const allocation = Math.min(outstanding, remaining);
-
-      nextAllocations[invoice.id] = allocation;
-
-      remaining -= allocation;
+      const due = Number(inv.due || 0);
+      if (due <= 0) continue;
+      selected.push(inv.id);
+      remaining -= Math.min(due, remaining);
     }
-
-    setAllocations(nextAllocations);
+    setSelectedInvoiceIds(selected);
   }
 
-  // ======================================================
-  // CLEAR ALLOCATIONS
-  // ======================================================
-
-  function handleClearAllocations() {
-    setAllocations({});
-  }
-
-  // ======================================================
-  // SUBMIT VALIDATION
-  // ======================================================
-
-  const canSubmit =
-    selectedClient && paymentAmount > 0 && totalAllocated <= paymentAmount;
-
-  // ======================================================
-  // RENDER
-  // ======================================================
+  const canSubmit = selectedClient && paymentAmount > 0;
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
-      <form
-        action={createPayment}
-        className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"
-      >
-        {/* ========================================= */}
-        {/* HIDDEN CLIENT */}
-        {/* ========================================= */}
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-2.5">
+      {/* Top Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div>
+            <h1 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+              New Payment
+            </h1>
+          </div>
+        </div>
+      </div>
 
+      <form
+        action={(formData) => {
+          startTransition(async () => {
+            await createPayment(formData);
+          });
+        }}
+        className="space-y-2.5"
+      >
+        {/* Hidden Form Inputs */}
         <input type="hidden" name="clientId" value={selectedClient?.id ?? ""} />
 
-        {/* ========================================= */}
-        {/* FORM BODY */}
-        {/* ========================================= */}
+        {/* Hidden Allocation Form Inputs */}
+        {Object.entries(allocations).map(([invId, allocAmt]) => (
+          <div key={`alloc-group-${invId}`}>
+            <input type="hidden" name="allocationInvoiceId" value={invId} />
+            <input type="hidden" name="allocationAmount" value={allocAmt} />
+          </div>
+        ))}
 
-        <div className="space-y-6 p-8">
-          {/* ========================================= */}
-          {/* CLIENT */}
-          {/* ========================================= */}
-
-          <section>
-            <div className="max-w-xl">
-              <label className="mb-2 block text-sm font-medium text-zinc-700">
-                Client
-                <span className="ml-1 text-red-500">*</span>
+        {/* Top Control Bar: Client & Payment Details */}
+        <div className="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-12 sm:items-center">
+            {/* Client Selector */}
+            <div className="sm:col-span-4">
+              <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Select Client <span className="text-red-500">*</span>
               </label>
-
               <ClientCombobox
                 clients={clients}
                 selectedClient={selectedClient}
                 onSelect={handleClientChange}
+                placeholder="Search client..."
               />
             </div>
 
-            {clientSummary && (
-              <div className="mt-4">
-                <ClientSummaryCard summary={clientSummary} />
+            {/* Payment Amount */}
+            <div className="sm:col-span-3">
+              <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Payment Amount <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
+                  ₹
+                </span>
+                <input
+                  type="number"
+                  name="amount"
+                  min="0.01"
+                  step="0.01"
+                  value={values.amount}
+                  onChange={handleChange}
+                  disabled={!selectedClient}
+                  required
+                  placeholder="0.00"
+                  className="h-8.5 w-full rounded-lg border border-zinc-200 bg-white pl-7 pr-2.5 text-xs font-semibold text-zinc-900 shadow-2xs outline-none transition focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:disabled:bg-zinc-800/50"
+                />
               </div>
-            )}
-          </section>
+            </div>
 
-          {/* Divider */}
-
-          <div className="border-t border-zinc-100" />
-
-          {/* ========================================= */}
-          {/* PAYMENT DETAILS */}
-          {/* ========================================= */}
-
-          <section>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {/* Amount */}
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Payment Amount
-                  <span className="ml-1 text-red-500">*</span>
-                </label>
-
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-500">
-                    ₹
-                  </span>
-
-                  <input
-                    type="number"
-                    name="amount"
-                    min="0"
-                    step="0.01"
-                    value={values.amount}
-                    onChange={handleChange}
-                    disabled={!selectedClient}
-                    required
-                    placeholder="0.00"
-                    className="h-10 w-full rounded-lg border border-zinc-300 bg-white pl-8 pr-3 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-zinc-100"
-                  />
-                </div>
-              </div>
-
-              {/* Payment Date */}
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Payment Date
-                  <span className="ml-1 text-red-500">*</span>
-                </label>
-
+            {/* Payment Date */}
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Date <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
                 <input
                   type="date"
                   name="paymentDate"
@@ -264,430 +251,320 @@ export default function PaymentForm({ clients = [] }) {
                   onChange={handleChange}
                   disabled={!selectedClient}
                   required
-                  className="h-10 w-full rounded-lg
-                    border border-zinc-300
-                    bg-white px-3
-                    text-sm text-zinc-800
-                    outline-none transition
-                    focus:border-blue-500
-                    focus:ring-2 focus:ring-blue-500/10
-                    disabled:cursor-not-allowed
-                    disabled:bg-zinc-100
-                  "
-                />
-              </div>
-
-              {/* Method */}
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Payment Method
-                </label>
-
-                <select
-                  name="method"
-                  value={values.method}
-                  onChange={handleChange}
-                  disabled={!selectedClient}
-                  className="h-10 w-full rounded-lg
-                    border border-zinc-300
-                    bg-white px-3
-                    text-sm text-zinc-800
-                    outline-none transition
-                    focus:border-blue-500
-                    focus:ring-2 focus:ring-blue-500/10
-                    disabled:cursor-not-allowed
-                    disabled:bg-zinc-100
-                  "
-                >
-                  <option value="bank">Bank Transfer</option>
-                  <option value="upi">UPI</option>
-                  <option value="cheque">Cheque</option>
-                  <option value="cash">Cash</option>
-                  <option value="adjustment">Adjustment</option>
-                </select>
-              </div>
-
-              {/* Reference */}
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Reference
-                </label>
-
-                <input
-                  type="text"
-                  name="reference"
-                  value={values.reference}
-                  onChange={handleChange}
-                  disabled={!selectedClient}
-                  placeholder="UTR / cheque / transaction number"
-                  className="h-10 w-full rounded-lg
-                    border border-zinc-300
-                    bg-white px-3
-                    text-sm text-zinc-800
-                    outline-none transition
-                    placeholder:text-zinc-400
-                    focus:border-blue-500
-                    focus:ring-2 focus:ring-blue-500/10
-                    disabled:cursor-not-allowed
-                    disabled:bg-zinc-100
-                  "
-                />
-              </div>
-
-              {/* Receipt Number */}
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Receipt Number
-                </label>
-
-                <input
-                  type="text"
-                  name="receiptNumber"
-                  value={values.receiptNumber}
-                  onChange={handleChange}
-                  disabled={!selectedClient}
-                  placeholder="Receipt number"
-                  className="h-10 w-full rounded-lg
-                    border border-zinc-300
-                    bg-white px-3
-                    text-sm text-zinc-800
-                    outline-none transition
-                    placeholder:text-zinc-400
-                    focus:border-blue-500
-                    focus:ring-2 focus:ring-blue-500/10
-                    disabled:cursor-not-allowed
-                    disabled:bg-zinc-100
-                  "
+                  className="h-8.5 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 shadow-2xs outline-none transition focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:disabled:bg-zinc-800/50"
                 />
               </div>
             </div>
 
-            {/* Notes */}
-
-            <div className="mt-4">
-              <label className="mb-2 block text-sm font-medium text-zinc-700">
-                Notes
+            {/* Method */}
+            <div className="sm:col-span-3">
+              <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Method
               </label>
+              <select
+                name="method"
+                value={values.method}
+                onChange={handleChange}
+                disabled={!selectedClient}
+                className="h-8.5 w-full rounded-lg border border-zinc-200 bg-white px-2 text-xs text-zinc-800 shadow-2xs outline-none transition focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:disabled:bg-zinc-800/50"
+              >
+                <option value="bank">Bank Transfer / NEFT / RTGS</option>
+                <option value="upi">UPI / QR Code</option>
+                <option value="cheque">Cheque</option>
+                <option value="cash">Cash</option>
+                <option value="adjustment">Adjustment / Credit</option>
+              </select>
+            </div>
+          </div>
 
-              <textarea
+          {/* Reference & Notes Row */}
+          <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-12">
+            <div className="sm:col-span-4">
+              <input
+                type="text"
+                name="reference"
+                value={values.reference}
+                onChange={handleChange}
+                disabled={!selectedClient}
+                placeholder="UTR / Cheque / Ref Number..."
+                className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 shadow-2xs outline-none transition placeholder:text-zinc-400 focus:border-blue-500 disabled:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:disabled:bg-zinc-800/50"
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <input
+                type="text"
+                name="receiptNumber"
+                value={values.receiptNumber}
+                onChange={handleChange}
+                disabled={!selectedClient}
+                placeholder="Receipt / Voucher No..."
+                className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 shadow-2xs outline-none transition placeholder:text-zinc-400 focus:border-blue-500 disabled:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:disabled:bg-zinc-800/50"
+              />
+            </div>
+            <div className="sm:col-span-5">
+              <input
+                type="text"
                 name="notes"
-                rows={3}
                 value={values.notes}
                 onChange={handleChange}
                 disabled={!selectedClient}
-                placeholder="Enter payment remarks..."
-                className="
-                  w-full resize-none rounded-lg
-                  border border-zinc-300
-                  bg-white px-3 py-2.5
-                  text-sm text-zinc-800
-                  outline-none transition
-                  placeholder:text-zinc-400
-                  focus:border-blue-500
-                  focus:ring-2 focus:ring-blue-500/10
-                  disabled:cursor-not-allowed
-                  disabled:bg-zinc-100
-                "
+                placeholder="Payment notes / remarks..."
+                className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 shadow-2xs outline-none transition placeholder:text-zinc-400 focus:border-blue-500 disabled:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:disabled:bg-zinc-800/50"
               />
             </div>
-          </section>
+          </div>
 
-          {/* Divider */}
-
-          <div className="border-t border-zinc-100" />
-
-          {/* ========================================= */}
-          {/* ALLOCATION */}
-          {/* ========================================= */}
-
-          <section>
-            <div className="mb-4 flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-base font-semibold text-zinc-800">
-                  Payment Allocation
-                </h3>
+          {/* Client Financial & Allocation Stats Strip */}
+          {selectedClient && clientSummary && (
+            <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-2 text-xs dark:border-zinc-800">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+                Client Stats:
+              </span>
+              <div className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                <span>Invoices:</span>
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                  {clientSummary.totalInvoices}
+                </span>
               </div>
+              <div className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                <span>Total Due:</span>
+                <span className="font-semibold">
+                  ₹
+                  {Number(clientSummary.outstandingAmount || 0).toLocaleString(
+                    "en-IN",
+                  )}
+                </span>
+              </div>
+              {Number(clientSummary.overdueAmount || 0) > 0 && (
+                <div className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                  <span>Overdue:</span>
+                  <span className="font-semibold">
+                    ₹
+                    {Number(clientSummary.overdueAmount || 0).toLocaleString(
+                      "en-IN",
+                    )}{" "}
+                    ({clientSummary.overdueInvoices})
+                  </span>
+                </div>
+              )}
 
-              {invoices.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleClearAllocations}
-                    className="
-                      h-9 rounded-lg border border-zinc-200
-                      bg-white px-3 text-sm font-medium
-                      text-zinc-600 transition
-                      hover:bg-zinc-50
-                    "
-                  >
-                    Clear
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleAutoAllocate}
-                    disabled={paymentAmount <= 0}
-                    className="
-                      h-9 rounded-lg
-                      bg-blue-50 px-3
-                      text-sm font-medium text-blue-700
-                      transition hover:bg-blue-100
-                      disabled:cursor-not-allowed
-                      disabled:opacity-50
-                    "
-                  >
-                    Auto Allocate
-                  </button>
+              {paymentAmount > 0 && (
+                <div className="ml-auto flex items-center gap-2">
+                  <div className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <Check size={12} />
+                    <span>
+                      Allocated: ₹{totalAllocated.toLocaleString("en-IN")} (
+                      {Object.keys(allocations).length} inv)
+                    </span>
+                  </div>
+                  {unallocatedAmount > 0 && (
+                    <div className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-2 py-0.5 text-[11px] font-medium text-orange-700 dark:bg-orange-950/60 dark:text-orange-300">
+                      <span>
+                        Unallocated: ₹
+                        {unallocatedAmount.toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-
-            {!selectedClient ? (
-              <div className="rounded-xl border border-dashed border-zinc-200 px-6 py-10 text-center">
-                <p className="text-sm text-zinc-400">
-                  Select a client to view outstanding invoices.
-                </p>
-              </div>
-            ) : invoices.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-zinc-200 px-6 py-10 text-center">
-                <p className="text-sm font-medium text-zinc-600">
-                  No outstanding invoices
-                </p>
-
-                <p className="mt-1 text-sm text-zinc-400">
-                  This client currently has no invoice balance to allocate.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-zinc-200">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="border-b border-zinc-200 bg-zinc-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                          Invoice
-                        </th>
-
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                          Due Date
-                        </th>
-
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                          Outstanding
-                        </th>
-
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                          Allocate
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody className="divide-y divide-zinc-100">
-                      {invoices.map((invoice) => {
-                        const allocation = allocations[invoice.id] ?? "";
-
-                        return (
-                          <tr key={invoice.id} className="hover:bg-zinc-50/70">
-                            {/* Invoice */}
-
-                            <td className="px-4 py-3">
-                              <p className="text-sm font-medium text-zinc-800">
-                                {invoice.invoiceNumber}
-                              </p>
-
-                              {invoice.subClientName && (
-                                <p className="mt-0.5 text-xs text-zinc-400">
-                                  {invoice.subClientName}
-                                </p>
-                              )}
-                            </td>
-
-                            {/* Due Date */}
-
-                            <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-600">
-                              {formatDate(invoice.dueDate)}
-                            </td>
-
-                            {/* Outstanding */}
-
-                            <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-zinc-700">
-                              {formatCurrency(invoice.due)}
-                            </td>
-
-                            {/* Allocate */}
-
-                            <td className="px-4 py-3">
-                              <div className="ml-auto w-36">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max={Number(invoice.due || 0)}
-                                  step="0.01"
-                                  value={allocation}
-                                  onChange={(e) =>
-                                    handleAllocationChange(
-                                      invoice.id,
-                                      e.target.value,
-                                    )
-                                  }
-                                  disabled={paymentAmount <= 0}
-                                  placeholder="0.00"
-                                  className="
-                                    h-9 w-full rounded-lg
-                                    border border-zinc-300
-                                    px-3 text-right text-sm
-                                    outline-none transition
-                                    focus:border-blue-500
-                                    focus:ring-2 focus:ring-blue-500/10
-                                    disabled:cursor-not-allowed
-                                    disabled:bg-zinc-100
-                                  "
-                                />
-
-                                {/* Hidden allocation fields */}
-
-                                {Number(allocation || 0) > 0 && (
-                                  <>
-                                    <input
-                                      type="hidden"
-                                      name="allocationInvoiceId"
-                                      value={invoice.id}
-                                    />
-
-                                    <input
-                                      type="hidden"
-                                      name="allocationAmount"
-                                      value={allocation}
-                                    />
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* ========================================= */}
-            {/* PAYMENT SUMMARY */}
-            {/* ========================================= */}
-
-            {selectedClient && paymentAmount > 0 && (
-              <div className="mt-4 flex justify-end">
-                <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <SummaryRow label="Payment Amount" value={paymentAmount} />
-
-                  <SummaryRow label="Allocated" value={totalAllocated} />
-
-                  <div className="my-3 border-t border-zinc-200" />
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-zinc-700">
-                      Unallocated
-                    </span>
-
-                    <span
-                      className={`text-sm font-semibold ${
-                        unallocatedAmount > 0
-                          ? "text-orange-600"
-                          : "text-emerald-600"
-                      }`}
-                    >
-                      {formatCurrency(unallocatedAmount)}
-                    </span>
-                  </div>
-
-                  {totalAllocated > paymentAmount && (
-                    <p className="mt-3 text-xs font-medium text-red-600">
-                      Allocation exceeds the payment amount.
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-          </section>
+          )}
         </div>
 
-        {/* ========================================= */}
-        {/* FOOTER */}
-        {/* ========================================= */}
+        {/* Invoices List with Checkboxes & AWBs */}
+        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+          {/* Card Header */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50/80 px-3.5 py-2 dark:border-zinc-800 dark:bg-zinc-800/50">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-200">
+                Outstanding Invoices to Settle
+              </h2>
+              {invoices.length > 0 && (
+                <span className="rounded-full bg-zinc-200 px-2 py-0.2 text-[10px] font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                  {invoices.length}
+                </span>
+              )}
+            </div>
 
-        <div className="flex items-center justify-end border-t border-zinc-200 bg-zinc-50/70 px-6 py-4">
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="
-              inline-flex h-10 items-center justify-center
-              rounded-lg bg-blue-600 px-5
-              text-sm font-medium text-white
-              shadow-sm transition
-              hover:bg-blue-700
-              focus:outline-none
-              focus:ring-2 focus:ring-blue-500
-              focus:ring-offset-2
-              disabled:cursor-not-allowed
-              disabled:bg-zinc-300
-              disabled:text-zinc-500
-              disabled:shadow-none
-            "
-          >
-            Save Payment
-          </button>
+            {selectedClient && invoices.length > 0 && (
+              <div className="flex items-center gap-2 text-xs">
+                {paymentAmount > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleAutoAllocateOldest}
+                      className="font-medium text-purple-600 transition hover:text-purple-700 dark:text-purple-400"
+                    >
+                      Auto-Settle Oldest
+                    </button>
+                    <span className="text-zinc-300 dark:text-zinc-700">|</span>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={selectAllInvoices}
+                  className="font-medium text-blue-600 transition hover:text-blue-700 dark:text-blue-400"
+                >
+                  Select All
+                </button>
+                <span className="text-zinc-300 dark:text-zinc-700">|</span>
+                <button
+                  type="button"
+                  onClick={clearInvoices}
+                  className="font-medium text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                >
+                  Deselect All
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Body Content */}
+          {!selectedClient ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center sm:p-10">
+              <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                No Client Selected
+              </p>
+              <p className="mt-0.5 max-w-sm text-[11px] text-zinc-400 dark:text-zinc-500">
+                Choose a client above to list outstanding invoices and settle
+                payments.
+              </p>
+            </div>
+          ) : loadingInvoices ? (
+            <div className="flex items-center justify-center p-8 text-center">
+              <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                <span>Loading outstanding invoices...</span>
+              </div>
+            </div>
+          ) : invoices.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                <Check size={16} />
+              </div>
+              <p className="mt-2 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                No Outstanding Invoices Found
+              </p>
+              <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">
+                All invoices for this client are settled. You can still record
+                unallocated on-account payment.
+              </p>
+            </div>
+          ) : (
+            <div className="max-h-[calc(100vh-340px)] min-h-[140px] overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800">
+              {invoices.map((invoice) => {
+                const isSelected = selectedInvoiceIds.includes(invoice.id);
+                const currentAllocation = allocations[invoice.id] || 0;
+
+                return (
+                  <div
+                    key={invoice.id}
+                    onClick={() => toggleInvoice(invoice.id)}
+                    className={`flex cursor-pointer items-center gap-3 px-3.5 py-2.5 transition select-none ${
+                      isSelected
+                        ? "bg-blue-50/30 dark:bg-blue-950/20"
+                        : "bg-white hover:bg-zinc-50/70 dark:bg-zinc-900 dark:hover:bg-zinc-800/40"
+                    }`}
+                  >
+                    {/* Checkbox */}
+                    <div
+                      className="shrink-0"
+                      title={isSelected ? "Deselect invoice" : "Select invoice"}
+                    >
+                      {isSelected ? (
+                        <div className="flex h-4 w-4 items-center justify-center rounded bg-blue-600 text-white shadow-2xs">
+                          <Check size={11} />
+                        </div>
+                      ) : (
+                        <div className="h-4 w-4 rounded border border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-600 dark:bg-zinc-800" />
+                      )}
+                    </div>
+
+                    {/* Invoice Info & Sub-client */}
+                    <div className="w-[170px] shrink-0 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                          {invoice.invoiceNumber}
+                        </span>
+                        {invoice.isOverdue && (
+                          <span className="shrink-0 rounded bg-red-100 px-1 py-0.2 text-[9px] font-bold uppercase text-red-700 dark:bg-red-950/70 dark:text-red-300">
+                            Overdue
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                        {invoice.subClientName && (
+                          <span
+                            className="truncate max-w-[85px]"
+                            title={invoice.subClientName}
+                          >
+                            {invoice.subClientName} •
+                          </span>
+                        )}
+                        <span>Due: {formatDate(invoice.dueDate)}</span>
+                      </div>
+                    </div>
+
+                    {/* AWB Information Section */}
+                    <div className="flex-1 min-w-[150px]">
+                      <AwbDetailsPopover
+                        awbs={invoice.awbs}
+                        invoiceNumber={invoice.invoiceNumber}
+                      />
+                    </div>
+
+                    {/* Financial Values */}
+                    <div className="w-[120px] shrink-0 text-right">
+                      <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                        ₹{Number(invoice.due || 0).toLocaleString("en-IN")}
+                      </div>
+                      <div className="text-[10px] text-zinc-400">
+                        Total: ₹
+                        {Number(invoice.invoiceAmount || 0).toLocaleString(
+                          "en-IN",
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Bottom Action Bar */}
+          <div className="flex items-center justify-end gap-2 border-t border-zinc-200 bg-zinc-50/90 px-4 py-2 dark:border-zinc-800 dark:bg-zinc-800/60">
+            <Link
+              href="/payments"
+              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3.5 text-xs font-medium text-zinc-700 shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              disabled={!canSubmit || isPending}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isPending ? (
+                <>
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Check size={14} />
+                  <span>Save Payment</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </form>
     </div>
   );
 }
 
-/**
- * ======================================================
- * SUMMARY ROW
- * ======================================================
- */
-
-function SummaryRow({ label, value }) {
-  return (
-    <div className="mb-2 flex items-center justify-between last:mb-0">
-      <span className="text-sm text-zinc-500">{label}</span>
-
-      <span className="text-sm font-medium text-zinc-800">
-        {formatCurrency(value)}
-      </span>
-    </div>
-  );
-}
-
-/**
- * ======================================================
- * FORMAT CURRENCY
- * ======================================================
- */
-
-function formatCurrency(value) {
-  return Number(value || 0).toLocaleString("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-/**
- * ======================================================
- * FORMAT DATE
- * ======================================================
- */
-
 function formatDate(date) {
   if (!date) return "—";
-
   return new Date(date).toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
