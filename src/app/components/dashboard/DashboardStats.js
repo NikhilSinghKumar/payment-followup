@@ -17,14 +17,13 @@ const formatCurrency = (amount) =>
 
 export default function DashboardStats({ summary }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
       {/* OUTSTANDING */}
       <KPICard
         title="Total Outstanding"
         value={formatCurrency(summary.outstanding)}
         icon={Wallet}
-        iconBg="bg-blue-100 dark:bg-blue-900/30"
-        iconColor="text-blue-600 dark:text-blue-400"
+        iconBg="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
       />
 
       {/* 90+ DAYS */}
@@ -32,16 +31,15 @@ export default function DashboardStats({ summary }) {
         title="90+ Days Due"
         value={formatCurrency(summary.outstanding90Days)}
         icon={TriangleAlert}
-        iconBg="bg-red-100 dark:bg-red-900/30"
-        iconColor="text-red-600 dark:text-red-400"
+        iconBg="bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400"
       />
+
       {/* TODAY */}
       <KPICard
         title="Today's Collection"
         value={formatCurrency(summary.todayCollection)}
         icon={IndianRupee}
-        iconBg="bg-green-100 dark:bg-green-900/30"
-        iconColor="text-green-600 dark:text-green-400"
+        iconBg="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
       />
 
       {/* MONTH */}
@@ -49,26 +47,16 @@ export default function DashboardStats({ summary }) {
         title="Month Collection"
         value={formatCurrency(summary.monthCollection)}
         icon={CalendarDays}
-        iconBg="bg-purple-100 dark:bg-purple-900/30"
-        iconColor="text-purple-600 dark:text-purple-400"
+        iconBg="bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400"
       />
 
+      {/* TOTAL COLLECTION */}
       <KPICard
         title="Total Collection"
         value={formatCurrency(summary.totalCollection)}
         icon={HandCoins}
-        iconBg="bg-emerald-100 dark:bg-emerald-900/30"
-        iconColor="text-emerald-600 dark:text-emerald-400"
+        iconBg="bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400"
       />
-
-      {/* UNALLOCATED */}
-      {/* <KPICard
-        title="Unallocated Payments"
-        value={formatCurrency(summary.unallocatedPayments)}
-        icon={HandCoins}
-        iconBg="bg-amber-100 dark:bg-amber-900/30"
-        iconColor="text-amber-600 dark:text-amber-400"
-      /> */}
     </div>
   );
 }

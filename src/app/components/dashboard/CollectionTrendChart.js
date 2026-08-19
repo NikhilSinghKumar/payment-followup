@@ -2,8 +2,8 @@
 
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -19,28 +19,26 @@ function formatCurrency(value) {
 }
 
 function formatCompactCurrency(value) {
-  if (value >= 10000000) {
-    return `₹${(value / 10000000).toFixed(1)} Cr`;
+  const amount = Number(value || 0);
+  if (amount >= 10000000) {
+    return `₹${(amount / 10000000).toFixed(1)}Cr`;
   }
-
-  if (value >= 100000) {
-    return `₹${(value / 100000).toFixed(1)} L`;
+  if (amount >= 100000) {
+    return `₹${(amount / 100000).toFixed(1)}L`;
   }
-
-  if (value >= 1000) {
-    return `₹${(value / 1000).toFixed(0)}K`;
+  if (amount >= 1000) {
+    return `₹${(amount / 1000).toFixed(0)}k`;
   }
-
-  return `₹${value}`;
+  return `₹${amount}`;
 }
 
 function formatDate(date, granularity) {
+  if (!date) return "";
   const parsed = new Date(`${date}T00:00:00Z`);
 
   if (granularity === "month") {
     return new Intl.DateTimeFormat("en-IN", {
       month: "short",
-      year: "numeric",
       timeZone: "UTC",
     }).format(parsed);
   }
@@ -62,79 +60,115 @@ export default function CollectionTrendChart({
     label: formatDate(item.date, granularity),
   }));
 
-  return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      {/* HEADER */}
-      <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-white">
-            Collection Performance
-          </h2>
+  const totalCollected = chartData.reduce(
+    (sum, item) => sum + (Number(item.collection) || 0),
+    0,
+  );
 
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            {periodLabel}
-          </p>
+  return (
+    <div className="flex flex-col rounded-xl border border-zinc-200/90 bg-white p-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-4">
+      {/* HEADER */}
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            Collection Trend
+          </h2>
+          {periodLabel && (
+            <span className="hidden sm:inline-block text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
+              ({periodLabel})
+            </span>
+          )}
         </div>
 
-        {/* <div className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-          {granularity === "month" ? "Monthly" : "Daily"}
-        </div> */}
+        <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-0.5 dark:bg-emerald-950/40">
+          <span className="text-[11px] text-emerald-700 dark:text-emerald-400">
+            Period Total:
+          </span>
+          <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+            {formatCurrency(totalCollected)}
+          </span>
+        </div>
       </div>
 
       {/* CHART */}
-      <div className="h-[320px] w-full">
+      <div className="h-[210px] w-full sm:h-[230px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
+          <AreaChart
             data={chartData}
             margin={{
-              top: 10,
-              right: 15,
-              left: 5,
-              bottom: 5,
+              top: 8,
+              right: 12,
+              left: -10,
+              bottom: 0,
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <defs>
+              <linearGradient
+                id="collectionGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop offset="5%" stopColor="#2563EB" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="#2563EB" stopOpacity={0.0} />
+              </linearGradient>
+            </defs>
+
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={false}
+              stroke="#e4e4e7"
+              strokeOpacity={0.6}
+            />
 
             <XAxis
               dataKey="label"
               tickLine={false}
               axisLine={false}
-              tick={{
-                fontSize: 12,
-              }}
-              minTickGap={30}
+              tick={{ fontSize: 10, fill: "#71717a" }}
+              minTickGap={24}
             />
 
             <YAxis
               tickLine={false}
               axisLine={false}
-              tick={{
-                fontSize: 11,
-              }}
+              tick={{ fontSize: 10, fill: "#71717a" }}
               tickFormatter={formatCompactCurrency}
-              width={50}
+              width={45}
             />
 
             <Tooltip
+              contentStyle={{
+                backgroundColor: "#ffffff",
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                border: "1px solid #e4e4e7",
+                fontSize: "12px",
+                padding: "6px 10px",
+              }}
               formatter={(value) => [
                 formatCurrency(Number(value)),
                 "Collection",
               ]}
-              labelFormatter={(label) => label}
+              labelFormatter={(label) => `Date: ${label}`}
             />
 
-            <Line
+            <Area
               type="monotone"
               dataKey="collection"
-              strokeWidth={2.5}
-              dot={{
-                r: 3,
-              }}
+              stroke="#2563EB"
+              strokeWidth={2}
+              fillOpacity={1}
+              fill="url(#collectionGradient)"
               activeDot={{
-                r: 5,
+                r: 4,
+                fill: "#2563EB",
+                stroke: "#ffffff",
+                strokeWidth: 2,
               }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>

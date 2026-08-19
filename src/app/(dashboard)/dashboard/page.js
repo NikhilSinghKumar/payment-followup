@@ -1,17 +1,15 @@
 import { getDashboardData } from "@/app/actions/dashboard/getDashboardData";
 import DashboardStats from "@/app/components/dashboard/DashboardStats";
-import DashboardPerformance from "@/app/components/dashboard/DashboardPerformance";
 import DashboardPeriodFilter from "@/app/components/dashboard/DashboardPeriodFilter";
 import CollectionTrendChart from "@/app/components/dashboard/CollectionTrendChart";
 import AgingChart from "@/app/components/dashboard/AgingChart";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage({ searchParams }) {
   const params = await searchParams;
-
   const period = params?.period || "YTD";
-
   const startDate = params?.startDate || "";
-
   const endDate = params?.endDate || "";
 
   const dashboard = await getDashboardData({
@@ -21,13 +19,20 @@ export default async function DashboardPage({ searchParams }) {
   });
 
   return (
-    <div className="space-y-6">
-      {/* HEADER */}
+    <div className="flex flex-col gap-3 w-full">
+      {/* HEADER & FILTERS BAR */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-base font-bold tracking-tight text-zinc-900 dark:text-white sm:text-lg">
+            Dashboard
+          </h1>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Receivables & collections overview
+          </p>
+        </div>
 
-      {/* CURRENT SNAPSHOT KPIs */}
-      <DashboardStats summary={dashboard.summary} />
-      <div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+        {/* PERIOD SELECTOR */}
+        <div className="flex items-center justify-end">
           <DashboardPeriodFilter
             period={dashboard.period}
             startDate={dashboard.startDate}
@@ -36,7 +41,11 @@ export default async function DashboardPage({ searchParams }) {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+      {/* 5 COMPACT KPI STATS */}
+      <DashboardStats summary={dashboard.summary} />
+
+      {/* 2 CHARTS SIDE-BY-SIDE */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <AgingChart data={dashboard.agingData} />
         <CollectionTrendChart
           data={dashboard.collectionTrend}
