@@ -15,22 +15,8 @@ import {
 async function processClientPaymentReminders() {
   const clients = await getClientPaymentReminderData();
 
-  console.log(
-    "[REMINDER TEST] getClientPaymentReminderData returned:",
-    clients.length,
-  );
-
   const testClients = clients.filter(
     (client) => Number(client.clientId) === 488,
-  );
-
-  console.log(
-    "[REMINDER TEST] AFTER FILTER:",
-    testClients.map((client) => ({
-      clientId: client.clientId,
-      clientName: client.clientName,
-      email: client.email,
-    })),
   );
 
   let processed = 0;
@@ -38,8 +24,6 @@ async function processClientPaymentReminders() {
 
   for (const client of testClients) {
     try {
-      console.log("[REMINDER TEST] SENDING TO:", client.clientId, client.email);
-
       await clientPaymentReminder(client);
 
       processed++;
@@ -52,12 +36,6 @@ async function processClientPaymentReminders() {
       failed++;
     }
   }
-
-  console.log("[REMINDER TEST] RESULT:", {
-    processed,
-    failed,
-    total: testClients.length,
-  });
 
   return {
     processed,

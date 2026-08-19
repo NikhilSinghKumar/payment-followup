@@ -18,6 +18,7 @@ import ClientLocationsTab from "@/app/components/client/tabs/clientLocationsTab"
 import ClientContactsTab from "@/app/components/client/tabs/clientContactsTab";
 import ClientPaymentsTab from "@/app/components/client/tabs/clientPaymentsTab";
 import ClientFollowupsTab from "@/app/components/client/tabs/clientFollowupsTab";
+import SendClientReminderModal from "@/app/components/reminder/SendClientReminderModal";
 import { getClientLocationsByClientId } from "@/app/actions/clientLocations";
 import { getClientContactsByClientId } from "@/app/actions/clientContacts";
 import { getSubClientsByClientId } from "@/app/actions/sub-client";
@@ -186,13 +187,13 @@ export default async function ClientDetailPage({ params, searchParams }) {
         {/* HEADER */}
         {/* ===================================== */}
 
-        <div className="">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             {/* LEFT */}
             <div>
               <div className="flex items-center gap-3">
                 <div>
-                  <h1 className="text-2xl font-semibold text-zinc-800">
+                  <h1 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-100">
                     {client.companyName}
                   </h1>
 
@@ -214,6 +215,20 @@ export default async function ClientDetailPage({ params, searchParams }) {
                   {client.address}
                 </p>
               )}
+            </div>
+
+            {/* RIGHT ACTIONS */}
+            <div className="flex flex-wrap items-center gap-2">
+              <SendClientReminderModal
+                clientId={client.id}
+                clientName={client.companyName}
+              />
+              <Link
+                href={`/clients/${client.id}/edit`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+              >
+                <span>Edit Client</span>
+              </Link>
             </div>
           </div>
         </div>

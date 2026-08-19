@@ -10,6 +10,7 @@ import {
   paymentAllocations,
   followups,
   followupInvoices,
+  notificationLogs,
 } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
@@ -211,6 +212,20 @@ export async function getInvoiceActivities(invoiceId) {
   const paymentActivities = await getInvoicePayments(invoiceId);
   const followupActivities = await getInvoiceFollowups(invoiceId);
 
+  const notificationActivities = await db
+    .select({
+      id: notificationLogs.id,
+      channel: notificationLogs.channel,
+      recipient: notificationLogs.recipient,
+      subject: notificationLogs.subject,
+      status: notificationLogs.status,
+      sentAt: notificationLogs.sentAt,
+      createdAt: notificationLogs.createdAt,
+    })
+    .from(notificationLogs)
+    .where(eq(notificationLogs.invoiceId, Number(invoiceId)))
+    .orderBy(desc(notificationLogs.sentAt));
+
   return [
     ...paymentActivities.map((item) => ({
       type: "payment",
@@ -222,6 +237,12 @@ export async function getInvoiceActivities(invoiceId) {
       type: "followup",
       message: item.note,
       createdAt: item.createdAt,
+    })),
+
+    ...notificationActivities.map((item) => ({
+      type: "reminder",
+      message: `Reminder sent (${item.channel}) to ${item.recipient}: ${item.subject || "Payment Notice"}`,
+      createdAt: item.sentAt || item.createdAt,
     })),
   ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
