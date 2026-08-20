@@ -13,10 +13,6 @@ export default function CompanySummary({ company }) {
 
           <div>
             <div className="flex items-center gap-3">
-              {/* <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-bold text-white">
-                {company.companyName?.charAt(0)}
-              </div> */}
-
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">
                   {company.companyName}
@@ -25,23 +21,16 @@ export default function CompanySummary({ company }) {
                 <p className="text-sm text-slate-500">{company.companyCode}</p>
               </div>
             </div>
+          </div>
 
-            {/* <div className="mt-5 grid gap-2 text-sm text-slate-600">
-              <div>
-                <span className="font-medium">GST :</span>{" "}
-                {company.gstNumber || "-"}
-              </div>
-
-              <div>
-                <span className="font-medium">Email :</span>{" "}
-                {company.email || "-"}
-              </div>
-
-              <div>
-                <span className="font-medium">Phone :</span>{" "}
-                {company.phone || "-"}
-              </div>
-            </div> */}
+          {/* RIGHT ACTION */}
+          <div>
+            <Link
+              href={`/companies/${company.id}/edit`}
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition"
+            >
+              Edit Company Details
+            </Link>
           </div>
 
           {/* RIGHT */}

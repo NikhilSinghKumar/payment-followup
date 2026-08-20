@@ -82,7 +82,7 @@ function fail(message) {
 // CREATE ROLE
 // ==========================================
 
-export async function createRole(formData) {
+export async function createRole(prevState, formData) {
   try {
     // -----------------------------------------
     // Form Values
@@ -95,6 +95,11 @@ export async function createRole(formData) {
     const description = String(formData.get("description") || "").trim();
 
     const isActive = formData.get("isActive") === "on";
+
+    const permissionIds = formData
+      .getAll("permissionIds")
+      .map(Number)
+      .filter(Boolean);
 
     // -----------------------------------------
     // Validation
@@ -125,15 +130,29 @@ export async function createRole(formData) {
     }
 
     // -----------------------------------------
-    // Create Role
+    // Create Role in transaction
     // -----------------------------------------
 
-    await db.insert(roles).values({
-      companyId,
-      roleName,
-      description: description || null,
-      isSystem: false,
-      isActive,
+    await db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(roles)
+        .values({
+          companyId,
+          roleName,
+          description: description || null,
+          isSystem: false,
+          isActive,
+        })
+        .returning({ id: roles.id });
+
+      if (permissionIds.length > 0 && inserted) {
+        await tx.insert(rolePermissions).values(
+          permissionIds.map((permissionId) => ({
+            roleId: inserted.id,
+            permissionId,
+          })),
+        );
+      }
     });
 
     // -----------------------------------------
@@ -141,13 +160,13 @@ export async function createRole(formData) {
     // -----------------------------------------
 
     revalidatePath("/roles");
+
+    return ok("Role created successfully.");
   } catch (error) {
     console.error("Create Role Error:", error);
 
     return fail("Unable to create role.");
   }
-
-  redirect("/roles");
 }
 
 // ==========================================
@@ -177,7 +196,7 @@ export async function getRoleById(id) {
   };
 }
 
-export async function updateRole(roleId, formData) {
+export async function updateRole(roleId, prevState, formData) {
   try {
     // -----------------------------------------
     // Form Values
@@ -268,11 +287,11 @@ export async function updateRole(roleId, formData) {
 
     revalidatePath("/roles");
     revalidatePath(`/roles/${roleId}/edit`);
+
+    return ok("Role updated successfully.");
   } catch (error) {
     console.error("Update Role Error:", error);
 
     return fail("Unable to update role.");
   }
-
-  redirect("/roles");
 }

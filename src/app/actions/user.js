@@ -2,7 +2,14 @@
 import { db } from "@/db";
 import { revalidatePath } from "next/cache";
 import { and, or, asc, desc, eq, ilike, isNull, ne } from "drizzle-orm";
-import { users, roles, companyUsers, companies } from "@/db/schema";
+import {
+  users,
+  roles,
+  companyUsers,
+  companies,
+  rolePermissions,
+  permissions,
+} from "@/db/schema";
 
 import { redirect } from "next/navigation";
 
@@ -225,11 +232,79 @@ export async function getUserById(id) {
     .then((rows) => rows[0] ?? null);
 }
 
+export async function getUserFullDetail(id) {
+  try {
+    const userRow = await db
+      .select({
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        mobile: users.mobile,
+        isActive: users.isActive,
+        lastLoginAt: users.lastLoginAt,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+
+        companyId: companies.id,
+        companyName: companies.companyName,
+        companyCode: companies.companyCode,
+        companyEmail: companies.email,
+        companyPhone: companies.phone,
+        companyCity: companies.city,
+
+        roleId: roles.id,
+        roleName: roles.roleName,
+        roleDescription: roles.description,
+        isSystemRole: roles.isSystem,
+
+        designation: companyUsers.designation,
+      })
+      .from(users)
+      .leftJoin(companyUsers, eq(companyUsers.userId, users.id))
+      .leftJoin(roles, eq(roles.id, companyUsers.roleId))
+      .leftJoin(companies, eq(companies.id, companyUsers.companyId))
+      .where(and(eq(users.id, Number(id)), isNull(users.deletedAt)))
+      .limit(1)
+      .then((rows) => rows[0] ?? null);
+
+    if (!userRow) return null;
+
+    // Fetch permissions granted via role
+    let rolePerms = [];
+    if (userRow.roleId) {
+      rolePerms = await db
+        .select({
+          id: permissions.id,
+          module: permissions.module,
+          action: permissions.action,
+          permissionKey: permissions.permissionKey,
+          description: permissions.description,
+        })
+        .from(rolePermissions)
+        .innerJoin(
+          permissions,
+          eq(permissions.id, rolePermissions.permissionId),
+        )
+        .where(eq(rolePermissions.roleId, userRow.roleId))
+        .orderBy(asc(permissions.module), asc(permissions.action));
+    }
+
+    return {
+      ...userRow,
+      permissions: rolePerms,
+    };
+  } catch (error) {
+    console.error("getUserFullDetail error:", error);
+    return null;
+  }
+}
+
 // ==========================================
 // UPDATE USER
 // ==========================================
 
-export async function updateUser(userId, formData) {
+export async function updateUser(userId, prevState, formData) {
   try {
     // -----------------------------------------
     // Form Values
@@ -339,11 +414,11 @@ export async function updateUser(userId, formData) {
     revalidatePath("/users");
     revalidatePath(`/users/${userId}`);
     revalidatePath(`/users/${userId}/edit`);
+
+    return ok("User updated successfully.");
   } catch (error) {
     console.error("Update User Error:", error);
 
     return fail("Unable to update user.");
   }
-
-  redirect("/users");
 }

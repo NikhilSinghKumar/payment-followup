@@ -147,3 +147,109 @@ export async function createCompany(prevState, formData) {
     return fail("Unable to create company.");
   }
 }
+
+// ==========================================
+// GET COMPANY BY ID
+// ==========================================
+
+export async function getCompanyById(id) {
+  try {
+    const company = await db.query.companies.findFirst({
+      where: eq(companies.id, Number(id)),
+    });
+
+    return company || null;
+  } catch (error) {
+    console.error("getCompanyById error:", error);
+    return null;
+  }
+}
+
+// ==========================================
+// UPDATE COMPANY
+// ==========================================
+
+export async function updateCompany(companyId, prevState, formData) {
+  try {
+    const numericId = Number(companyId);
+    if (!numericId) {
+      return fail("Invalid company ID.");
+    }
+
+    const companyName = String(formData.get("companyName") || "").trim();
+    const companyCode = String(formData.get("companyCode") || "")
+      .trim()
+      .toUpperCase();
+    const gstNumber = String(formData.get("gstNumber") || "").trim();
+    const email = String(formData.get("email") || "")
+      .trim()
+      .toLowerCase();
+    const phone = String(formData.get("phone") || "").trim();
+    const address = String(formData.get("address") || "").trim();
+    const city = String(formData.get("city") || "").trim();
+    const state = String(formData.get("state") || "").trim();
+    const pincode = String(formData.get("pincode") || "").trim();
+    const country = String(formData.get("country") || "").trim() || "India";
+    const isActive = formData.get("isActive") === "on";
+
+    const bankName = String(formData.get("bankName") || "").trim();
+    const bankAccountNumber = String(
+      formData.get("bankAccountNumber") || "",
+    ).trim();
+    const bankIfsc = String(formData.get("bankIfsc") || "").trim();
+    const bankBranch = String(formData.get("bankBranch") || "").trim();
+    const bankUpi = String(formData.get("bankUpi") || "").trim();
+
+    if (!companyName) {
+      return fail("Company name is required.");
+    }
+
+    if (!companyCode) {
+      return fail("Company code is required.");
+    }
+
+    // Check duplicate code for different company
+    const existing = await db.query.companies.findFirst({
+      where: and(
+        eq(companies.companyCode, companyCode),
+        sql`${companies.id} != ${numericId}`,
+      ),
+    });
+
+    if (existing) {
+      return fail("Company code already used by another company.");
+    }
+
+    await db
+      .update(companies)
+      .set({
+        companyName,
+        companyCode,
+        gstNumber: gstNumber || null,
+        email: email || null,
+        phone: phone || null,
+        address: address || null,
+        city: city || null,
+        state: state || null,
+        pincode: pincode || null,
+        country,
+        isActive,
+        bankName: bankName || null,
+        bankAccountNumber: bankAccountNumber || null,
+        bankIfsc: bankIfsc || null,
+        bankBranch: bankBranch || null,
+        bankUpi: bankUpi || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(companies.id, numericId));
+
+    revalidatePath("/companies");
+    revalidatePath(`/companies/${numericId}`);
+    revalidatePath(`/companies/${numericId}/edit`);
+
+    return ok("Company updated successfully.");
+  } catch (error) {
+    console.error("Update Company Error:", error);
+    return fail("Unable to update company details.");
+  }
+}

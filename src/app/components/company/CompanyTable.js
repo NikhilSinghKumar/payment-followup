@@ -90,12 +90,20 @@ export default function CompanyTable({ companies }) {
 
                 {/* Actions */}
                 <td className="px-6 py-4 text-right">
-                  <Link
-                    href={`/companies/${company.id}`}
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600"
-                  >
-                    View
-                  </Link>
+                  <div className="flex items-center justify-end gap-2">
+                    <Link
+                      href={`/companies/${company.id}`}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      View
+                    </Link>
+                    <Link
+                      href={`/companies/${company.id}/edit`}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-amber-600 transition hover:border-amber-500 hover:bg-amber-50"
+                    >
+                      Edit
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))

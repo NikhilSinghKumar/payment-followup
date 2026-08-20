@@ -1,27 +1,26 @@
 import Link from "next/link";
-import { Users, UserCheck, UserX, Plus } from "lucide-react";
-import { getUsers } from "@/app/actions/user";
-import UserTable from "@/app/components/user/UserTable";
+import { KeyRound, Shield, Plus, Layers } from "lucide-react";
+import { getPermissions } from "@/app/actions/permission";
+import PermissionTable from "@/app/components/permission/PermissionTable";
 
 export const metadata = {
-  title: "Users Management | PAFEX",
-  description: "Manage system users, company associations, and security roles.",
+  title: "Permissions | PAFEX",
+  description: "Configure system permissions and RBAC capabilities.",
 };
 
-export default async function UsersPage() {
-  const users = await getUsers();
+export default async function PermissionsPage() {
+  const permissionsList = await getPermissions();
 
-  const totalUsers = users.length;
-  const activeUsers = users.filter((u) => u.isActive).length;
-  const inactiveUsers = totalUsers - activeUsers;
+  const totalPerms = permissionsList.length;
+  const modulesCount = new Set(permissionsList.map((p) => p.module)).size;
 
   return (
     <div className="space-y-4">
-      {/* Top Header & Compact Metrics */}
+      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-            User Management
+            Permissions
           </h1>
         </div>
 
@@ -29,30 +28,30 @@ export default async function UsersPage() {
           {/* Quick Metrics */}
           <div className="hidden items-center gap-2 sm:flex">
             <div className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-              <Users size={13} className="text-blue-500" />
+              <KeyRound size={13} className="text-purple-500" />
               <span>
-                Total: <strong>{totalUsers}</strong>
+                Total: <strong>{totalPerms}</strong>
               </span>
             </div>
             <div className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-              <UserCheck size={13} className="text-emerald-500" />
+              <Layers size={13} className="text-blue-500" />
               <span>
-                Active: <strong>{activeUsers}</strong>
+                Modules: <strong>{modulesCount}</strong>
               </span>
             </div>
           </div>
 
           <Link
-            href="/users/new"
+            href="/permissions/new"
             className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition"
           >
             <Plus size={14} />
-            <span>New User</span>
+            <span>New Permission</span>
           </Link>
         </div>
       </div>
 
-      <UserTable users={users} />
+      <PermissionTable permissions={permissionsList} />
     </div>
   );
 }
