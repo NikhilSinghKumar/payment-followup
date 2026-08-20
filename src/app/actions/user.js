@@ -5,6 +5,7 @@ import { and, or, asc, desc, eq, ilike, isNull, ne } from "drizzle-orm";
 import {
   users,
   roles,
+  departments,
   companyUsers,
   companies,
   rolePermissions,
@@ -44,24 +45,20 @@ export async function createUser(formData) {
     // -----------------------------------------
 
     const firstName = String(formData.get("firstName") || "").trim();
-
     const lastName = String(formData.get("lastName") || "").trim();
-
     const email = String(formData.get("email") || "")
       .trim()
       .toLowerCase();
-
     const mobile = String(formData.get("mobile") || "").trim();
 
     const companyId = Number(formData.get("companyId"));
     const roleId = Number(formData.get("roleId"));
+    const rawDeptId = formData.get("departmentId");
+    const departmentId = rawDeptId ? Number(rawDeptId) : null;
 
     const designation = String(formData.get("designation") || "").trim();
-
     const password = String(formData.get("password") || "");
-
     const confirmPassword = String(formData.get("confirmPassword") || "");
-
     const isActive = formData.get("isActive") === "on";
 
     // -----------------------------------------
@@ -130,6 +127,7 @@ export async function createUser(formData) {
       await tx.insert(companyUsers).values({
         companyId,
         roleId,
+        departmentId,
         userId: user.id,
         designation: designation || null,
         isActive,
@@ -157,6 +155,7 @@ export async function createUser(formData) {
 export async function getUsers({
   search = "",
   activeOnly = false,
+  departmentId = null,
   sort = "name",
 } = {}) {
   const conditions = [];
@@ -170,8 +169,13 @@ export async function getUsers({
         ilike(users.lastName, `%${search}%`),
         ilike(users.email, `%${search}%`),
         ilike(companies.companyName, `%${search}%`),
+        ilike(departments.name, `%${search}%`),
       ),
     );
+  }
+
+  if (departmentId) {
+    conditions.push(eq(companyUsers.departmentId, Number(departmentId)));
   }
 
   if (activeOnly) {
@@ -194,14 +198,18 @@ export async function getUsers({
       companyId: companies.id,
       companyName: companies.companyName,
       roleId: roles.id,
-
       roleName: roles.roleName,
+
+      departmentId: departments.id,
+      departmentName: departments.name,
+      departmentCode: departments.code,
 
       designation: companyUsers.designation,
     })
     .from(users)
     .leftJoin(companyUsers, eq(companyUsers.userId, users.id))
     .leftJoin(roles, eq(roles.id, companyUsers.roleId))
+    .leftJoin(departments, eq(departments.id, companyUsers.departmentId))
     .leftJoin(companies, eq(companies.id, companyUsers.companyId))
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(orderBy);
@@ -211,17 +219,15 @@ export async function getUserById(id) {
   return await db
     .select({
       id: users.id,
-
       firstName: users.firstName,
       lastName: users.lastName,
-
       email: users.email,
       mobile: users.mobile,
-
       isActive: users.isActive,
 
       companyId: companyUsers.companyId,
       roleId: companyUsers.roleId,
+      departmentId: companyUsers.departmentId,
 
       designation: companyUsers.designation,
     })
@@ -258,11 +264,17 @@ export async function getUserFullDetail(id) {
         roleDescription: roles.description,
         isSystemRole: roles.isSystem,
 
+        departmentId: departments.id,
+        departmentName: departments.name,
+        departmentCode: departments.code,
+        departmentDescription: departments.description,
+
         designation: companyUsers.designation,
       })
       .from(users)
       .leftJoin(companyUsers, eq(companyUsers.userId, users.id))
       .leftJoin(roles, eq(roles.id, companyUsers.roleId))
+      .leftJoin(departments, eq(departments.id, companyUsers.departmentId))
       .leftJoin(companies, eq(companies.id, companyUsers.companyId))
       .where(and(eq(users.id, Number(id)), isNull(users.deletedAt)))
       .limit(1)
@@ -311,19 +323,18 @@ export async function updateUser(userId, prevState, formData) {
     // -----------------------------------------
 
     const firstName = String(formData.get("firstName") || "").trim();
-
     const lastName = String(formData.get("lastName") || "").trim();
-
     const email = String(formData.get("email") || "")
       .trim()
       .toLowerCase();
-
     const mobile = String(formData.get("mobile") || "").trim();
 
     const companyId = Number(formData.get("companyId"));
     const roleId = Number(formData.get("roleId"));
-    const designation = String(formData.get("designation") || "").trim();
+    const rawDeptId = formData.get("departmentId");
+    const departmentId = rawDeptId ? Number(rawDeptId) : null;
 
+    const designation = String(formData.get("designation") || "").trim();
     const isActive = formData.get("isActive") === "on";
 
     // -----------------------------------------
@@ -380,7 +391,6 @@ export async function updateUser(userId, prevState, formData) {
 
     await db.transaction(async (tx) => {
       // Update users table
-
       await tx
         .update(users)
         .set({
@@ -394,12 +404,12 @@ export async function updateUser(userId, prevState, formData) {
         .where(eq(users.id, Number(userId)));
 
       // Update company_users table
-
       await tx
         .update(companyUsers)
         .set({
           companyId,
           roleId,
+          departmentId,
           designation: designation || null,
           isActive,
           updatedAt: new Date(),

@@ -2,10 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { User, Mail, Shield, Building, Search, Eye, Edit2 } from "lucide-react";
+import {
+  User,
+  Mail,
+  Shield,
+  Building,
+  Building2,
+  Search,
+  Eye,
+  Edit2,
+} from "lucide-react";
 
 export default function UserTable({ users = [] }) {
   const [search, setSearch] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("ALL");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
@@ -13,17 +23,26 @@ export default function UserTable({ users = [] }) {
     new Set(users.map((u) => u.roleName).filter(Boolean)),
   );
 
+  const departmentsList = Array.from(
+    new Set(users.map((u) => u.departmentName).filter(Boolean)),
+  );
+
   const filteredUsers = users.filter((u) => {
     const fullName = `${u.firstName} ${u.lastName || ""}`.toLowerCase();
     const email = (u.email || "").toLowerCase();
     const company = (u.companyName || "").toLowerCase();
+    const department = (u.departmentName || "").toLowerCase();
     const query = search.toLowerCase();
 
     const matchesSearch =
       !query ||
       fullName.includes(query) ||
       email.includes(query) ||
-      company.includes(query);
+      company.includes(query) ||
+      department.includes(query);
+
+    const matchesDepartment =
+      departmentFilter === "ALL" || u.departmentName === departmentFilter;
 
     const matchesRole = roleFilter === "ALL" || u.roleName === roleFilter;
 
@@ -32,7 +51,7 @@ export default function UserTable({ users = [] }) {
       (statusFilter === "ACTIVE" && u.isActive) ||
       (statusFilter === "INACTIVE" && !u.isActive);
 
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch && matchesDepartment && matchesRole && matchesStatus;
   });
 
   return (
@@ -46,14 +65,30 @@ export default function UserTable({ users = [] }) {
           />
           <input
             type="text"
-            placeholder="Search by name, email, or company..."
+            placeholder="Search by name, email, department, or company..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-8.5 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-3 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Department Filter */}
+          {departmentsList.length > 0 && (
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="h-8.5 rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+            >
+              <option value="ALL">All Departments</option>
+              {departmentsList.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          )}
+
           {/* Role Filter */}
           {rolesList.length > 0 && (
             <select
@@ -95,6 +130,9 @@ export default function UserTable({ users = [] }) {
                 Company
               </th>
               <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                Department
+              </th>
+              <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
                 Role
               </th>
               <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
@@ -115,7 +153,7 @@ export default function UserTable({ users = [] }) {
             {filteredUsers.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="py-8 text-center text-xs text-zinc-400"
                 >
                   No users found matching your search criteria.
@@ -135,9 +173,9 @@ export default function UserTable({ users = [] }) {
                     {/* User & Email */}
                     <td className="py-2 pl-4 pr-3">
                       <div className="flex items-center gap-2.5">
-                        {/* <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                           {initials}
-                        </div> */}
+                        </div>
                         <div className="min-w-0">
                           <div className="font-semibold text-zinc-900 truncate dark:text-zinc-100">
                             {u.firstName} {u.lastName || ""}
@@ -154,6 +192,20 @@ export default function UserTable({ users = [] }) {
                       <span className="font-medium">
                         {u.companyName || "—"}
                       </span>
+                    </td>
+
+                    {/* Department */}
+                    <td className="py-2 px-3">
+                      {u.departmentName ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900">
+                          <Building2 size={11} className="text-indigo-500" />
+                          <span>{u.departmentName}</span>
+                        </span>
+                      ) : (
+                        <span className="text-zinc-400 italic text-[11px]">
+                          Unassigned
+                        </span>
+                      )}
                     </td>
 
                     {/* Role */}
@@ -225,7 +277,7 @@ export default function UserTable({ users = [] }) {
             {filteredUsers.length === 1 ? "user" : "users"}
           </span>
           <span className="text-[11px] text-zinc-400">
-            PAFEX User Directory
+            PAFEX User & Department Directory
           </span>
         </div>
       </div>

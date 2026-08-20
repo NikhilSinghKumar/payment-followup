@@ -25,7 +25,7 @@ export async function generateMetadata({ params }) {
   if (!user) return { title: "User Details | PAFEX" };
   return {
     title: `${user.firstName} ${user.lastName || ""} | User Details | PAFEX`,
-    description: `Profile and role permissions for ${user.firstName} ${user.lastName || ""}`,
+    description: `Profile, department, and role permissions for ${user.firstName} ${user.lastName || ""}`,
   };
 }
 
@@ -84,9 +84,9 @@ export default async function UserDetailPage({ params }) {
         <div className="border-b border-zinc-100 bg-gradient-to-r from-blue-50/50 via-purple-50/30 to-white p-6 dark:border-zinc-800 dark:from-zinc-800/40 dark:via-zinc-800/20 dark:to-zinc-900">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              {/* <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-bold text-white shadow-md">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-bold text-white shadow-md">
                 {initials}
-              </div> */}
+              </div>
               <div>
                 <div className="flex items-center gap-2.5">
                   <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -112,10 +112,20 @@ export default async function UserDetailPage({ params }) {
                     )}
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs text-zinc-500 font-medium dark:text-zinc-400">
-                  {user.designation || "Team Member"} •{" "}
-                  {user.companyName || "No Company Assigned"}
-                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500 font-medium dark:text-zinc-400">
+                  <span>{user.designation || "Team Member"}</span>
+                  <span>•</span>
+                  <span>{user.companyName || "No Company Assigned"}</span>
+                  {user.departmentName && (
+                    <>
+                      <span>•</span>
+                      <span className="inline-flex items-center gap-1 font-semibold text-indigo-600 dark:text-indigo-400">
+                        <Building2 size={12} />
+                        {user.departmentName}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -141,8 +151,8 @@ export default async function UserDetailPage({ params }) {
           </div>
         </div>
 
-        {/* 3-Column Info Grid */}
-        <div className="grid grid-cols-1 divide-y border-zinc-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0 dark:border-zinc-800 dark:divide-zinc-800">
+        {/* 4-Column Info Grid */}
+        <div className="grid grid-cols-1 divide-y border-zinc-100 sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0 dark:border-zinc-800 dark:divide-zinc-800">
           {/* Card 1: Company Affiliation */}
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
@@ -177,14 +187,6 @@ export default async function UserDetailPage({ params }) {
                   </strong>
                 </div>
               )}
-              {user.companyCity && (
-                <div className="text-zinc-500">
-                  Location:{" "}
-                  <span className="text-zinc-700 dark:text-zinc-300">
-                    {user.companyCity}
-                  </span>
-                </div>
-              )}
               {user.designation && (
                 <div className="text-zinc-500">
                   Designation:{" "}
@@ -196,7 +198,39 @@ export default async function UserDetailPage({ params }) {
             </div>
           </div>
 
-          {/* Card 2: Assigned Role & Access */}
+          {/* Card 2: Department */}
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+                  <Layers size={15} />
+                </div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  Department
+                </h3>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 text-xs">
+              <div className="font-bold text-indigo-700 dark:text-indigo-400">
+                {user.departmentName || "Unassigned"}
+              </div>
+              {user.departmentCode && (
+                <div className="font-mono text-[11px] text-zinc-500">
+                  Dept Code:{" "}
+                  <strong className="text-zinc-700 dark:text-zinc-300">
+                    {user.departmentCode}
+                  </strong>
+                </div>
+              )}
+              <p className="text-[11px] text-zinc-500 mt-1">
+                {user.departmentDescription ||
+                  "Department team assignment for routing and internal escalation alerts."}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3: Assigned Role & Access */}
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -239,7 +273,7 @@ export default async function UserDetailPage({ params }) {
             </div>
           </div>
 
-          {/* Card 3: Account Timestamps */}
+          {/* Card 4: Account Timestamps */}
           <div className="p-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">

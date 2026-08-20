@@ -12,11 +12,30 @@ import {
   getServiceSuspensionClients,
 } from "./notification-queries";
 
+import { evaluateAndRunEscalations } from "./escalation-service";
+import { db } from "@/db";
+import { companies } from "@/db/schema";
+import { isNull } from "drizzle-orm";
+
 async function processClientPaymentReminders() {
   const clients = await getClientPaymentReminderData();
 
+  console.log(
+    "[REMINDER TEST] getClientPaymentReminderData returned:",
+    clients.length,
+  );
+
   const testClients = clients.filter(
     (client) => Number(client.clientId) === 488,
+  );
+
+  console.log(
+    "[REMINDER TEST] AFTER FILTER:",
+    testClients.map((client) => ({
+      clientId: client.clientId,
+      clientName: client.clientName,
+      email: client.email,
+    })),
   );
 
   let processed = 0;
@@ -24,6 +43,8 @@ async function processClientPaymentReminders() {
 
   for (const client of testClients) {
     try {
+      console.log("[REMINDER TEST] SENDING TO:", client.clientId, client.email);
+
       await clientPaymentReminder(client);
 
       processed++;
@@ -36,6 +57,12 @@ async function processClientPaymentReminders() {
       failed++;
     }
   }
+
+  console.log("[REMINDER TEST] RESULT:", {
+    processed,
+    failed,
+    total: testClients.length,
+  });
 
   return {
     processed,
@@ -136,12 +163,39 @@ async function processServiceSuspension() {
 export async function runNotificationScheduler() {
   const startedAt = Date.now();
 
+  const activeCompanies = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(isNull(companies.deletedAt));
+
+  let escalationProcessed = 0;
+  let escalationTotal = 0;
+  let escalationFailed = 0;
+
+  for (const comp of activeCompanies) {
+    try {
+      const escRes = await evaluateAndRunEscalations(comp.id);
+      escalationTotal += escRes.totalOverdueInvoices || 0;
+      escalationProcessed += escRes.escalated || 0;
+      escalationFailed += escRes.errors?.length || 0;
+    } catch (e) {
+      console.error(`Escalation run failed for company ${comp.id}:`, e);
+      escalationFailed++;
+    }
+  }
+
   const summary = {
     clientPaymentReminder: await processClientPaymentReminders(),
 
     dueToday: await processDueToday(),
 
     serviceSuspension: await processServiceSuspension(),
+
+    hierarchicalEscalations: {
+      total: escalationTotal,
+      processed: escalationProcessed,
+      failed: escalationFailed,
+    },
   };
 
   const duration = Date.now() - startedAt;

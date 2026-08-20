@@ -128,6 +128,47 @@ export const companies = pgTable(
   }),
 );
 
+// ==========================================
+// DEPARTMENTS
+// ==========================================
+
+export const departments = pgTable(
+  "departments",
+  {
+    id: serial("id").primaryKey(),
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, {
+        onDelete: "cascade",
+      }),
+    name: text("name").notNull(), // e.g. "Finance & Accounts", "Sales & Marketing", "Operations & Logistics", "Management & Executive", "Customer Support"
+    code: text("code"), // e.g. "FIN", "SALES", "OPS", "MGMT", "SUPPORT"
+    description: text("description"),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+    deletedAt: timestamp("deleted_at", {
+      withTimezone: true,
+    }),
+  },
+  (table) => ({
+    companyIdx: index("departments_company_idx").on(table.companyId),
+    uniqueNamePerCompany: uniqueIndex("departments_company_name_idx").on(
+      table.companyId,
+      table.name,
+    ),
+  }),
+);
+
 export const companyUsers = pgTable(
   "company_users",
   {
@@ -143,6 +184,9 @@ export const companyUsers = pgTable(
         onDelete: "cascade",
       }),
     roleId: integer("role_id").references(() => roles.id, {
+      onDelete: "set null",
+    }),
+    departmentId: integer("department_id").references(() => departments.id, {
       onDelete: "set null",
     }),
     designation: text("designation"),
@@ -171,6 +215,7 @@ export const companyUsers = pgTable(
 
     companyIdx: index("company_users_company_idx").on(table.companyId),
     userIdx: index("company_users_user_idx").on(table.userId),
+    departmentIdx: index("company_users_department_idx").on(table.departmentId),
   }),
 );
 
@@ -1694,6 +1739,115 @@ export const notificationPreferences = pgTable(
       table.userId,
       table.type,
       table.channel,
+    ),
+  }),
+);
+
+// =====================================================
+// NOTIFICATION ESCALATION RULES (TIER DEFINITIONS)
+// =====================================================
+
+export const notificationEscalationRules = pgTable(
+  "notification_escalation_rules",
+  {
+    id: serial("id").primaryKey(),
+
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+
+    tierLevel: integer("tier_level").notNull(), // 1, 2, 3...
+
+    daysAfterDue: integer("days_after_due").notNull(), // e.g. 1 day, 4 days, 7 days overdue
+
+    targetRoleId: integer("target_role_id").references(() => roles.id, {
+      onDelete: "set null",
+    }),
+
+    targetDepartmentId: integer("target_department_id").references(
+      () => departments.id,
+      {
+        onDelete: "set null",
+      },
+    ),
+
+    targetUserId: integer("target_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+
+    notifyAccountManager: boolean("notify_account_manager").default(false),
+
+    customEmail: text("custom_email"), // Optional external CC or direct email
+
+    emailTemplateKey: text("email_template_key").default("STANDARD_ESCALATION"),
+
+    description: text("description"),
+
+    isActive: boolean("is_active").default(true).notNull(),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    companyIdx: index("escalation_rules_company_idx").on(table.companyId),
+    tierIdx: index("escalation_rules_tier_idx").on(
+      table.companyId,
+      table.tierLevel,
+    ),
+  }),
+);
+
+// =====================================================
+// INVOICE ESCALATION STATES (ACTIVE TRACKER PER INVOICE)
+// =====================================================
+
+export const invoiceEscalationStates = pgTable(
+  "invoice_escalation_states",
+  {
+    id: serial("id").primaryKey(),
+
+    invoiceId: integer("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+
+    currentTier: integer("current_tier").default(0).notNull(),
+
+    lastEscalatedAt: timestamp("last_escalated_at", { withTimezone: true }),
+
+    nextEscalationDueAt: timestamp("next_escalation_due_at", {
+      withTimezone: true,
+    }),
+
+    status: text("status").default("PENDING").notNull(), // 'PENDING', 'MAX_TIER_REACHED', 'RESOLVED_PAID'
+
+    notes: text("notes"),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    invoiceIdx: uniqueIndex("invoice_escalation_unique_idx").on(
+      table.invoiceId,
+    ),
+    companyStatusIdx: index("invoice_escalation_status_idx").on(
+      table.companyId,
+      table.status,
     ),
   }),
 );

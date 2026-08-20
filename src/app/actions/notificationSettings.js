@@ -7,12 +7,22 @@ import {
   companies,
   clients,
   invoices,
+  notificationEscalationRules,
+  roles,
+  departments,
+  companyUsers,
+  users,
 } from "@/db/schema";
-import { eq, desc, and, count, ilike } from "drizzle-orm";
+import { eq, desc, and, count, ilike, asc, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
 import { revalidatePath } from "next/cache";
 import { sendEmail } from "@/lib/email";
 import { runNotificationScheduler } from "@/lib/notifications/notification-scheduler";
+import {
+  ensureDefaultEscalationRules,
+  evaluateAndRunEscalations,
+} from "@/lib/notifications/escalation-service";
+import { ensureDefaultDepartments } from "@/app/actions/department";
 
 /**
  * Get notification settings for the user's company
@@ -293,6 +303,166 @@ export async function testNotificationEmail(targetEmail) {
     return {
       success: false,
       error: error?.message || "Failed to dispatch test email",
+    };
+  }
+}
+
+/**
+ * Get escalation tier rules and available company roles & departments
+ */
+export async function getEscalationTierRules() {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser?.companyId) {
+      return {
+        error: "Unauthorized",
+        rules: [],
+        rolesList: [],
+        departmentsList: [],
+      };
+    }
+
+    await ensureDefaultDepartments(currentUser.companyId);
+    const rules = await ensureDefaultEscalationRules(currentUser.companyId);
+
+    const rolesList = await db
+      .select({
+        id: roles.id,
+        roleName: roles.roleName,
+      })
+      .from(roles)
+      .where(
+        and(
+          eq(roles.companyId, currentUser.companyId),
+          isNull(roles.deletedAt),
+        ),
+      );
+
+    const departmentsList = await db
+      .select({
+        id: departments.id,
+        name: departments.name,
+        code: departments.code,
+      })
+      .from(departments)
+      .where(
+        and(
+          eq(departments.companyId, currentUser.companyId),
+          eq(departments.isActive, true),
+          isNull(departments.deletedAt),
+        ),
+      )
+      .orderBy(asc(departments.name));
+
+    return { rules, rolesList, departmentsList };
+  } catch (error) {
+    console.error("getEscalationTierRules error:", error);
+    return {
+      error: error?.message,
+      rules: [],
+      rolesList: [],
+      departmentsList: [],
+    };
+  }
+}
+
+/**
+ * Save / Update escalation tier rules
+ */
+export async function saveEscalationTierRules(rulesPayload) {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser?.companyId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    for (const r of rulesPayload) {
+      const tierLevel = Number(r.tierLevel);
+      const daysAfterDue = Number(r.daysAfterDue);
+      const targetRoleId = r.targetRoleId ? Number(r.targetRoleId) : null;
+      const targetDepartmentId = r.targetDepartmentId
+        ? Number(r.targetDepartmentId)
+        : null;
+      const notifyAccountManager = Boolean(r.notifyAccountManager);
+      const customEmail = r.customEmail?.trim() || null;
+      const description = r.description?.trim() || null;
+      const isActive = r.isActive !== false;
+
+      if (r.id) {
+        await db
+          .update(notificationEscalationRules)
+          .set({
+            tierLevel,
+            daysAfterDue,
+            targetRoleId,
+            targetDepartmentId,
+            notifyAccountManager,
+            customEmail,
+            description,
+            isActive,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(notificationEscalationRules.id, Number(r.id)),
+              eq(notificationEscalationRules.companyId, currentUser.companyId),
+            ),
+          );
+      } else {
+        await db.insert(notificationEscalationRules).values({
+          companyId: currentUser.companyId,
+          tierLevel,
+          daysAfterDue,
+          targetRoleId,
+          targetDepartmentId,
+          notifyAccountManager,
+          customEmail,
+          description,
+          isActive,
+        });
+      }
+    }
+
+    revalidatePath("/settings");
+
+    return {
+      success: true,
+      message: "Hierarchical escalation tiers saved successfully.",
+    };
+  } catch (error) {
+    console.error("saveEscalationTierRules error:", error);
+    return {
+      success: false,
+      error: error?.message || "Failed to save escalation rules",
+    };
+  }
+}
+
+/**
+ * Trigger manual escalation run for current company
+ */
+export async function triggerManualEscalationRun() {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser?.companyId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const summary = await evaluateAndRunEscalations(currentUser.companyId);
+
+    revalidatePath("/settings");
+    revalidatePath("/invoices");
+
+    return {
+      success: true,
+      summary,
+      message: `Escalation run completed. Overdue Invoices: ${summary.totalOverdueInvoices}, Escalated: ${summary.escalated}, Resolved: ${summary.resolvedPaid}`,
+    };
+  } catch (error) {
+    console.error("triggerManualEscalationRun error:", error);
+    return {
+      success: false,
+      error: error?.message || "Escalation evaluation failed",
     };
   }
 }

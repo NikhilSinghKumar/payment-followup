@@ -8,6 +8,7 @@ import {
   Mail,
   Shield,
   Building,
+  Building2,
   Lock,
   Check,
   AlertCircle,
@@ -24,6 +25,7 @@ export default function UserForm({
   mode = "create",
   companies = [],
   roles = [],
+  departments = [],
   initialData = {},
   action,
 }) {
@@ -57,8 +59,8 @@ export default function UserForm({
             </h2>
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
               {isEdit
-                ? "Update user profile, company affiliation, and role assignment."
-                : "Add a new system user and grant company/role access."}
+                ? "Update user profile, company affiliation, department, and role assignment."
+                : "Add a new system user with company, department, and role access."}
             </p>
           </div>
         </div>
@@ -152,12 +154,12 @@ export default function UserForm({
           </div>
         </div>
 
-        {/* SECTION 2: COMPANY & ROLE ASSIGNMENT */}
+        {/* SECTION 2: COMPANY, DEPARTMENT & ROLE ASSIGNMENT */}
         <div className="border-t border-zinc-100 pt-3 dark:border-zinc-800">
           <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-            Company & Access Role
+            Company, Department & Role Assignment
           </h3>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 Company <span className="text-red-500">*</span>
@@ -172,6 +174,24 @@ export default function UserForm({
                 {companies.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.companyName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Department
+              </label>
+              <select
+                name="departmentId"
+                defaultValue={initialData.departmentId ?? ""}
+                className="h-8.5 w-full rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              >
+                <option value="">Select Department (Optional)</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} {d.code ? `(${d.code})` : ""}
                   </option>
                 ))}
               </select>
@@ -203,7 +223,7 @@ export default function UserForm({
               <input
                 name="designation"
                 defaultValue={initialData.designation || ""}
-                placeholder="e.g. Accounts Manager"
+                placeholder="e.g. Accounts Lead"
                 className="h-8.5 w-full rounded-xl border border-zinc-200 px-3 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
               />
             </div>
@@ -248,7 +268,7 @@ export default function UserForm({
 
         {/* Footer Actions */}
         <div className="flex items-center justify-between border-t border-zinc-100 pt-4 dark:border-zinc-800">
-          <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+          <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer">
             <input
               type="checkbox"
               name="isActive"
