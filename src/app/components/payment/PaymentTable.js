@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export default function PaymentTable({ payments = [] }) {
+export default function PaymentTable({ payments = [], hasFilter = false }) {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [selectedAllocations, setSelectedAllocations] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -27,12 +27,16 @@ export default function PaymentTable({ payments = [] }) {
 
   if (payments.length === 0) {
     return (
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="px-6 py-14 text-center">
-          <p className="text-sm font-medium text-zinc-700">No payments found</p>
+          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+            {hasFilter ? "No matching payments found" : "No payments found"}
+          </p>
 
           <p className="mt-1 text-sm text-zinc-400">
-            No client payments have been recorded yet.
+            {hasFilter
+              ? "Try adjusting or resetting your search keywords or date filter."
+              : "No client payments have been recorded yet."}
           </p>
         </div>
       </div>
@@ -45,9 +49,9 @@ export default function PaymentTable({ payments = [] }) {
       {/* PAYMENT TABLE */}
       {/* ===================================== */}
 
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="overflow-x-auto [scrollbar-width:thin]">
+          <table className="w-full min-w-[850px]">
             {/* Header */}
 
             <thead className="border-b border-zinc-200 bg-zinc-50">
@@ -332,7 +336,9 @@ function InvoiceAllocations({ allocations = [], onViewAll }) {
         <button
           type="button"
           onClick={onViewAll}
-          className="whitespace-nowrap text-xs font-medium text-blue-600 hover:text-blue-700"
+          className="whitespace-nowrap text-xs font-medium
+            text-blue-600 hover:text-blue-700
+          "
         >
           +{remaining} more
         </button>

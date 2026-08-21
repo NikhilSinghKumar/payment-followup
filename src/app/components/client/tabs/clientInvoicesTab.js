@@ -16,9 +16,9 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto border-collapse">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="overflow-x-auto [scrollbar-width:thin]">
+          <table className="w-full min-w-[760px] table-auto border-collapse">
             {/* TABLE HEADER */}
             <thead>
               <tr className="border-b border-zinc-200 bg-zinc-100 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600">

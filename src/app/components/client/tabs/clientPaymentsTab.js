@@ -36,9 +36,9 @@ export default function ClientPaymentsTab({ clientId, payments = [] }) {
 
   return (
     <>
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="overflow-x-auto [scrollbar-width:thin]">
+          <table className="w-full min-w-[760px]">
             {/* Header */}
             <thead className="border-b border-zinc-200 bg-zinc-50">
               <tr>

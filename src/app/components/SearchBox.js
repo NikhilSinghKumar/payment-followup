@@ -34,10 +34,10 @@ export default function SearchBox() {
   return (
     <input
       type="text"
-      placeholder="Search..."
+      placeholder="Search invoices by company, number..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
-      className="py-2 px-4 rounded-lg border border-zinc-300 text-sm bg-white dark:placeholder:text-zinc-500 dark:text-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3.5 text-xs text-zinc-800 placeholder-zinc-400 shadow-2xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder-zinc-500"
     />
   );
 }

@@ -77,9 +77,9 @@ export default function NotificationLogsTable() {
           />
         </form>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Status Filter */}
-          <div className="flex rounded-xl border border-zinc-200 bg-white p-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-800">
+          <div className="flex flex-wrap rounded-xl border border-zinc-200 bg-white p-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-800">
             {["ALL", "DELIVERED", "FAILED", "PENDING"].map((st) => (
               <button
                 key={st}
@@ -110,143 +110,149 @@ export default function NotificationLogsTable() {
 
       {/* Logs Table */}
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="grid grid-cols-[110px_1.8fr_2fr_1.2fr_100px_130px] items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300">
-          <div>Channel / Status</div>
-          <div>Recipient</div>
-          <div>Subject</div>
-          <div>Related Entity</div>
-          <div className="text-center">Sent At</div>
-          <div className="text-right">Actions</div>
-        </div>
+        <div className="overflow-x-auto [scrollbar-width:thin]">
+          <div className="min-w-[780px]">
+            <div className="grid grid-cols-[110px_1.8fr_2fr_1.2fr_100px_130px] items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300">
+              <div>Channel / Status</div>
+              <div>Recipient</div>
+              <div>Subject</div>
+              <div>Related Entity</div>
+              <div className="text-center">Sent At</div>
+              <div className="text-right">Actions</div>
+            </div>
 
-        {loading ? (
-          <div className="flex h-40 items-center justify-center text-xs text-zinc-500">
-            <RefreshCw size={16} className="animate-spin mr-2" />
-            <span>Loading delivery logs...</span>
-          </div>
-        ) : logs.length > 0 ? (
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
-            {logs.map((log) => {
-              const isDelivered =
-                log.status === "DELIVERED" || log.status === "SENT";
-              const isFailed = log.status === "FAILED";
+            {loading ? (
+              <div className="flex h-40 items-center justify-center text-xs text-zinc-500">
+                <RefreshCw size={16} className="animate-spin mr-2" />
+                <span>Loading delivery logs...</span>
+              </div>
+            ) : logs.length > 0 ? (
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+                {logs.map((log) => {
+                  const isDelivered =
+                    log.status === "DELIVERED" || log.status === "SENT";
+                  const isFailed = log.status === "FAILED";
 
-              return (
-                <div
-                  key={log.id}
-                  className="grid grid-cols-[110px_1.8fr_2fr_1.2fr_100px_130px] items-center px-4 py-2 text-xs transition hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
-                >
-                  {/* Channel & Status */}
-                  <div className="flex items-center gap-1.5">
-                    {log.channel === "EMAIL" ? (
-                      <span className="rounded bg-blue-50 p-1 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
-                        <Mail size={12} />
-                      </span>
-                    ) : (
-                      <span className="rounded bg-emerald-50 p-1 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
-                        <MessageSquare size={12} />
-                      </span>
-                    )}
-
-                    <span
-                      className={`inline-flex items-center rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
-                        isDelivered
-                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                          : isFailed
-                            ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
-                            : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                      }`}
+                  return (
+                    <div
+                      key={log.id}
+                      className="grid grid-cols-[110px_1.8fr_2fr_1.2fr_100px_130px] items-center px-4 py-2 text-xs transition hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
                     >
-                      {log.status}
-                    </span>
-                  </div>
+                      {/* Channel & Status */}
+                      <div className="flex items-center gap-1.5">
+                        {log.channel === "EMAIL" ? (
+                          <span className="rounded bg-blue-50 p-1 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+                            <Mail size={12} />
+                          </span>
+                        ) : (
+                          <span className="rounded bg-emerald-50 p-1 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+                            <MessageSquare size={12} />
+                          </span>
+                        )}
 
-                  {/* Recipient */}
-                  <div className="font-mono text-zinc-800 truncate pr-2 dark:text-zinc-200">
-                    {log.recipient}
-                  </div>
+                        <span
+                          className={`inline-flex items-center rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
+                            isDelivered
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                              : isFailed
+                                ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
+                                : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                          }`}
+                        >
+                          {log.status}
+                        </span>
+                      </div>
 
-                  {/* Subject */}
-                  <div
-                    className="text-zinc-700 truncate pr-2 dark:text-zinc-300"
-                    title={log.subject}
-                  >
-                    {log.subject || "Notification"}
-                    {log.errorMessage && (
-                      <p
-                        className="text-[10px] text-red-500 truncate"
-                        title={log.errorMessage}
-                      >
-                        Err: {log.errorMessage}
-                      </p>
-                    )}
-                  </div>
+                      {/* Recipient */}
+                      <div className="font-mono text-zinc-800 truncate pr-2 dark:text-zinc-200">
+                        {log.recipient}
+                      </div>
 
-                  {/* Related Entity */}
-                  <div className="text-[11px] text-zinc-500 truncate">
-                    {log.clientName && (
-                      <Link
-                        href={`/clients/${log.clientId}`}
-                        className="font-medium text-blue-600 hover:underline dark:text-blue-400 block truncate"
+                      {/* Subject */}
+                      <div
+                        className="text-zinc-700 truncate pr-2 dark:text-zinc-300"
+                        title={log.subject}
                       >
-                        {log.clientName}
-                      </Link>
-                    )}
-                    {log.invoiceNumber && (
-                      <Link
-                        href={`/invoices/${log.invoiceId}`}
-                        className="text-[10px] text-zinc-400 hover:underline block truncate"
-                      >
-                        Inv #{log.invoiceNumber}
-                      </Link>
-                    )}
-                    {!log.clientName && !log.invoiceNumber && <span>—</span>}
-                  </div>
+                        {log.subject || "Notification"}
+                        {log.errorMessage && (
+                          <p
+                            className="text-[10px] text-red-500 truncate"
+                            title={log.errorMessage}
+                          >
+                            Err: {log.errorMessage}
+                          </p>
+                        )}
+                      </div>
 
-                  {/* Sent At */}
-                  <div className="text-center text-[10px] text-zinc-400">
-                    {log.sentAt || log.createdAt
-                      ? new Date(
-                          log.sentAt || log.createdAt,
-                        ).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "—"}
-                  </div>
+                      {/* Related Entity */}
+                      <div className="text-[11px] text-zinc-500 truncate">
+                        {log.clientName && (
+                          <Link
+                            href={`/clients/${log.clientId}`}
+                            className="font-medium text-blue-600 hover:underline dark:text-blue-400 block truncate"
+                          >
+                            {log.clientName}
+                          </Link>
+                        )}
+                        {log.invoiceNumber && (
+                          <Link
+                            href={`/invoices/${log.invoiceId}`}
+                            className="text-[10px] text-zinc-400 hover:underline block truncate"
+                          >
+                            Inv #{log.invoiceNumber}
+                          </Link>
+                        )}
+                        {!log.clientName && !log.invoiceNumber && (
+                          <span>—</span>
+                        )}
+                      </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center justify-end gap-1">
-                    {log.invoiceId && (
-                      <Link
-                        href={`/invoices/${log.invoiceId}`}
-                        className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-                      >
-                        <span>Invoice</span>
-                        <ExternalLink size={9} />
-                      </Link>
-                    )}
-                    {log.clientId && !log.invoiceId && (
-                      <Link
-                        href={`/clients/${log.clientId}`}
-                        className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-                      >
-                        <span>Client</span>
-                        <ExternalLink size={9} />
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                      {/* Sent At */}
+                      <div className="text-center text-[10px] text-zinc-400">
+                        {log.sentAt || log.createdAt
+                          ? new Date(
+                              log.sentAt || log.createdAt,
+                            ).toLocaleDateString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—"}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-1">
+                        {log.invoiceId && (
+                          <Link
+                            href={`/invoices/${log.invoiceId}`}
+                            className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+                          >
+                            <span>Invoice</span>
+                            <ExternalLink size={9} />
+                          </Link>
+                        )}
+                        {log.clientId && !log.invoiceId && (
+                          <Link
+                            href={`/clients/${log.clientId}`}
+                            className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+                          >
+                            <span>Client</span>
+                            <ExternalLink size={9} />
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-xs text-zinc-400">
+                No notification delivery logs found for the selected criteria.
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="p-8 text-center text-xs text-zinc-400">
-            No notification delivery logs found for the selected criteria.
-          </div>
-        )}
+        </div>
 
         {/* Pagination Footer */}
         <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50/80 px-4 py-2.5 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/40">

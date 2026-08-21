@@ -41,8 +41,8 @@ export default function ClientFollowupsTab({ clientId, followups = [] }) {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto [scrollbar-width:thin]">
+          <table className="w-full min-w-[760px]">
             <thead className="border-b border-zinc-200 bg-zinc-50">
               <tr>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -166,13 +166,44 @@ export default function ClientFollowupsTab({ clientId, followups = [] }) {
       {/* ========================================= */}
 
       <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
-        <DialogContent className="max-w-lg bg-white text-zinc-900 shadow-2xl">
+        <DialogContent className="max-w-lg bg-white text-zinc-900 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
           <DialogHeader>
             <DialogTitle>Follow-up Remarks</DialogTitle>
           </DialogHeader>
 
-          <div className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">
-            {selectedNote || "No remarks recorded."}
+          <div className="mt-2 max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+            {selectedNote ? (
+              selectedNote.split("\n").map((line, idx) => {
+                const colonIdx = line.indexOf(":");
+                if (colonIdx > 0 && colonIdx < 30) {
+                  const prefix = line.slice(0, colonIdx).trim();
+                  const rest = line.slice(colonIdx + 1).trim();
+                  return (
+                    <div
+                      key={idx}
+                      className="rounded-lg border border-zinc-100 bg-zinc-50 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/50"
+                    >
+                      <span className="inline-block rounded bg-blue-100 px-1.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/60 dark:text-blue-300">
+                        {prefix}
+                      </span>
+                      <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
+                        {rest}
+                      </p>
+                    </div>
+                  );
+                }
+                return (
+                  <p
+                    key={idx}
+                    className="text-sm text-zinc-700 dark:text-zinc-200"
+                  >
+                    {line}
+                  </p>
+                );
+              })
+            ) : (
+              <p className="text-sm text-zinc-400">No remarks recorded.</p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -216,7 +247,15 @@ function InvoiceLinks({ invoices = [], onViewAll }) {
         <button
           type="button"
           onClick={() => onViewAll(invoices)}
-          className="shrink-0 whitespace-nowrap rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-800"
+          className="
+            shrink-0 whitespace-nowrap
+            rounded-md bg-zinc-100
+            px-2 py-1
+            text-xs font-medium text-zinc-600
+            transition
+            hover:bg-zinc-200
+            hover:text-zinc-800
+          "
         >
           +{remainingCount} more
         </button>

@@ -120,155 +120,157 @@ export default function UserTable({ users = [] }) {
 
       {/* Compact Table */}
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-        <table className="w-full text-left text-xs">
-          <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/60">
-            <tr>
-              <th className="py-2.5 pl-4 pr-3 font-semibold text-zinc-600 dark:text-zinc-400">
-                User
-              </th>
-              <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
-                Company
-              </th>
-              <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
-                Department
-              </th>
-              <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
-                Role
-              </th>
-              <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
-                Designation
-              </th>
-              <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
-                Mobile
-              </th>
-              <th className="py-2.5 px-3 text-center font-semibold text-zinc-600 dark:text-zinc-400">
-                Status
-              </th>
-              <th className="py-2.5 pr-4 pl-3 text-right font-semibold text-zinc-600 dark:text-zinc-400">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
-            {filteredUsers.length === 0 ? (
+        <div className="overflow-x-auto [scrollbar-width:thin]">
+          <table className="w-full min-w-[850px] text-left text-xs">
+            <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/60">
               <tr>
-                <td
-                  colSpan={8}
-                  className="py-8 text-center text-xs text-zinc-400"
-                >
-                  No users found matching your search criteria.
-                </td>
+                <th className="py-2.5 pl-4 pr-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                  User
+                </th>
+                <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                  Company
+                </th>
+                <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                  Department
+                </th>
+                <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                  Role
+                </th>
+                <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                  Designation
+                </th>
+                <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                  Mobile
+                </th>
+                <th className="py-2.5 px-3 text-center font-semibold text-zinc-600 dark:text-zinc-400">
+                  Status
+                </th>
+                <th className="py-2.5 pr-4 pl-3 text-right font-semibold text-zinc-600 dark:text-zinc-400">
+                  Actions
+                </th>
               </tr>
-            ) : (
-              filteredUsers.map((u) => {
-                const initials =
-                  `${u.firstName?.[0] || ""}${u.lastName?.[0] || ""}`.toUpperCase() ||
-                  "U";
-
-                return (
-                  <tr
-                    key={u.id}
-                    className="transition hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40"
+            </thead>
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="py-8 text-center text-xs text-zinc-400"
                   >
-                    {/* User & Email */}
-                    <td className="py-2 pl-4 pr-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                          {initials}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-semibold text-zinc-900 truncate dark:text-zinc-100">
-                            {u.firstName} {u.lastName || ""}
+                    No users found matching your search criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((u) => {
+                  const initials =
+                    `${u.firstName?.[0] || ""}${u.lastName?.[0] || ""}`.toUpperCase() ||
+                    "U";
+
+                  return (
+                    <tr
+                      key={u.id}
+                      className="transition hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40"
+                    >
+                      {/* User & Email */}
+                      <td className="py-2 pl-4 pr-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                            {initials}
                           </div>
-                          <div className="text-[11px] text-zinc-500 font-mono truncate dark:text-zinc-400">
-                            {u.email}
+                          <div className="min-w-0">
+                            <div className="font-semibold text-zinc-900 truncate dark:text-zinc-100">
+                              {u.firstName} {u.lastName || ""}
+                            </div>
+                            <div className="text-[11px] text-zinc-500 font-mono truncate dark:text-zinc-400">
+                              {u.email}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Company */}
-                    <td className="py-2 px-3 text-zinc-700 dark:text-zinc-300">
-                      <span className="font-medium">
-                        {u.companyName || "—"}
-                      </span>
-                    </td>
-
-                    {/* Department */}
-                    <td className="py-2 px-3">
-                      {u.departmentName ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900">
-                          <Building2 size={11} className="text-indigo-500" />
-                          <span>{u.departmentName}</span>
+                      {/* Company */}
+                      <td className="py-2 px-3 text-zinc-700 dark:text-zinc-300">
+                        <span className="font-medium">
+                          {u.companyName || "—"}
                         </span>
-                      ) : (
-                        <span className="text-zinc-400 italic text-[11px]">
-                          Unassigned
-                        </span>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* Role */}
-                    <td className="py-2 px-3">
-                      {u.roleName ? (
-                        <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-100 dark:border-purple-900">
-                          {u.roleName}
-                        </span>
-                      ) : (
-                        <span className="text-zinc-400">—</span>
-                      )}
-                    </td>
+                      {/* Department */}
+                      <td className="py-2 px-3">
+                        {u.departmentName ? (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900">
+                            <Building2 size={11} className="text-indigo-500" />
+                            <span>{u.departmentName}</span>
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400 italic text-[11px]">
+                            Unassigned
+                          </span>
+                        )}
+                      </td>
 
-                    {/* Designation */}
-                    <td className="py-2 px-3 text-zinc-600 dark:text-zinc-400">
-                      {u.designation || "—"}
-                    </td>
+                      {/* Role */}
+                      <td className="py-2 px-3">
+                        {u.roleName ? (
+                          <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-100 dark:border-purple-900">
+                            {u.roleName}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400">—</span>
+                        )}
+                      </td>
 
-                    {/* Mobile */}
-                    <td className="py-2 px-3 text-zinc-600 font-mono text-[11px] dark:text-zinc-400">
-                      {u.mobile || "—"}
-                    </td>
+                      {/* Designation */}
+                      <td className="py-2 px-3 text-zinc-600 dark:text-zinc-400">
+                        {u.designation || "—"}
+                      </td>
 
-                    {/* Status */}
-                    <td className="py-2 px-3 text-center">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          u.isActive
-                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                            : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
-                        }`}
-                      >
-                        {u.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
+                      {/* Mobile */}
+                      <td className="py-2 px-3 text-zinc-600 font-mono text-[11px] dark:text-zinc-400">
+                        {u.mobile || "—"}
+                      </td>
 
-                    {/* Actions */}
-                    <td className="py-2 pr-4 pl-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Link
-                          href={`/users/${u.id}`}
-                          className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-[11px] font-medium text-zinc-600 transition hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                          title="View user details"
+                      {/* Status */}
+                      <td className="py-2 px-3 text-center">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            u.isActive
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                              : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
+                          }`}
                         >
-                          <Eye size={12} />
-                          <span>View</span>
-                        </Link>
-                        <Link
-                          href={`/users/${u.id}/edit`}
-                          className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-[11px] font-medium text-amber-600 transition hover:border-amber-500 hover:bg-amber-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                          title="Edit user"
-                        >
-                          <Edit2 size={12} />
-                          <span>Edit</span>
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                          {u.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-2 pr-4 pl-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Link
+                            href={`/users/${u.id}`}
+                            className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-[11px] font-medium text-zinc-600 transition hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                            title="View user details"
+                          >
+                            <Eye size={12} />
+                            <span>View</span>
+                          </Link>
+                          <Link
+                            href={`/users/${u.id}/edit`}
+                            className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-[11px] font-medium text-amber-600 transition hover:border-amber-500 hover:bg-amber-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                            title="Edit user"
+                          >
+                            <Edit2 size={12} />
+                            <span>Edit</span>
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {/* Compact Footer */}
         <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50/60 px-4 py-2 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/40">

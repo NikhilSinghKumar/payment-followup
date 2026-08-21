@@ -44,32 +44,40 @@ export default async function InvoicePage({ searchParams }) {
   const years = await getFinancialYears();
 
   return (
-    <div className="bg-zinc-50">
-      <div className="flex items-center justify-center mb-2">
-        <div className="flex items-center gap-2">
+    <div className="space-y-4">
+      {/* Top Search & Actions Bar */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        {/* Search Box */}
+        <div className="w-full lg:max-w-md">
           <SearchBox />
+        </div>
+
+        {/* Action Buttons Group */}
+        <div className="flex flex-wrap items-center gap-2">
           <ImportInvoices />
 
           <a
             href="/api/import-invoice-sample"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium text-zinc-500 border border-zinc-200 underline py-2 px-3 rounded-lg"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 shadow-2xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
           >
-            Sample(csv)
+            Sample (CSV)
           </a>
+
           <ExportInvoicesButton />
 
           <Link
             href="/invoices/new"
-            className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 text-xs font-medium text-white shadow-xs transition hover:from-blue-500 hover:to-indigo-500"
           >
             + New Invoice
           </Link>
         </div>
       </div>
 
-      <div className="flex justify-center items-center gap-2 mb-6">
+      {/* Filter Chips / Dropdowns */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200/80 bg-white p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
         <AlphabetDropdown />
         <FilterDropdown />
         <AmountRangeFilter maxAmount={maxOutstanding} />
