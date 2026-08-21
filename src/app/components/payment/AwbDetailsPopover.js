@@ -49,10 +49,12 @@ export default function AwbDetailsPopover({ awbs = [], invoiceNumber }) {
 
     let top = isUpward ? triggerRect.top - 8 : triggerRect.bottom + 8;
 
-    // Horizontal positioning: align with trigger, but clamp within viewport
+    // Horizontal positioning: align with trigger, but clamp within viewport with safe padding
     let left = triggerRect.left;
-    if (left + popoverWidth > viewportWidth - 16) {
-      left = Math.max(16, viewportWidth - popoverWidth - 16);
+    if (left + popoverWidth > viewportWidth - 12) {
+      left = Math.max(12, viewportWidth - popoverWidth - 12);
+    } else {
+      left = Math.max(12, left);
     }
 
     setCoords({

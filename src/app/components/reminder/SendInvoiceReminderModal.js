@@ -185,19 +185,19 @@ export default function SendInvoiceReminderModal({
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50/80 px-5 py-3.5 dark:border-zinc-800 dark:bg-zinc-800/50">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-xs">
+            <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50/80 px-4 py-3 sm:px-5 sm:py-3.5 dark:border-zinc-800 dark:bg-zinc-800/50">
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-xs">
                   <Mail size={16} />
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-zinc-900 truncate dark:text-zinc-100">
                     Send Payment Reminder
                   </h3>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <p className="text-[11px] text-zinc-500 truncate dark:text-zinc-400">
                     {invoice
                       ? `Invoice #${invoice.invoiceNumber} • ${client?.companyName}`
                       : "Loading details..."}
@@ -215,11 +215,11 @@ export default function SendInvoiceReminderModal({
             </div>
 
             {/* Modal Tabs */}
-            <div className="flex border-b border-zinc-200 bg-white px-5 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="flex overflow-x-auto [scrollbar-width:none] border-b border-zinc-200 bg-white px-4 sm:px-5 dark:border-zinc-800 dark:bg-zinc-900">
               <button
                 type="button"
                 onClick={() => setActiveTab("compose")}
-                className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition ${
+                className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition ${
                   activeTab === "compose"
                     ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
                     : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
@@ -231,7 +231,7 @@ export default function SendInvoiceReminderModal({
               <button
                 type="button"
                 onClick={() => setActiveTab("preview")}
-                className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition ${
+                className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition ${
                   activeTab === "preview"
                     ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
                     : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
@@ -243,7 +243,7 @@ export default function SendInvoiceReminderModal({
               <button
                 type="button"
                 onClick={() => setActiveTab("whatsapp")}
-                className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition ${
+                className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition ${
                   activeTab === "whatsapp"
                     ? "border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400"
                     : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
@@ -255,7 +255,7 @@ export default function SendInvoiceReminderModal({
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
               {loadingData ? (
                 <div className="flex h-48 items-center justify-center text-xs text-zinc-500">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent mr-2" />
@@ -544,16 +544,16 @@ export default function SendInvoiceReminderModal({
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50/80 px-5 py-3 dark:border-zinc-800 dark:bg-zinc-800/50">
-              <span className="text-[11px] text-zinc-400">
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2 border-t border-zinc-200 bg-zinc-50/80 px-4 py-2.5 sm:px-5 sm:py-3 dark:border-zinc-800 dark:bg-zinc-800/50">
+              <span className="text-[11px] text-zinc-400 text-center sm:text-left">
                 {selectedEmails.length} recipient(s) configured
               </span>
 
-              <div className="flex items-center gap-2">
+              <div className="flex w-full sm:w-auto items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                  className="flex-1 sm:flex-none justify-center rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                 >
                   Cancel
                 </button>
@@ -561,7 +561,7 @@ export default function SendInvoiceReminderModal({
                   type="button"
                   disabled={isPending || loadingData || !selectedEmails.length}
                   onClick={handleSend}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 sm:flex-none justify-center inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isPending ? (
                     <>

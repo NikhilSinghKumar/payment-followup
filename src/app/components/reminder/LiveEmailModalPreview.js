@@ -175,11 +175,11 @@ export default function LiveEmailModalPreview({
       </div>
 
       {/* Rendered Email Frame */}
-      <div className="flex justify-center rounded-xl border border-zinc-200 bg-zinc-100/80 p-3 dark:border-zinc-800 dark:bg-zinc-950/60">
+      <div className="flex justify-center overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-100/80 p-2 sm:p-3 dark:border-zinc-800 dark:bg-zinc-950/60">
         <div
           className={`transition-all duration-200 ${
             deviceMode === "mobile"
-              ? "w-[375px] shadow-lg"
+              ? "w-full max-w-[375px] shadow-lg"
               : "w-full max-w-[660px]"
           }`}
         >
@@ -188,7 +188,7 @@ export default function LiveEmailModalPreview({
               title="Email Template Live Preview"
               srcDoc={html}
               sandbox="allow-same-origin"
-              className="h-[480px] w-full border-0 bg-[#F3F6FB]"
+              className="h-[380px] sm:h-[480px] w-full border-0 bg-[#F3F6FB]"
             />
           </div>
         </div>
