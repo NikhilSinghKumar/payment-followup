@@ -612,7 +612,7 @@ export default function NotificationSettingsForm({
         {cronReport && (
           <div className="mt-4 rounded-xl border border-purple-200 bg-purple-50/60 p-4 text-xs dark:border-purple-900 dark:bg-purple-950/30">
             <h5 className="font-bold text-purple-900 dark:text-purple-200 mb-2">
-              Automation Execution Result:
+              Email Trigger Result:
             </h5>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="rounded-lg bg-white p-2 border border-purple-100 dark:bg-zinc-800 dark:border-zinc-700">

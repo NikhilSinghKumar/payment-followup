@@ -244,15 +244,7 @@ function InvoiceLinks({ invoices = [], onViewAll }) {
         <button
           type="button"
           onClick={() => onViewAll(invoices)}
-          className="
-            shrink-0 whitespace-nowrap
-            rounded-md bg-zinc-100
-            px-2 py-1
-            text-xs font-medium text-zinc-600
-            transition
-            hover:bg-zinc-200
-            hover:text-zinc-800
-          "
+          className="shrink-0 whitespace-nowrap rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-800"
         >
           +{remainingCount} more
         </button>

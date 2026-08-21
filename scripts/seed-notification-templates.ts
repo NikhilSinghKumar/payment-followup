@@ -26,9 +26,7 @@ Thank you for your continued business.
       name: "Due Reminder",
       subject: "Gentle Payment Reminder - Invoice {{invoiceNumber}}",
       body: `
-This is a friendly reminder that payment for the invoice below is approaching its due date.
-
-We kindly request you to arrange payment before the due date to avoid any inconvenience.
+This is a friendly reminder that payment for the invoice below is approaching its due date. We kindly request you to arrange payment before the due date to avoid any inconvenience.
 
 Thank you for your continued business. 
 

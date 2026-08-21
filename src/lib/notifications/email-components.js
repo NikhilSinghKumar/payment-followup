@@ -66,6 +66,108 @@ ${title}
 
 /**
  * ======================================================
+ * Bank & Payment Details
+ * ======================================================
+ */
+export function renderBankDetails(company) {
+  if (!company) return "";
+  const hasBank = Boolean(
+    company.bankName ||
+    company.bankAccountNumber ||
+    company.bankIfsc ||
+    company.bankUpi,
+  );
+  if (!hasBank) return "";
+
+  return `
+<div
+  style="
+    margin:20px 0;
+    padding:16px 20px;
+    background:#F8FAFC;
+    border:1px dashed #CBD5E1;
+    border-radius:10px;
+    font-size:13px;
+    color:#334155;
+  "
+>
+  <div
+    style="
+      font-size:14px;
+      font-weight:700;
+      color:#0F172A;
+      margin-bottom:10px;
+      border-bottom:1px solid #E2E8F0;
+      padding-bottom:6px;
+    "
+  >
+    Bank & Payment Details
+  </div>
+  <table
+    width="100%"
+    cellpadding="4"
+    cellspacing="0"
+    border="0"
+    style="font-size:13px;color:#334155;line-height:1.6;"
+  >
+    ${
+      company.bankName
+        ? `<tr><td style="width:130px;color:#64748B;">Bank Name:</td><td><strong style="color:#0F172A;">${company.bankName}</strong></td></tr>`
+        : ""
+    }
+    ${
+      company.bankAccountNumber
+        ? `<tr><td style="color:#64748B;">Account No:</td><td><strong style="font-family:monospace;font-size:14px;color:#0F172A;">${company.bankAccountNumber}</strong></td></tr>`
+        : ""
+    }
+    ${
+      company.bankIfsc
+        ? `<tr><td style="color:#64748B;">IFSC Code:</td><td><strong style="font-family:monospace;color:#0F172A;">${company.bankIfsc}</strong></td></tr>`
+        : ""
+    }
+    ${
+      company.bankBranch
+        ? `<tr><td style="color:#64748B;">Branch:</td><td>${company.bankBranch}</td></tr>`
+        : ""
+    }
+    ${
+      company.bankUpi
+        ? `<tr><td style="color:#64748B;">UPI ID:</td><td><strong style="font-family:monospace;color:#2563EB;">${company.bankUpi}</strong></td></tr>`
+        : ""
+    }
+  </table>
+</div>
+`;
+}
+
+/**
+ * ======================================================
+ * Custom Note Box
+ * ======================================================
+ */
+export function renderCustomNote(note, color = "#2563EB") {
+  if (!note || !note.trim()) return "";
+  return `
+<div
+  style="
+    margin:18px 0;
+    padding:12px 16px;
+    background:#F8FAFC;
+    border-left:4px solid ${color};
+    border-radius:6px;
+    font-size:13px;
+    color:#334155;
+    line-height:1.6;
+  "
+>
+  <strong style="color:#0F172A;display:block;margin-bottom:4px;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;">Note from Sender:</strong>
+  ${note.trim().replace(/\n/g, "<br/>")}
+</div>
+`;
+}
+
+/**
+ * ======================================================
  * Invoice Summary Card
  * ======================================================
  */
@@ -77,7 +179,18 @@ export function renderInvoiceSummary({
   paidAmount,
   outstandingAmount,
   showPaymentDetails = true,
+  awbs = [],
+  isOverdue = false,
+  dueDaysText = "",
 }) {
+  const awbText =
+    Array.isArray(awbs) && awbs.length > 0
+      ? awbs
+          .map((a) => (typeof a === "object" ? a.awbNumber : a))
+          .filter(Boolean)
+          .join(", ")
+      : "";
+
   return `
 <table
 width="100%"
@@ -97,58 +210,80 @@ border-collapse:collapse;
   colspan="2"
   style="
     background:#F8FAFC;
-    font-size:16px;
+    font-size:15px;
     font-weight:bold;
     color:#0F172A;
     border-bottom:1px solid #E2E8F0;
+    padding:10px 12px;
   "
 >
-Invoice Summary
+Invoice Details Summary
 </td>
 </tr>
 
 <tr>
-<td><strong>Invoice Number</strong></td>
-<td>${invoiceNumber}</td>
-</tr>
-
-<tr>
-<td><strong>Invoice Date</strong></td>
-<td>${invoiceDate}</td>
-</tr>
-
-<tr>
-<td><strong>Due Date</strong></td>
-<td>${dueDate}</td>
-</tr>
-
-<tr>
-<td><strong>Invoice Amount</strong></td>
-<td>₹${invoiceAmount}</td>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#64748B;width:150px;"><strong>Invoice Number</strong></td>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;font-weight:600;color:#0F172A;">${invoiceNumber}</td>
 </tr>
 
 ${
-  showPaymentDetails
-    ? `
-<tr>
-<td><strong>Paid Amount</strong></td>
-<td>₹${paidAmount}</td>
-</tr>
+  invoiceDate
+    ? `<tr>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#64748B;"><strong>Invoice Date</strong></td>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#334155;">${invoiceDate}</td>
+</tr>`
+    : ""
+}
 
 <tr>
-<td><strong>Outstanding Amount</strong></td>
-<td
-style="
-font-weight:bold;
-color:#DC2626;
-"
->
-₹${outstandingAmount}
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#64748B;"><strong>Due Date</strong></td>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:${isOverdue ? "#DC2626" : "#334155"};font-weight:${isOverdue ? "700" : "500"};">
+  ${dueDate} ${dueDaysText ? `(${dueDaysText})` : ""}
 </td>
+</tr>
+
+${
+  awbText
+    ? `<tr>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#64748B;"><strong>AWBs / Dockets</strong></td>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;font-family:monospace;font-size:12px;color:#334155;">${awbText}</td>
+</tr>`
+    : ""
+}
+
+<tr>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#64748B;"><strong>Invoice Amount</strong></td>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;font-weight:600;color:#0F172A;">₹${invoiceAmount}</td>
+</tr>
+
+${
+  showPaymentDetails &&
+  paidAmount !== undefined &&
+  paidAmount !== null &&
+  Number(paidAmount) > 0
+    ? `
+<tr>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#64748B;"><strong>Paid Amount</strong></td>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#16A34A;font-weight:600;">₹${paidAmount}</td>
 </tr>
 `
     : ""
 }
+
+<tr>
+<td style="padding:12px;background:#F8FAFC;font-weight:700;color:#0F172A;font-size:14px;"><strong>Balance Due</strong></td>
+<td
+style="
+padding:12px;
+background:#F8FAFC;
+font-weight:bold;
+font-size:16px;
+color:#2563EB;
+"
+>
+₹${outstandingAmount || invoiceAmount}
+</td>
+</tr>
 
 </table>
 `;

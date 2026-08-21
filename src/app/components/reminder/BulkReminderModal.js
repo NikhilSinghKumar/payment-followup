@@ -22,6 +22,8 @@ import {
   getBulkInvoicesReminderPreview,
   sendBulkGroupedReminders,
 } from "@/app/actions/reminder";
+import { renderManualBulkInvoicesReminderEmail } from "@/lib/notifications/email-renderer";
+import LiveEmailModalPreview from "./LiveEmailModalPreview";
 
 export default function BulkReminderModal({
   selectedInvoiceIds = [],
@@ -581,7 +583,7 @@ export default function BulkReminderModal({
                 </div>
               )}
 
-              {/* TAB 2: LIVE EMAIL STATEMENT PREVIEW */}
+              {/* TAB 2: UNIFIED LIVE STATEMENT PREVIEW */}
               {activeTab === "preview" && previewGroup && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -603,94 +605,30 @@ export default function BulkReminderModal({
                     </select>
                   </div>
 
-                  <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
-                    <div className="border-b border-zinc-100 pb-2 mb-3 text-xs space-y-1 dark:border-zinc-800">
-                      <div>
-                        <strong className="text-zinc-400">To:</strong>{" "}
-                        <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                          {previewGroup.selectedEmails?.join(", ") ||
-                            "No recipients selected"}
-                        </span>
-                      </div>
-                      <div>
-                        <strong className="text-zinc-400">Subject:</strong>{" "}
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                          {reminderType === "SUSPENSION_WARNING"
-                            ? `URGENT: Outstanding Dues & Service Suspension Warning | ${previewGroup.companyName}`
-                            : reminderType === "OVERDUE_NOTICE"
-                              ? `Overdue Statement of Account: ${previewGroup.overdueCount} Overdue Invoices | ${previewGroup.companyName}`
-                              : `Statement of Outstanding Invoices (${previewGroup.invoices.length} Invoices) | ${previewGroup.companyName}`}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 text-xs text-zinc-700 dark:text-zinc-300">
-                      <p>
-                        Dear <strong>{previewGroup.companyName}</strong> Team,
-                      </p>
-                      <p>
-                        Please find below the consolidated statement of your
-                        outstanding invoices. There are currently{" "}
-                        <strong>
-                          {previewGroup.invoices.length} pending invoices
-                        </strong>{" "}
-                        totaling{" "}
-                        <strong className="text-blue-600">
-                          ₹
-                          {Number(previewGroup.totalDue || 0).toLocaleString(
-                            "en-IN",
-                          )}
-                        </strong>
-                        .
-                      </p>
-
-                      {customNote && (
-                        <div className="rounded-lg bg-zinc-100 p-2.5 italic text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-l-3 border-blue-500">
-                          <strong>Note:</strong> {customNote}
-                        </div>
-                      )}
-
-                      <div className="rounded-lg border border-zinc-200 overflow-hidden dark:border-zinc-700 max-h-56 overflow-y-auto">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-zinc-50 border-b text-[10px] uppercase text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700">
-                            <tr>
-                              <th className="p-2">Invoice</th>
-                              <th className="p-2">Due Date</th>
-                              <th className="p-2">AWBs</th>
-                              <th className="p-2 text-right">Balance Due</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                            {previewGroup.invoices.map((inv) => (
-                              <tr key={inv.id}>
-                                <td className="p-2 font-semibold">
-                                  #{inv.invoiceNumber}
-                                </td>
-                                <td
-                                  className={`p-2 ${inv.isOverdue ? "text-red-600 font-medium" : ""}`}
-                                >
-                                  {inv.dueDate
-                                    ? new Date(inv.dueDate).toLocaleDateString(
-                                        "en-IN",
-                                      )
-                                    : "—"}
-                                </td>
-                                <td className="p-2 font-mono text-[10px] text-zinc-500">
-                                  {inv.awbs?.length
-                                    ? inv.awbs.slice(0, 2).join(", ")
-                                    : "—"}
-                                </td>
-                                <td className="p-2 text-right font-semibold">
-                                  ₹
-                                  {Number(inv.due || 0).toLocaleString("en-IN")}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
+                  <LiveEmailModalPreview
+                    html={renderManualBulkInvoicesReminderEmail({
+                      client: { companyName: previewGroup.companyName },
+                      groupInvoices: previewGroup.invoices || [],
+                      company: previewData?.company || {},
+                      reminderType,
+                      customNote,
+                      totalDue: previewGroup.totalDue || 0,
+                      overdueCount: previewGroup.overdueCount || 0,
+                    })}
+                    subject={
+                      reminderType === "SUSPENSION_WARNING"
+                        ? `URGENT: Outstanding Dues & Service Suspension Warning | ${previewGroup.companyName}`
+                        : reminderType === "OVERDUE_NOTICE"
+                          ? `Overdue Statement of Account: ${previewGroup.overdueCount} Overdue Invoices | ${previewGroup.companyName}`
+                          : `Statement of Outstanding Invoices (${previewGroup.invoices.length} Invoices) | ${previewGroup.companyName}`
+                    }
+                    recipientEmails={previewGroup.selectedEmails || []}
+                    senderCompany={
+                      previewData?.company?.companyName || "PAFEX Logistics"
+                    }
+                    senderEmail={previewData?.company?.email || ""}
+                    reminderType={reminderType}
+                  />
                 </div>
               )}
             </>

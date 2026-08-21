@@ -22,6 +22,8 @@ import {
   getInvoiceReminderData,
   sendInvoiceReminder,
 } from "@/app/actions/reminder";
+import { renderManualSingleInvoiceReminderEmail } from "@/lib/notifications/email-renderer";
+import LiveEmailModalPreview from "./LiveEmailModalPreview";
 
 export default function SendInvoiceReminderModal({
   invoiceId,
@@ -179,7 +181,7 @@ export default function SendInvoiceReminderModal({
         }
       >
         <Mail size={13} />
-        <span>Send Email</span>
+        <span>Send Reminder</span>
       </button>
 
       {isOpen && (
@@ -458,97 +460,30 @@ export default function SendInvoiceReminderModal({
                     </div>
                   )}
 
-                  {/* TAB 2: EMAIL PREVIEW */}
+                  {/* TAB 2: UNIFIED LIVE EMAIL PREVIEW */}
                   {activeTab === "preview" && invoice && (
-                    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
-                      <div className="border-b border-zinc-100 pb-2.5 mb-3 text-xs space-y-1 dark:border-zinc-800">
-                        <div>
-                          <strong className="text-zinc-400">To:</strong>{" "}
-                          <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                            {selectedEmails.join(", ") ||
-                              "No recipients selected"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong className="text-zinc-400">Subject:</strong>{" "}
-                          <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                            {reminderType === "FINAL_NOTICE"
-                              ? `FINAL NOTICE: Overdue Payment for Invoice #${invoice.invoiceNumber}`
-                              : reminderType === "DUE_TODAY"
-                                ? `Payment Due Today: Invoice #${invoice.invoiceNumber}`
-                                : `Payment Reminder: Invoice #${invoice.invoiceNumber}`}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3 text-xs text-zinc-700 dark:text-zinc-300">
-                        <p>
-                          Dear <strong>{client?.companyName}</strong> Team,
-                        </p>
-                        <p>
-                          This is a reminder regarding the outstanding balance
-                          for invoice <strong>#{invoice.invoiceNumber}</strong>.
-                        </p>
-
-                        {customNote && (
-                          <div className="rounded-lg bg-zinc-100 p-2.5 italic text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-l-3 border-blue-500">
-                            <strong>Note:</strong> {customNote}
-                          </div>
-                        )}
-
-                        <div className="rounded-lg border border-zinc-200 overflow-hidden dark:border-zinc-700">
-                          <div className="bg-zinc-50 px-3 py-1.5 font-semibold text-[11px] uppercase text-zinc-500 dark:bg-zinc-800">
-                            Invoice Summary
-                          </div>
-                          <div className="p-3 space-y-1.5">
-                            <div className="flex justify-between">
-                              <span className="text-zinc-500">
-                                Invoice Number:
-                              </span>
-                              <span className="font-semibold">
-                                #{invoice.invoiceNumber}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-zinc-500">Due Date:</span>
-                              <span
-                                className={
-                                  invoice.isOverdue
-                                    ? "font-bold text-red-600"
-                                    : ""
-                                }
-                              >
-                                {invoice.dueDate
-                                  ? new Date(
-                                      invoice.dueDate,
-                                    ).toLocaleDateString("en-IN")
-                                  : "—"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-zinc-500">
-                                Total Amount:
-                              </span>
-                              <span>
-                                ₹
-                                {Number(
-                                  invoice.invoiceAmount || 0,
-                                ).toLocaleString("en-IN")}
-                              </span>
-                            </div>
-                            <div className="flex justify-between border-t pt-1.5 font-bold text-blue-600">
-                              <span>Balance Due:</span>
-                              <span className="text-sm">
-                                ₹
-                                {Number(invoice.due || 0).toLocaleString(
-                                  "en-IN",
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <LiveEmailModalPreview
+                      html={renderManualSingleInvoiceReminderEmail({
+                        invoice,
+                        client,
+                        company,
+                        reminderType,
+                        customNote,
+                      })}
+                      subject={
+                        reminderType === "FINAL_NOTICE"
+                          ? `FINAL NOTICE: Overdue Payment for Invoice #${invoice.invoiceNumber} | Immediate Action Required`
+                          : reminderType === "DUE_TODAY"
+                            ? `Payment Due Today: Invoice #${invoice.invoiceNumber} | ${company?.companyName || "PAFEX"}`
+                            : reminderType === "DUE_SOON"
+                              ? `Upcoming Payment Reminder: Invoice #${invoice.invoiceNumber} | ${company?.companyName || "PAFEX"}`
+                              : `Overdue Payment Reminder: Invoice #${invoice.invoiceNumber} (${invoice.dueDaysText || "Overdue"})`
+                      }
+                      recipientEmails={selectedEmails}
+                      senderCompany={company?.companyName || "PAFEX Logistics"}
+                      senderEmail={company?.email || ""}
+                      reminderType={reminderType}
+                    />
                   )}
 
                   {/* TAB 3: WHATSAPP */}
@@ -636,7 +571,7 @@ export default function SendInvoiceReminderModal({
                   ) : (
                     <>
                       <Send size={13} />
-                      <span>Send Email</span>
+                      <span>Send Reminder Email</span>
                     </>
                   )}
                 </button>

@@ -22,6 +22,8 @@ import {
   getClientReminderData,
   sendClientReminder,
 } from "@/app/actions/reminder";
+import { renderManualClientStatementReminderEmail } from "@/lib/notifications/email-renderer";
+import LiveEmailModalPreview from "./LiveEmailModalPreview";
 
 export default function SendClientReminderModal({
   clientId,
@@ -189,7 +191,7 @@ export default function SendClientReminderModal({
         }
       >
         <Mail size={13} />
-        <span>Send Email</span>
+        <span>Send Statement / Reminder</span>
       </button>
 
       {isOpen && (
@@ -470,85 +472,29 @@ export default function SendClientReminderModal({
                     </div>
                   )}
 
-                  {/* TAB 2: STATEMENT PREVIEW */}
+                  {/* TAB 2: UNIFIED LIVE STATEMENT PREVIEW */}
                   {activeTab === "preview" && client && (
-                    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
-                      <div className="border-b border-zinc-100 pb-2.5 mb-3 text-xs space-y-1 dark:border-zinc-800">
-                        <div>
-                          <strong className="text-zinc-400">To:</strong>{" "}
-                          <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                            {selectedEmails.join(", ") ||
-                              "No recipients selected"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong className="text-zinc-400">Subject:</strong>{" "}
-                          <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                            {reminderType === "SUSPENSION_WARNING"
-                              ? `URGENT: Outstanding Dues & Service Suspension Warning | ${client.companyName}`
-                              : reminderType === "OVERDUE_NOTICE"
-                                ? `Overdue Statement of Account: ${clientSummary?.overdueInvoices || 0} Overdue Invoices`
-                                : `Statement of Outstanding Invoices (${invoices.length} Pending)`}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3 text-xs text-zinc-700 dark:text-zinc-300">
-                        <p>
-                          Dear <strong>{client.companyName}</strong> Team,
-                        </p>
-                        <p>
-                          Please find below the summary of your outstanding
-                          balance totaling{" "}
-                          <strong className="text-blue-600">
-                            ₹{totalOutstandingFormatted}
-                          </strong>
-                          .
-                        </p>
-
-                        {customNote && (
-                          <div className="rounded-lg bg-zinc-100 p-2.5 italic text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-l-3 border-blue-500">
-                            <strong>Note:</strong> {customNote}
-                          </div>
-                        )}
-
-                        <div className="rounded-lg border border-zinc-200 overflow-hidden dark:border-zinc-700 max-h-56 overflow-y-auto">
-                          <table className="w-full text-left text-xs">
-                            <thead className="bg-zinc-50 border-b text-[10px] uppercase text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700">
-                              <tr>
-                                <th className="p-2">Invoice</th>
-                                <th className="p-2">Due Date</th>
-                                <th className="p-2 text-right">Balance Due</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                              {invoices.map((inv) => (
-                                <tr key={inv.id}>
-                                  <td className="p-2 font-semibold">
-                                    #{inv.invoiceNumber}
-                                  </td>
-                                  <td
-                                    className={`p-2 ${inv.isOverdue ? "text-red-600 font-medium" : ""}`}
-                                  >
-                                    {inv.dueDate
-                                      ? new Date(
-                                          inv.dueDate,
-                                        ).toLocaleDateString("en-IN")
-                                      : "—"}
-                                  </td>
-                                  <td className="p-2 text-right font-semibold">
-                                    ₹
-                                    {Number(inv.due || 0).toLocaleString(
-                                      "en-IN",
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
+                    <LiveEmailModalPreview
+                      html={renderManualClientStatementReminderEmail({
+                        client,
+                        clientSummary,
+                        invoices,
+                        company,
+                        reminderType,
+                        customNote,
+                      })}
+                      subject={
+                        reminderType === "SUSPENSION_WARNING"
+                          ? `URGENT: Outstanding Dues & Service Suspension Warning | ${client.companyName}`
+                          : reminderType === "OVERDUE_NOTICE"
+                            ? `Overdue Statement of Account: ${clientSummary?.overdueInvoices || 0} Overdue Invoices | ${client.companyName}`
+                            : `Statement of Outstanding Invoices (${invoices.length} Invoices) | ${client.companyName}`
+                      }
+                      recipientEmails={selectedEmails}
+                      senderCompany={company?.companyName || "PAFEX Logistics"}
+                      senderEmail={company?.email || ""}
+                      reminderType={reminderType}
+                    />
                   )}
 
                   {/* TAB 3: WHATSAPP */}

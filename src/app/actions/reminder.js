@@ -19,6 +19,11 @@ import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { enrichInvoices } from "@/lib/invoice-summary";
 import { calculateClientSummary } from "@/lib/client-summary";
 import { sendEmail } from "@/lib/email";
+import {
+  renderManualSingleInvoiceReminderEmail,
+  renderManualClientStatementReminderEmail,
+  renderManualBulkInvoicesReminderEmail,
+} from "@/lib/notifications/email-renderer";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -349,85 +354,14 @@ export async function sendInvoiceReminder({
       ? invoice.awbs.map((a) => a.awbNumber).join(", ")
       : "";
 
-    // Build HTML Email Body
-    const htmlBody = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden;">
-        <div style="background: ${headerColor}; padding: 20px 24px; color: #ffffff;">
-          <h2 style="margin: 0; font-size: 20px; font-weight: 700;">${headerTitle}</h2>
-          <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">${company.companyName || "PAFEX Logistics"} • Payment Follow-up</p>
-        </div>
-        
-        <div style="padding: 24px; color: #27272a; line-height: 1.6;">
-          <p style="margin-top: 0; font-size: 15px;">Dear <strong>${client.companyName}</strong> Team,</p>
-          
-          <p style="font-size: 14px; color: #3f3f46;">
-            This is a friendly reminder regarding the outstanding balance for invoice <strong>#${invoice.invoiceNumber}</strong>. 
-            ${reminderType === "FINAL_NOTICE" ? "<strong style='color: #dc2626;'>Please clear the dues immediately to prevent any interruption to your logistics services.</strong>" : "Kindly process the payment at your earliest convenience."}
-          </p>
-
-          ${
-            customNote
-              ? `<div style="margin: 16px 0; padding: 12px 16px; background: #f4f4f5; border-left: 4px solid ${headerColor}; border-radius: 4px; font-size: 13px; color: #3f3f46;">
-                  <strong>Note from sender:</strong><br/>${customNote}
-                </div>`
-              : ""
-          }
-
-          <div style="margin: 20px 0; border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-            <div style="background: #fafafa; padding: 10px 16px; border-bottom: 1px solid #e4e4e7; font-weight: 600; font-size: 13px; color: #52525b;">
-              INVOICE SUMMARY
-            </div>
-            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-              <tr>
-                <td style="padding: 10px 16px; border-bottom: 1px solid #f4f4f5; color: #71717a;">Invoice Number</td>
-                <td style="padding: 10px 16px; border-bottom: 1px solid #f4f4f5; font-weight: 600; text-align: right;">#${invoice.invoiceNumber}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 16px; border-bottom: 1px solid #f4f4f5; color: #71717a;">Due Date</td>
-                <td style="padding: 10px 16px; border-bottom: 1px solid #f4f4f5; font-weight: 600; text-align: right; color: ${invoice.isOverdue ? "#dc2626" : "#27272a"};">${formattedDueDate} ${invoice.isOverdue ? `(${invoice.dueDaysText})` : ""}</td>
-              </tr>
-              ${
-                awbListText
-                  ? `<tr>
-                      <td style="padding: 10px 16px; border-bottom: 1px solid #f4f4f5; color: #71717a;">AWBs / Dockets</td>
-                      <td style="padding: 10px 16px; border-bottom: 1px solid #f4f4f5; font-weight: 500; text-align: right; font-family: monospace;">${awbListText}</td>
-                    </tr>`
-                  : ""
-              }
-              <tr>
-                <td style="padding: 10px 16px; border-bottom: 1px solid #f4f4f5; color: #71717a;">Total Amount</td>
-                <td style="padding: 10px 16px; border-bottom: 1px solid #f4f4f5; text-align: right;">₹${formattedTotal}</td>
-              </tr>
-              <tr style="background: #f8fafc;">
-                <td style="padding: 12px 16px; font-weight: 700; color: #0f172a; font-size: 14px;">Balance Due</td>
-                <td style="padding: 12px 16px; font-weight: 700; color: #2563eb; text-align: right; font-size: 16px;">₹${formattedDue}</td>
-              </tr>
-            </table>
-          </div>
-
-          ${
-            company.bankName || company.bankAccountNumber || company.bankUpi
-              ? `<div style="margin: 20px 0; padding: 14px 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 12px; color: #334155;">
-                  <strong style="color: #0f172a; font-size: 13px; display: block; margin-bottom: 6px;">Bank Payment Details:</strong>
-                  ${company.bankName ? `<div><strong>Bank:</strong> ${company.bankName}</div>` : ""}
-                  ${company.bankAccountNumber ? `<div><strong>A/C No:</strong> ${company.bankAccountNumber}</div>` : ""}
-                  ${company.bankIfsc ? `<div><strong>IFSC:</strong> ${company.bankIfsc}</div>` : ""}
-                  ${company.bankUpi ? `<div><strong>UPI:</strong> ${company.bankUpi}</div>` : ""}
-                </div>`
-              : ""
-          }
-
-          <p style="font-size: 13px; color: #71717a; margin-bottom: 0;">
-            If you have already made this payment, kindly disregard this email or send us the transaction reference / UTR number for reconciliation.
-          </p>
-        </div>
-
-        <div style="background: #fafafa; padding: 16px 24px; border-top: 1px solid #e4e4e7; font-size: 12px; color: #71717a; text-align: center;">
-          <p style="margin: 0;"><strong>${company.companyName || "PAFEX"}</strong></p>
-          <p style="margin: 4px 0 0 0;">${company.email || ""} ${company.phone ? `• ${company.phone}` : ""}</p>
-        </div>
-      </div>
-    `;
+    // Build unified HTML Email Body using shared automatic layout system
+    const htmlBody = renderManualSingleInvoiceReminderEmail({
+      invoice,
+      client,
+      company,
+      reminderType,
+      customNote,
+    });
 
     // Send email to each recipient
     const sendPromises = recipientEmails.map(async (email) => {
@@ -548,113 +482,15 @@ export async function sendClientReminder({
       minimumFractionDigits: 2,
     });
 
-    // Build invoices table rows
-    const rowsHtml = openInvoices
-      .map((inv) => {
-        const dueFormatted = Number(inv.due || 0).toLocaleString("en-IN", {
-          minimumFractionDigits: 2,
-        });
-        const dueDateFormatted = inv.dueDate
-          ? new Date(inv.dueDate).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
-          : "—";
-        const awbText = inv.awbs?.length
-          ? inv.awbs.slice(0, 2).join(", ")
-          : "—";
-
-        return `
-          <tr style="border-bottom: 1px solid #f4f4f5; font-size: 12px;">
-            <td style="padding: 8px 12px; font-weight: 600;">#${inv.invoiceNumber}</td>
-            <td style="padding: 8px 12px; color: ${inv.isOverdue ? "#dc2626" : "#52525b"}; font-weight: ${inv.isOverdue ? "600" : "400"};">${dueDateFormatted}</td>
-            <td style="padding: 8px 12px; font-family: monospace; color: #71717a;">${awbText}</td>
-            <td style="padding: 8px 12px; text-align: right; font-weight: 600; color: #0f172a;">₹${dueFormatted}</td>
-          </tr>
-        `;
-      })
-      .join("");
-
-    const htmlBody = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden;">
-        <div style="background: ${headerColor}; padding: 20px 24px; color: #ffffff;">
-          <h2 style="margin: 0; font-size: 20px; font-weight: 700;">${headerTitle}</h2>
-          <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">${company.companyName || "PAFEX Logistics"} • Outstanding Ledger</p>
-        </div>
-        
-        <div style="padding: 24px; color: #27272a; line-height: 1.6;">
-          <p style="margin-top: 0; font-size: 15px;">Dear <strong>${client.companyName}</strong> Team,</p>
-          
-          <p style="font-size: 14px; color: #3f3f46;">
-            Please find below the consolidated statement of your pending and overdue invoices. 
-            There are currently <strong>${openInvoices.length} outstanding invoices</strong> with a total pending balance of <strong style="color: #2563eb;">₹${formattedTotalOutstanding}</strong>.
-          </p>
-
-          ${
-            clientSummary.overdueInvoices > 0
-              ? `<div style="margin: 12px 0; padding: 10px 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; font-size: 13px; color: #991b1b;">
-                  ⚠️ <strong>${clientSummary.overdueInvoices} invoices are overdue</strong> totaling <strong>₹${formattedOverdueAmount}</strong>. Please prioritize settling these invoices.
-                </div>`
-              : ""
-          }
-
-          ${
-            customNote
-              ? `<div style="margin: 16px 0; padding: 12px 16px; background: #f4f4f5; border-left: 4px solid ${headerColor}; border-radius: 4px; font-size: 13px; color: #3f3f46;">
-                  <strong>Note from sender:</strong><br/>${customNote}
-                </div>`
-              : ""
-          }
-
-          <div style="margin: 20px 0; border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-            <div style="background: #fafafa; padding: 10px 14px; border-bottom: 1px solid #e4e4e7; font-weight: 600; font-size: 13px; color: #52525b;">
-              OUTSTANDING INVOICES LIST
-            </div>
-            <table style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="background: #f8fafc; border-bottom: 1px solid #e4e4e7; font-size: 11px; text-transform: uppercase; color: #64748b;">
-                  <th style="padding: 8px 12px; text-align: left;">Invoice</th>
-                  <th style="padding: 8px 12px; text-align: left;">Due Date</th>
-                  <th style="padding: 8px 12px; text-align: left;">AWBs</th>
-                  <th style="padding: 8px 12px; text-align: right;">Balance Due</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rowsHtml}
-              </tbody>
-              <tfoot>
-                <tr style="background: #f8fafc; border-top: 2px solid #cbd5e1;">
-                  <td colspan="3" style="padding: 10px 12px; font-weight: 700; font-size: 13px; color: #0f172a;">Total Outstanding</td>
-                  <td style="padding: 10px 12px; font-weight: 700; font-size: 15px; color: #2563eb; text-align: right;">₹${formattedTotalOutstanding}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
-          ${
-            company.bankName || company.bankAccountNumber || company.bankUpi
-              ? `<div style="margin: 20px 0; padding: 14px 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 12px; color: #334155;">
-                  <strong style="color: #0f172a; font-size: 13px; display: block; margin-bottom: 6px;">Bank Payment Details:</strong>
-                  ${company.bankName ? `<div><strong>Bank:</strong> ${company.bankName}</div>` : ""}
-                  ${company.bankAccountNumber ? `<div><strong>A/C No:</strong> ${company.bankAccountNumber}</div>` : ""}
-                  ${company.bankIfsc ? `<div><strong>IFSC:</strong> ${company.bankIfsc}</div>` : ""}
-                  ${company.bankUpi ? `<div><strong>UPI:</strong> ${company.bankUpi}</div>` : ""}
-                </div>`
-              : ""
-          }
-
-          <p style="font-size: 13px; color: #71717a; margin-bottom: 0;">
-            Kindly share the payment confirmation / UTR details once processed.
-          </p>
-        </div>
-
-        <div style="background: #fafafa; padding: 16px 24px; border-top: 1px solid #e4e4e7; font-size: 12px; color: #71717a; text-align: center;">
-          <p style="margin: 0;"><strong>${company.companyName || "PAFEX"}</strong></p>
-          <p style="margin: 4px 0 0 0;">${company.email || ""} ${company.phone ? `• ${company.phone}` : ""}</p>
-        </div>
-      </div>
-    `;
+    // Build unified HTML Email Body using shared automatic layout system
+    const htmlBody = renderManualClientStatementReminderEmail({
+      client,
+      clientSummary,
+      invoices: openInvoices,
+      company,
+      reminderType,
+      customNote,
+    });
 
     // Send email to each recipient
     const sendPromises = recipientEmails.map(async (email) => {
@@ -955,112 +791,16 @@ export async function sendBulkGroupedReminders({
         minimumFractionDigits: 2,
       });
 
-      const rowsHtml = groupInvoices
-        .map((inv) => {
-          const dueFormatted = Number(inv.due || 0).toLocaleString("en-IN", {
-            minimumFractionDigits: 2,
-          });
-          const dueDateFormatted = inv.dueDate
-            ? new Date(inv.dueDate).toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })
-            : "—";
-          const awbText = inv.awbs?.length
-            ? inv.awbs.slice(0, 2).join(", ")
-            : "—";
-
-          return `
-            <tr style="border-bottom: 1px solid #f4f4f5; font-size: 12px;">
-              <td style="padding: 8px 12px; font-weight: 600;">#${inv.invoiceNumber}</td>
-              <td style="padding: 8px 12px; color: ${inv.isOverdue ? "#dc2626" : "#52525b"}; font-weight: ${inv.isOverdue ? "600" : "400"};">${dueDateFormatted}</td>
-              <td style="padding: 8px 12px; font-family: monospace; color: #71717a;">${awbText}</td>
-              <td style="padding: 8px 12px; text-align: right; font-weight: 600; color: #0f172a;">₹${dueFormatted}</td>
-            </tr>
-          `;
-        })
-        .join("");
-
-      const htmlBody = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden;">
-          <div style="background: ${headerColor}; padding: 20px 24px; color: #ffffff;">
-            <h2 style="margin: 0; font-size: 20px; font-weight: 700;">${headerTitle}</h2>
-            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">${company.companyName || "PAFEX Logistics"} • Outstanding Ledger</p>
-          </div>
-          
-          <div style="padding: 24px; color: #27272a; line-height: 1.6;">
-            <p style="margin-top: 0; font-size: 15px;">Dear <strong>${companyName}</strong> Team,</p>
-            
-            <p style="font-size: 14px; color: #3f3f46;">
-              Please find below the consolidated statement of your outstanding invoices. 
-              There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563eb;">₹${formattedTotalDue}</strong>.
-            </p>
-
-            ${
-              overdueCount > 0
-                ? `<div style="margin: 12px 0; padding: 10px 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; font-size: 13px; color: #991b1b;">
-                    ⚠️ <strong>${overdueCount} of these invoices are past due</strong>. Please arrange settlement at your earliest convenience.
-                  </div>`
-                : ""
-            }
-
-            ${
-              customNote
-                ? `<div style="margin: 16px 0; padding: 12px 16px; background: #f4f4f5; border-left: 4px solid ${headerColor}; border-radius: 4px; font-size: 13px; color: #3f3f46;">
-                    <strong>Note from sender:</strong><br/>${customNote}
-                  </div>`
-                : ""
-            }
-
-            <div style="margin: 20px 0; border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;">
-              <div style="background: #fafafa; padding: 10px 14px; border-bottom: 1px solid #e4e4e7; font-weight: 600; font-size: 13px; color: #52525b;">
-                OUTSTANDING INVOICES (${groupInvoices.length})
-              </div>
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                  <tr style="background: #f8fafc; border-bottom: 1px solid #e4e4e7; font-size: 11px; text-transform: uppercase; color: #64748b;">
-                    <th style="padding: 8px 12px; text-align: left;">Invoice</th>
-                    <th style="padding: 8px 12px; text-align: left;">Due Date</th>
-                    <th style="padding: 8px 12px; text-align: left;">AWBs</th>
-                    <th style="padding: 8px 12px; text-align: right;">Balance Due</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${rowsHtml}
-                </tbody>
-                <tfoot>
-                  <tr style="background: #f8fafc; border-top: 2px solid #cbd5e1;">
-                    <td colspan="3" style="padding: 10px 12px; font-weight: 700; font-size: 13px; color: #0f172a;">Total Balance</td>
-                    <td style="padding: 10px 12px; font-weight: 700; font-size: 15px; color: #2563eb; text-align: right;">₹${formattedTotalDue}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-
-            ${
-              company.bankName || company.bankAccountNumber || company.bankUpi
-                ? `<div style="margin: 20px 0; padding: 14px 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 12px; color: #334155;">
-                    <strong style="color: #0f172a; font-size: 13px; display: block; margin-bottom: 6px;">Bank Payment Details:</strong>
-                    ${company.bankName ? `<div><strong>Bank:</strong> ${company.bankName}</div>` : ""}
-                    ${company.bankAccountNumber ? `<div><strong>A/C No:</strong> ${company.bankAccountNumber}</div>` : ""}
-                    ${company.bankIfsc ? `<div><strong>IFSC:</strong> ${company.bankIfsc}</div>` : ""}
-                    ${company.bankUpi ? `<div><strong>UPI:</strong> ${company.bankUpi}</div>` : ""}
-                  </div>`
-                : ""
-            }
-
-            <p style="font-size: 13px; color: #71717a; margin-bottom: 0;">
-              Kindly share transaction details / UTR number once payment is initiated.
-            </p>
-          </div>
-
-          <div style="background: #fafafa; padding: 16px 24px; border-top: 1px solid #e4e4e7; font-size: 12px; color: #71717a; text-align: center;">
-            <p style="margin: 0;"><strong>${company.companyName || "PAFEX"}</strong></p>
-            <p style="margin: 4px 0 0 0;">${company.email || ""} ${company.phone ? `• ${company.phone}` : ""}</p>
-          </div>
-        </div>
-      `;
+      // Build unified HTML Email Body using shared automatic layout system
+      const htmlBody = renderManualBulkInvoicesReminderEmail({
+        client: { companyName },
+        groupInvoices,
+        company,
+        reminderType,
+        customNote,
+        totalDue: groupTotalDue,
+        overdueCount,
+      });
 
       // Send to each contact recipient for this client
       for (const email of selectedEmails) {
@@ -1124,5 +864,139 @@ export async function sendBulkGroupedReminders({
       success: false,
       error: error?.message || "Failed to dispatch bulk reminders",
     };
+  }
+}
+
+/**
+ * Generate live rendered email preview HTML for single invoice reminder
+ */
+export async function getSingleInvoiceReminderPreviewHtml({
+  invoiceId,
+  reminderType = "OVERDUE",
+  customNote = "",
+}) {
+  try {
+    const data = await getInvoiceReminderData(invoiceId);
+    if (data.error) return { error: data.error };
+
+    const html = renderManualSingleInvoiceReminderEmail({
+      invoice: data.invoice,
+      client: data.client,
+      company: data.company,
+      reminderType,
+      customNote,
+    });
+
+    let subject = "";
+    switch (reminderType) {
+      case "DUE_SOON":
+        subject = `Upcoming Payment Reminder: Invoice #${data.invoice.invoiceNumber} | ${data.company.companyName || "PAFEX"}`;
+        break;
+      case "DUE_TODAY":
+        subject = `Payment Due Today: Invoice #${data.invoice.invoiceNumber} | ${data.company.companyName || "PAFEX"}`;
+        break;
+      case "FINAL_NOTICE":
+        subject = `FINAL NOTICE: Overdue Payment for Invoice #${data.invoice.invoiceNumber} | Immediate Action Required`;
+        break;
+      case "OVERDUE":
+      default:
+        subject = `Overdue Payment Reminder: Invoice #${data.invoice.invoiceNumber} (${data.invoice.dueDaysText || "Overdue"})`;
+        break;
+    }
+
+    return { success: true, html, subject, company: data.company };
+  } catch (err) {
+    return { error: err?.message || "Failed to render preview" };
+  }
+}
+
+/**
+ * Generate live rendered email preview HTML for client statement reminder
+ */
+export async function getClientStatementReminderPreviewHtml({
+  clientId,
+  reminderType = "STATEMENT",
+  customNote = "",
+}) {
+  try {
+    const data = await getClientReminderData(clientId);
+    if (data.error) return { error: data.error };
+
+    const html = renderManualClientStatementReminderEmail({
+      client: data.client,
+      clientSummary: data.clientSummary,
+      invoices: data.invoices,
+      company: data.company,
+      reminderType,
+      customNote,
+    });
+
+    let subject = "";
+    switch (reminderType) {
+      case "SUSPENSION_WARNING":
+        subject = `URGENT: Outstanding Dues & Service Suspension Warning | ${data.client.companyName}`;
+        break;
+      case "OVERDUE_NOTICE":
+        subject = `Overdue Statement of Account: ${data.clientSummary.overdueInvoices} Overdue Invoices | ${data.client.companyName}`;
+        break;
+      case "STATEMENT":
+      default:
+        subject = `Statement of Outstanding Invoices (${data.invoices.length} Invoices) | ${data.client.companyName}`;
+        break;
+    }
+
+    return { success: true, html, subject, company: data.company };
+  } catch (err) {
+    return { error: err?.message || "Failed to render preview" };
+  }
+}
+
+/**
+ * Generate live rendered email preview HTML for bulk statement group
+ */
+export async function getBulkStatementPreviewHtml({
+  group,
+  reminderType = "STATEMENT",
+  customNote = "",
+}) {
+  try {
+    const currentUser = await getCurrentUser();
+    let company = {};
+    if (currentUser?.companyId) {
+      const companyRows = await db
+        .select()
+        .from(companies)
+        .where(eq(companies.id, currentUser.companyId))
+        .limit(1);
+      if (companyRows.length > 0) company = companyRows[0];
+    }
+
+    const html = renderManualBulkInvoicesReminderEmail({
+      client: { companyName: group.companyName },
+      groupInvoices: group.invoices || [],
+      company,
+      reminderType,
+      customNote,
+      totalDue: group.totalDue || 0,
+      overdueCount: group.overdueCount || 0,
+    });
+
+    let subject = "";
+    switch (reminderType) {
+      case "SUSPENSION_WARNING":
+        subject = `URGENT: Outstanding Dues & Service Suspension Warning | ${group.companyName}`;
+        break;
+      case "OVERDUE_NOTICE":
+        subject = `Overdue Statement of Account: ${group.overdueCount} Overdue Invoices | ${group.companyName}`;
+        break;
+      case "STATEMENT":
+      default:
+        subject = `Statement of Outstanding Invoices (${group.invoices?.length || 0} Invoices) | ${group.companyName}`;
+        break;
+    }
+
+    return { success: true, html, subject };
+  } catch (err) {
+    return { error: err?.message || "Failed to render preview" };
   }
 }
