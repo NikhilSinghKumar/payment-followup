@@ -25,7 +25,7 @@ export default function Topbar({
   }, []);
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-6">
+    <header className="flex h-14 items-center justify-between border-b border-slate-200/80 bg-white px-6">
       {/* LEFT */}
 
       <div className="flex items-center gap-4">
@@ -82,7 +82,7 @@ export default function Topbar({
           </button>
 
           {open && (
-            <div className="absolute right-0 mt-2 w-40 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+            <div className="absolute right-0 mt-2 w-40 z-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
               <div className="border-b border-gray-200 px-4 py-3">
                 <div className="text-sm text-slate-500 truncate">
                   {user.email}

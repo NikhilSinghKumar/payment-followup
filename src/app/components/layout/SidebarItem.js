@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function SidebarItem({ title, href, icon: Icon }) {
+export default function SidebarItem({
+  title,
+  href,
+  icon: Icon,
+  collapsed = false,
+}) {
   const pathname = usePathname();
 
   const active = pathname === href || pathname.startsWith(`${href}/`);
@@ -11,13 +16,18 @@ export default function SidebarItem({ title, href, icon: Icon }) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-all ${
-        active ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"
+      title={collapsed ? title : undefined}
+      className={`group flex items-center ${
+        collapsed ? "justify-center px-2 py-2" : "gap-3.5 px-5 py-1.5"
+      } rounded-lg text-[14px] font-medium transition-all ${
+        active
+          ? "bg-blue-600 text-white shadow-xs"
+          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
       }`}
     >
-      <Icon size={20} />
+      <Icon size={18} className="shrink-0" />
 
-      <span className="text-sm font-medium">{title}</span>
+      {!collapsed && <span className="truncate">{title}</span>}
     </Link>
   );
 }
