@@ -20,19 +20,10 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="h-full flex flex-col">
+      <body className="min-h-screen flex flex-col bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
         {children}
-
-        <footer>
-          <div className="mb-2 flex flex-col text-xs text-zinc-500 md:flex-row md:items-center md:justify-center">
-            <p>
-              © {new Date().getFullYear()} Prakash Airfreight India Pvt Ltd
-              (Pafex)
-            </p>
-          </div>
-        </footer>
       </body>
     </html>
   );
