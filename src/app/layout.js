@@ -28,8 +28,8 @@ export default function RootLayout({ children }) {
         <footer>
           <div className="mb-2 flex flex-col text-xs text-zinc-500 md:flex-row md:items-center md:justify-center">
             <p>
-              © {new Date().getFullYear()} PAFEX Payment Follow-up. All rights
-              reserved.
+              © {new Date().getFullYear()} Prakash Airfreight India Pvt Ltd
+              (Pafex)
             </p>
           </div>
         </footer>
