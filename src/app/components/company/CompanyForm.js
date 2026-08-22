@@ -99,7 +99,7 @@ export default function CompanyForm({ mode = "create", initialData = {} }) {
                 name="companyName"
                 required
                 defaultValue={initialData.companyName || ""}
-                placeholder="e.g. PAFEX Express Pvt Ltd"
+                placeholder="e.g. PAFEX"
                 className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
               />
             </div>

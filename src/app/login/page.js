@@ -1,8 +1,8 @@
 import LoginForm from "@/app/components/auth/LoginForm";
 
 export const metadata = {
-  title: "Login | PAFEX Express Logistics",
-  description: "Sign in to PAFEX Logistics Billing & Invoicing Portal",
+  title: "Login | PAFEX",
+  description: "Sign in to PAFEX",
 };
 
 export default function LoginPage() {
