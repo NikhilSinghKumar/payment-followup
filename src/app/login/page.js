@@ -334,7 +334,7 @@ export default function LoginPage() {
         </div>
 
         {/* The White Login Card */}
-        <div className="w-full rounded-[28px] border border-slate-100/90 bg-white p-7 sm:p-9 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.03)] backdrop-blur-xs">
+        <div className="w-full rounded-[28px] border border-slate-100/90 bg-gradient-r from-indigo-600 to-purple-300 p-7 sm:p-9 shadow-sm backdrop-blur-xs">
           <LoginForm />
         </div>
       </div>
