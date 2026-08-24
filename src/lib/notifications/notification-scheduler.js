@@ -20,27 +20,28 @@ import { isNull } from "drizzle-orm";
 async function processClientPaymentReminders() {
   const clients = await getClientPaymentReminderData();
 
-  console.log(
-    "[REMINDER TEST] getClientPaymentReminderData returned:",
-    clients.length,
-  );
+  // console.log(
+  //   "[REMINDER TEST] getClientPaymentReminderData returned:",
+  //   clients.length,
+  // );
 
   const testClients = clients.filter(
     (client) => Number(client.clientId) === 488,
   );
 
-  console.log(
-    "[REMINDER TEST] AFTER FILTER:",
-    testClients.map((client) => ({
-      clientId: client.clientId,
-      clientName: client.clientName,
-      email: client.email,
-    })),
-  );
+  // console.log(
+  //   "[REMINDER TEST] AFTER FILTER:",
+  //   testClients.map((client) => ({
+  //     clientId: client.clientId,
+  //     clientName: client.clientName,
+  //     email: client.email,
+  //   })),
+  // );
 
   let processed = 0;
   let failed = 0;
 
+  // chnage testClients to clients to send notification to all
   for (const client of testClients) {
     try {
       console.log("[REMINDER TEST] SENDING TO:", client.clientId, client.email);
