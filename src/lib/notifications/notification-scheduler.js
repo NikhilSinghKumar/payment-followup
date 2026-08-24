@@ -41,7 +41,7 @@ async function processClientPaymentReminders() {
   let processed = 0;
   let failed = 0;
 
-  // chnage testClients to clients to send notification to all
+  // chnage testClients to clients to send
   for (const client of testClients) {
     try {
       console.log("[REMINDER TEST] SENDING TO:", client.clientId, client.email);

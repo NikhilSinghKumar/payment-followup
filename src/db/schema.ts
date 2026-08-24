@@ -1570,6 +1570,14 @@ export const notificationSettings = pgTable(
       .default(true)
       .notNull(),
 
+    autoSendSuspensionNotice: boolean("auto_send_suspension_notice")
+      .default(false)
+      .notNull(),
+
+    sendInternalSuspensionAlert: boolean("send_internal_suspension_alert")
+      .default(true)
+      .notNull(),
+
     sendInvoicePdf: boolean("send_invoice_pdf").default(true).notNull(),
 
     ccAccountsEmail: text("cc_accounts_email"),

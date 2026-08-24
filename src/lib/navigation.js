@@ -10,6 +10,8 @@ import {
   KeyRound,
   BarChart3,
   Settings,
+  ShieldAlert,
+  Network,
 } from "lucide-react";
 
 export const SIDEBAR_NAVIGATION = [
@@ -44,6 +46,12 @@ export const SIDEBAR_NAVIGATION = [
         href: "/followups",
         icon: Megaphone,
       },
+
+      {
+        title: "Suspensions",
+        href: "/suspensions",
+        icon: ShieldAlert,
+      },
     ],
   },
 
@@ -61,6 +69,12 @@ export const SIDEBAR_NAVIGATION = [
         title: "Users",
         href: "/users",
         icon: Users,
+      },
+
+      {
+        title: "Departments",
+        href: "/departments",
+        icon: Network,
       },
 
       {

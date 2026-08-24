@@ -34,6 +34,9 @@ export default function NotificationSettingsForm({
     sendOverdueReminder: initialSettings.sendOverdueReminder ?? true,
     overdueReminderDays: initialSettings.overdueReminderDays ?? 7,
     sendPaymentConfirmation: initialSettings.sendPaymentConfirmation ?? true,
+    autoSendSuspensionNotice: initialSettings.autoSendSuspensionNotice ?? false,
+    sendInternalSuspensionAlert:
+      initialSettings.sendInternalSuspensionAlert ?? true,
     sendInvoicePdf: initialSettings.sendInvoicePdf ?? true,
     ccAccountsEmail: initialSettings.ccAccountsEmail || "",
     ccSalesEmail: initialSettings.ccSalesEmail || "",
@@ -139,9 +142,9 @@ export default function NotificationSettingsForm({
               <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 Automated Payment Reminders
               </h3>
-              {/* <p className="text-xs text-zinc-500">
+              <p className="text-xs text-zinc-500">
                 Triggered automatically based on invoice due dates and aging.
-              </p> */}
+              </p>
             </div>
           </div>
         </div>
@@ -160,9 +163,9 @@ export default function NotificationSettingsForm({
                   </span>
                 )}
               </div>
-              {/* <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="mt-0.5 text-xs text-zinc-500">
                 Sends a polite reminder before the invoice due date arrives.
-              </p> */}
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -213,10 +216,10 @@ export default function NotificationSettingsForm({
                   </span>
                 )}
               </div>
-              {/* <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="mt-0.5 text-xs text-zinc-500">
                 Dispatches a notification on the exact morning of the invoice
                 due date.
-              </p> */}
+              </p>
             </div>
 
             <button
@@ -251,10 +254,10 @@ export default function NotificationSettingsForm({
                   </span>
                 )}
               </div>
-              {/* <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="mt-0.5 text-xs text-zinc-500">
                 Periodically follows up with clients when invoices remain unpaid
                 past their due date.
-              </p> */}
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -299,10 +302,10 @@ export default function NotificationSettingsForm({
               <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
                 Bill Submission Confirmation
               </span>
-              {/* <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="mt-0.5 text-xs text-zinc-500">
                 Sends initial submission email to client contact upon creating a
                 new invoice.
-              </p> */}
+              </p>
             </div>
 
             <button
@@ -328,10 +331,10 @@ export default function NotificationSettingsForm({
               <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
                 Payment Receipt Acknowledgement
               </span>
-              {/* <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="mt-0.5 text-xs text-zinc-500">
                 Sends an instant thank-you receipt and ledger balance update
                 when payment is recorded.
-              </p> */}
+              </p>
             </div>
 
             <button
@@ -353,16 +356,97 @@ export default function NotificationSettingsForm({
             </button>
           </div>
 
-          {/* Rule 6: Attach PDF / AWB Detail */}
+          {/* Rule 6: Service Suspension Notice */}
+          <div className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                  Automated Service Suspension Notices to Clients
+                </span>
+                {form.autoSendSuspensionNotice ? (
+                  <span className="rounded bg-red-100 px-1.5 py-0.2 text-[10px] font-bold text-red-800 dark:bg-red-900 dark:text-red-200">
+                    Auto-Send Active
+                  </span>
+                ) : (
+                  <span className="rounded bg-zinc-100 px-1.5 py-0.2 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                    Manual Review Only
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                When enabled, automatically emails formal service suspension
+                notice to defaulters (&ge; 10 days past due). Disable to require
+                manual approval in Suspension Center.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleToggle("autoSendSuspensionNotice")}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                form.autoSendSuspensionNotice
+                  ? "bg-red-600"
+                  : "bg-zinc-300 dark:bg-zinc-700"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                  form.autoSendSuspensionNotice
+                    ? "translate-x-5"
+                    : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Rule 7: Internal Team Suspension Alerts */}
+          <div className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                  Internal Team Suspension Alerts
+                </span>
+                {form.sendInternalSuspensionAlert && (
+                  <span className="rounded bg-blue-100 px-1.5 py-0.2 text-[10px] font-bold text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    Active
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                Notifies internal finance & operations team whenever a client
+                crosses into service suspension default status.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleToggle("sendInternalSuspensionAlert")}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                form.sendInternalSuspensionAlert
+                  ? "bg-blue-600"
+                  : "bg-zinc-300 dark:bg-zinc-700"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                  form.sendInternalSuspensionAlert
+                    ? "translate-x-5"
+                    : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Rule 8: Attach PDF / AWB Detail */}
           <div className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-xl">
               <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                Include AWB Breakdown
+                Include AWB Breakdown & Bank Coordinates
               </span>
-              {/* <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="mt-0.5 text-xs text-zinc-500">
                 Embeds shipment AWBs and company bank/UPI details in all
                 dispatched reminder templates.
-              </p> */}
+              </p>
             </div>
 
             <button
@@ -395,6 +479,10 @@ export default function NotificationSettingsForm({
               <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 Schedule & Operating Window
               </h3>
+              <p className="text-xs text-zinc-500">
+                Configure business hours and weekend handling for automated
+                communications.
+              </p>
             </div>
           </div>
         </div>
@@ -439,10 +527,10 @@ export default function NotificationSettingsForm({
                 </select>
               </div>
             </div>
-            {/* <p className="mt-1 text-[11px] text-zinc-400">
+            <p className="mt-1 text-[11px] text-zinc-400">
               Automated reminders will only be dispatched during these business
               hours.
-            </p> */}
+            </p>
           </div>
 
           <div className="flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-800/40">
@@ -527,7 +615,7 @@ export default function NotificationSettingsForm({
         </div>
       </div>
 
-      {/* SECTION 4: AUTOMATION EXECUTION & TEST SANDBOX */}
+      {/* SECTION 4: ON-DEMAND ACTIONS & TESTING */}
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mb-4 flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
           <div className="flex items-center gap-2.5">
@@ -536,22 +624,27 @@ export default function NotificationSettingsForm({
             </div>
             <div>
               <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                Manual Trigger and Test Email
+                Testing & On-Demand Actions
               </h3>
-              {/* <p className="text-xs text-zinc-500">
-                Manual trigger against schedule reminder and Send test email
-              </p> */}
+              <p className="text-xs text-zinc-500">
+                Evaluate reminder rules immediately or send a sample
+                verification email.
+              </p>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* Manual Run Card */}
+          {/* On-Demand Run Card */}
           <div className="flex flex-col justify-between rounded-xl border border-zinc-200 p-4 bg-zinc-50/50 dark:border-zinc-700 dark:bg-zinc-800/40">
             <div>
-              <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100"></h4>
+              <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                Evaluate & Dispatch Due Reminders Now
+              </h4>
               <p className="mt-1 text-xs text-zinc-500">
-                Run reminder emails immediately against notification schedule.
+                Instantly checks all active invoices against your configured
+                reminder rules and sends any due notifications without waiting
+                for the scheduled background run.
               </p>
             </div>
 
@@ -560,17 +653,17 @@ export default function NotificationSettingsForm({
                 type="button"
                 disabled={isRunningCron}
                 onClick={handleTriggerAutomation}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-purple-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-purple-700 disabled:opacity-50 transition"
               >
                 {isRunningCron ? (
                   <>
                     <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    <span>Evaluating Rules...</span>
+                    <span>Evaluating Invoices...</span>
                   </>
                 ) : (
                   <>
                     <Play size={13} />
-                    <span>Run Now</span>
+                    <span>Run Due Reminders Check</span>
                   </>
                 )}
               </button>
@@ -581,10 +674,11 @@ export default function NotificationSettingsForm({
           <div className="flex flex-col justify-between rounded-xl border border-zinc-200 p-4 bg-zinc-50/50 dark:border-zinc-700 dark:bg-zinc-800/40">
             <div>
               <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                Send Test Email
+                Send Sample Verification Email
               </h4>
               <p className="mt-1 text-xs text-zinc-500">
-                Verify mail dispatcher and brand headers with a sample email.
+                Send a sample email to verify SMTP mail server connectivity and
+                branding headers.
               </p>
             </div>
 
@@ -608,11 +702,11 @@ export default function NotificationSettingsForm({
           </div>
         </div>
 
-        {/* Cron Execution Report Preview */}
+        {/* Execution Report Preview */}
         {cronReport && (
           <div className="mt-4 rounded-xl border border-purple-200 bg-purple-50/60 p-4 text-xs dark:border-purple-900 dark:bg-purple-950/30">
             <h5 className="font-bold text-purple-900 dark:text-purple-200 mb-2">
-              Email Trigger Result:
+              Execution Summary:
             </h5>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="rounded-lg bg-white p-2 border border-purple-100 dark:bg-zinc-800 dark:border-zinc-700">
@@ -625,7 +719,7 @@ export default function NotificationSettingsForm({
               </div>
               <div className="rounded-lg bg-white p-2 border border-purple-100 dark:bg-zinc-800 dark:border-zinc-700">
                 <span className="text-[10px] text-zinc-400 block uppercase">
-                  Processed
+                  Notifications Sent
                 </span>
                 <span className="text-base font-bold text-emerald-600">
                   {cronReport.totals?.processed || 0}

@@ -96,6 +96,8 @@ export async function updateNotificationSettings(formData) {
       sendOverdueReminder: formData.sendOverdueReminder ?? true,
       overdueReminderDays: Number(formData.overdueReminderDays ?? 7),
       sendPaymentConfirmation: formData.sendPaymentConfirmation ?? true,
+      autoSendSuspensionNotice: formData.autoSendSuspensionNotice ?? false,
+      sendInternalSuspensionAlert: formData.sendInternalSuspensionAlert ?? true,
       sendInvoicePdf: formData.sendInvoicePdf ?? true,
       ccAccountsEmail: formData.ccAccountsEmail?.trim() || null,
       ccSalesEmail: formData.ccSalesEmail?.trim() || null,

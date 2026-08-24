@@ -87,7 +87,7 @@ async function getNotificationCandidates() {
       and(
         isNull(invoices.deletedAt),
         isNull(clients.deletedAt),
-        eq(clients.companyCode, "AMAZON"), // remove this hardcoded line eq to send notification to all
+        eq(clients.companyCode, "AMAZON"),
       ),
     )
 
