@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { Mail } from "lucide-react";
 import ImportResultDialog from "@/app/components/import/ImportResultDialog";
+import BulkPaymentNotificationModal from "./BulkPaymentNotificationModal";
 
 const PAYMENT_ERROR_COLUMNS = [
   {
@@ -30,6 +31,8 @@ export default function ImportPayments() {
 
   const [result, setResult] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [notifyModalOpen, setNotifyModalOpen] = useState(false);
+  const [importedPaymentIds, setImportedPaymentIds] = useState([]);
 
   const router = useRouter();
 
@@ -85,7 +88,6 @@ export default function ImportPayments() {
         });
 
         setDialogOpen(true);
-
         return;
       }
 
@@ -94,6 +96,11 @@ export default function ImportPayments() {
       // =====================================
 
       setResult(data);
+      if (data.insertedPaymentIds && data.insertedPaymentIds.length > 0) {
+        setImportedPaymentIds(data.insertedPaymentIds);
+      } else {
+        setImportedPaymentIds([]);
+      }
       setDialogOpen(true);
 
       // Refresh global payment list
@@ -139,10 +146,9 @@ export default function ImportPayments() {
 
   return (
     <>
-      <div className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white/80 px-2 shadow-sm backdrop-blur-md">
+      <div className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white/80 px-2 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900">
         {/* File Picker */}
-
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600 transition hover:text-zinc-800">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600 transition hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-100">
           <span>{file ? truncateFileName(file.name, 14) : "Choose file"}</span>
 
           <input
@@ -156,11 +162,9 @@ export default function ImportPayments() {
         </label>
 
         {/* Divider */}
-
-        <div className="h-4 w-px bg-zinc-200" />
+        <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
 
         {/* Import Button */}
-
         <button
           type="button"
           onClick={handleUpload}
@@ -173,6 +177,8 @@ export default function ImportPayments() {
             hover:text-zinc-900
             disabled:cursor-not-allowed
             disabled:opacity-50
+            dark:text-zinc-300
+            dark:hover:text-zinc-100
           "
         >
           {loading ? (
@@ -187,9 +193,8 @@ export default function ImportPayments() {
       </div>
 
       {/* ===================================== */}
-      {/* IMPORT RESULT */}
+      {/* IMPORT RESULT DIALOG */}
       {/* ===================================== */}
-
       <ImportResultDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -197,6 +202,35 @@ export default function ImportPayments() {
         result={result}
         errorFilename="Payment_Import_Errors.csv"
         errorColumns={PAYMENT_ERROR_COLUMNS}
+        actionButton={
+          result?.summary?.inserted > 0 ? (
+            <button
+              type="button"
+              onClick={() => {
+                setDialogOpen(false);
+                setNotifyModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700"
+            >
+              <Mail className="h-4 w-4" />
+              <span>
+                Send Payment Confirmation Emails ({result.summary.inserted})
+              </span>
+            </button>
+          ) : null
+        }
+      />
+
+      {/* ===================================== */}
+      {/* BULK NOTIFICATION MODAL */}
+      {/* ===================================== */}
+      <BulkPaymentNotificationModal
+        isOpen={notifyModalOpen}
+        onClose={() => {
+          setNotifyModalOpen(false);
+          setImportedPaymentIds([]);
+        }}
+        initialPaymentIds={importedPaymentIds}
       />
     </>
   );

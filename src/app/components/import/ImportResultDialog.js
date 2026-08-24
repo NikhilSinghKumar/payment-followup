@@ -21,6 +21,7 @@ export default function ImportResultDialog({
   // Configurable per import type
   errorFilename = "Import_Errors.csv",
   errorColumns,
+  actionButton,
 }) {
   if (!result) return null;
 
@@ -49,16 +50,18 @@ export default function ImportResultDialog({
         {/* Summary */}
         <ImportSummaryCard summary={summary} />
 
-        {/* Download Error Report */}
-        {errors.length > 0 && (
-          <div className="flex justify-end">
+        {/* Actions bar (Error download & Custom actions like Notify Clients) */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>{actionButton}</div>
+
+          {errors.length > 0 && (
             <DownloadErrorReport
               errors={errors}
               filename={errorFilename}
               columns={errorColumns}
             />
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Error Table */}
         <div className="overflow-x-auto [scrollbar-width:thin]">

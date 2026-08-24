@@ -55,6 +55,7 @@ export async function POST(req) {
 
     let inserted = 0;
     let skipped = 0;
+    const insertedPaymentIds = [];
 
     const total = records.length;
     const errors = [];
@@ -365,6 +366,10 @@ export async function POST(req) {
           await updateInvoiceFinancials(invoiceId);
         }
 
+        if (payment?.id) {
+          insertedPaymentIds.push(payment.id);
+        }
+
         inserted++;
       } catch (err) {
         console.error(`Payment Import Error (Row ${csvRow})`, err);
@@ -392,6 +397,8 @@ export async function POST(req) {
         skipped,
         total,
       },
+
+      insertedPaymentIds,
 
       errors,
     });

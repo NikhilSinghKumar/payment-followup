@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Mail } from "lucide-react";
 
 import {
   Dialog,
@@ -9,16 +10,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import BulkPaymentNotificationModal from "./BulkPaymentNotificationModal";
 
 export default function PaymentTable({ payments = [], hasFilter = false }) {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [selectedAllocations, setSelectedAllocations] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
 
+  // Single payment notify state
+  const [notifyModalOpen, setNotifyModalOpen] = useState(false);
+  const [targetPaymentId, setTargetPaymentId] = useState(null);
+
   function handleViewInvoices(payment) {
     setSelectedPayment(payment);
     setSelectedAllocations(payment.allocations || []);
     setInvoiceDialogOpen(true);
+  }
+
+  function handleNotifyPayment(paymentId) {
+    setTargetPaymentId(paymentId);
+    setNotifyModalOpen(true);
   }
 
   // =====================================
@@ -54,7 +65,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
           <table className="w-full min-w-[850px]">
             {/* Header */}
 
-            <thead className="border-b border-zinc-200 bg-zinc-50">
+            <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/60">
               <tr>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Client
@@ -72,10 +83,6 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                   Payment
                 </th>
 
-                {/* <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Allocated
-                </th> */}
-
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Credit
                 </th>
@@ -91,19 +98,23 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Reference
                 </th>
+
+                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Actions
+                </th>
               </tr>
             </thead>
 
             {/* Body */}
 
-            <tbody className="divide-y divide-zinc-100 bg-white">
+            <tbody className="divide-y divide-zinc-100 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
               {payments.map((payment) => {
                 const allocations = payment.allocations || [];
 
                 return (
                   <tr
                     key={payment.id}
-                    className="transition hover:bg-zinc-50/70"
+                    className="transition hover:bg-zinc-50/70 dark:hover:bg-zinc-800/50"
                   >
                     {/* Client */}
 
@@ -113,7 +124,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                           href={`/clients/${payment.client.id}`}
                           className="group"
                         >
-                          <p className="whitespace-nowrap text-sm font-medium truncate text-zinc-800 transition group-hover:text-blue-600">
+                          <p className="whitespace-nowrap text-sm font-medium truncate text-zinc-800 transition group-hover:text-blue-600 dark:text-zinc-200 dark:group-hover:text-blue-400">
                             {payment.client.companyName || "—"}
                           </p>
 
@@ -130,29 +141,23 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     {/* Payment Date */}
 
-                    <td className="whitespace-nowrap px-5 py-4 text-sm text-zinc-700">
+                    <td className="whitespace-nowrap px-5 py-4 text-sm text-zinc-700 dark:text-zinc-300">
                       {formatDate(payment.paymentDate)}
                     </td>
 
                     {/* Receipt */}
 
                     <td className="whitespace-nowrap px-5 py-4">
-                      <span className="text-sm font-medium text-zinc-800">
+                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                         {payment.receiptNumber || "—"}
                       </span>
                     </td>
 
                     {/* Payment Amount */}
 
-                    <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-emerald-600">
+                    <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                       {formatCurrency(payment.amount)}
                     </td>
-
-                    {/* Allocated */}
-
-                    {/* <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-medium text-zinc-700">
-                      {formatCurrency(payment.allocatedAmount)}
-                    </td> */}
 
                     {/* Unallocated */}
 
@@ -160,8 +165,8 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                       <span
                         className={`text-sm font-medium ${
                           Number(payment.unallocatedAmount || 0) > 0
-                            ? "text-orange-600"
-                            : "text-zinc-500"
+                            ? "text-orange-600 dark:text-orange-400"
+                            : "text-zinc-500 dark:text-zinc-400"
                         }`}
                       >
                         {formatCurrency(payment.unallocatedAmount)}
@@ -180,7 +185,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                     {/* Method */}
 
                     <td className="whitespace-nowrap px-5 py-4">
-                      <span className="text-sm capitalize text-zinc-700">
+                      <span className="text-sm capitalize text-zinc-700 dark:text-zinc-300">
                         {formatMethod(payment.method)}
                       </span>
                     </td>
@@ -189,11 +194,24 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     <td className="px-5 py-4">
                       <p
-                        className="max-w-[180px] truncate text-sm text-zinc-600"
+                        className="max-w-[180px] truncate text-sm text-zinc-600 dark:text-zinc-400"
                         title={payment.reference || ""}
                       >
                         {payment.reference || "—"}
                       </p>
+                    </td>
+
+                    {/* Action */}
+                    <td className="whitespace-nowrap px-5 py-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleNotifyPayment(payment.id)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 shadow-2xs transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-750"
+                        title="Send payment receipt email to client"
+                      >
+                        <Mail className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Send Email</span>
+                      </button>
                     </td>
                   </tr>
                 );
@@ -208,7 +226,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
       {/* ===================================== */}
 
       <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
-        <DialogContent className="max-w-lg bg-white text-zinc-900 shadow-2xl">
+        <DialogContent className="max-w-lg bg-white text-zinc-900 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
           <DialogHeader>
             <DialogTitle>Payment Allocations</DialogTitle>
           </DialogHeader>
@@ -217,11 +235,11 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
             {/* Payment summary */}
 
             {selectedPayment && (
-              <div className="mb-4 grid grid-cols-3 gap-3 rounded-xl bg-zinc-50 p-3">
+              <div className="mb-4 grid grid-cols-3 gap-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/60">
                 <div>
                   <p className="text-xs text-zinc-400">Payment</p>
 
-                  <p className="mt-1 text-sm font-semibold text-zinc-800">
+                  <p className="mt-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
                     {formatCurrency(selectedPayment.amount)}
                   </p>
                 </div>
@@ -229,7 +247,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                 <div>
                   <p className="text-xs text-zinc-400">Allocated</p>
 
-                  <p className="mt-1 text-sm font-semibold text-blue-600">
+                  <p className="mt-1 text-sm font-semibold text-blue-600 dark:text-blue-400">
                     {formatCurrency(selectedPayment.allocatedAmount)}
                   </p>
                 </div>
@@ -240,8 +258,8 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                   <p
                     className={`mt-1 text-sm font-semibold ${
                       Number(selectedPayment.unallocatedAmount || 0) > 0
-                        ? "text-orange-600"
-                        : "text-zinc-700"
+                        ? "text-orange-600 dark:text-orange-400"
+                        : "text-zinc-700 dark:text-zinc-300"
                     }`}
                   >
                     {formatCurrency(selectedPayment.unallocatedAmount)}
@@ -253,54 +271,49 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
             {/* Allocations */}
 
             {selectedAllocations.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-zinc-200 px-5 py-8 text-center">
-                <p className="text-sm font-medium text-zinc-600">
+              <div className="rounded-xl border border-dashed border-zinc-200 px-5 py-8 text-center dark:border-zinc-700">
+                <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
                   No invoice allocation
                 </p>
 
-                <p className="mt-1 text-sm text-zinc-400">
-                  This payment has not been allocated to an invoice yet.
+                <p className="mt-1 text-xs text-zinc-400">
+                  This payment is recorded as an unallocated advance/credit.
                 </p>
               </div>
             ) : (
-              <>
-                <p className="mb-3 text-sm text-zinc-500">
-                  This payment was allocated to {selectedAllocations.length}{" "}
-                  {selectedAllocations.length === 1 ? "invoice" : "invoices"}.
-                </p>
-
-                <div className="overflow-hidden rounded-xl border border-zinc-200">
-                  <div className="divide-y divide-zinc-100">
-                    {selectedAllocations.map((allocation) => (
-                      <Link
-                        key={allocation.id}
-                        href={`/invoices/${allocation.invoice?.id}`}
-                        className="
-                          flex items-center justify-between
-                          gap-4 px-4 py-3
-                          transition hover:bg-zinc-50
-                        "
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-zinc-800">
-                            {allocation.invoice?.invoiceNumber || "Invoice"}
-                          </p>
-                        </div>
-
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-blue-600">
-                            {formatCurrency(allocation.allocatedAmount)}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
+              <div className="space-y-2 max-h-[300px] overflow-y-auto [scrollbar-width:thin]">
+                {selectedAllocations.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50/50 p-2.5 text-xs dark:border-zinc-800 dark:bg-zinc-800/40"
+                  >
+                    <div>
+                      <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                        #{a.invoice?.invoiceNumber || a.invoiceId}
+                      </span>
+                    </div>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(a.allocatedAmount)}
+                    </span>
                   </div>
-                </div>
-              </>
+                ))}
+              </div>
             )}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ===================================== */}
+      {/* SINGLE PAYMENT NOTIFICATION MODAL */}
+      {/* ===================================== */}
+      <BulkPaymentNotificationModal
+        isOpen={notifyModalOpen}
+        onClose={() => {
+          setNotifyModalOpen(false);
+          setTargetPaymentId(null);
+        }}
+        initialPaymentIds={targetPaymentId ? [targetPaymentId] : []}
+      />
     </>
   );
 }
@@ -314,7 +327,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 function InvoiceAllocations({ allocations = [], onViewAll }) {
   if (allocations.length === 0) {
     return (
-      <span className="whitespace-nowrap text-sm text-orange-600">
+      <span className="whitespace-nowrap text-sm text-orange-600 dark:text-orange-400">
         Unallocated
       </span>
     );
@@ -327,7 +340,7 @@ function InvoiceAllocations({ allocations = [], onViewAll }) {
     <div className="flex items-center gap-2">
       <Link
         href={`/invoices/${first.invoice?.id}`}
-        className="inline-flex whitespace-nowrap rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
+        className="inline-flex whitespace-nowrap rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300"
       >
         {first.invoice?.invoiceNumber || "Invoice"}
       </Link>
@@ -336,9 +349,7 @@ function InvoiceAllocations({ allocations = [], onViewAll }) {
         <button
           type="button"
           onClick={onViewAll}
-          className="whitespace-nowrap text-xs font-medium
-            text-blue-600 hover:text-blue-700
-          "
+          className="whitespace-nowrap text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
         >
           +{remaining} more
         </button>
