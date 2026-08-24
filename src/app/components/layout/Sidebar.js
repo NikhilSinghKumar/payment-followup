@@ -26,10 +26,10 @@ export default function Sidebar({
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex h-full flex-col border-r border-slate-200/80 bg-white select-none transition-all duration-300 ease-in-out lg:static lg:h-screen lg:translate-x-0 ${
           mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
-        } ${collapsed ? "lg:w-16" : "w-64 sm:w-56 lg:w-52"} shrink-0`}
+        } ${collapsed ? "lg:w-16" : "w-64 sm:w-60 lg:w-56"} shrink-0`}
       >
         {/* Logo & Mobile Close */}
-        <div className="flex h-14 items-center justify-between border-b border-slate-200/80 px-4 lg:justify-center lg:px-3">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200/80 px-4 lg:justify-center lg:px-3">
           <Link
             href="/dashboard"
             onClick={onClose}
@@ -57,17 +57,17 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Navigation - scrollbar hidden */}
-        <div className="flex-1 overflow-y-auto px-2.5 py-3.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {/* Navigation with smooth, visible custom scrollbar */}
+        <div className="custom-scrollbar flex-1 overflow-y-auto px-2.5 py-3 pb-16">
           {SIDEBAR_NAVIGATION.map((section, index) => (
-            <div key={index} className="mb-3.5 last:mb-0">
+            <div key={index} className="mb-3 last:mb-0">
               {section.title && !collapsed && (
-                <h2 className="mb-1 px-2.5 text-[12px] font-semibold uppercase tracking-wider text-slate-400">
+                <h2 className="mb-1 px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   {section.title}
                 </h2>
               )}
 
-              <div className="space-y-0.5 mt-4">
+              <div className="space-y-0.5">
                 {section.items.map((item) => (
                   <SidebarItem
                     key={item.href}

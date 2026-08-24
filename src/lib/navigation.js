@@ -47,11 +47,11 @@ export const SIDEBAR_NAVIGATION = [
         icon: Megaphone,
       },
 
-      {
-        title: "Suspensions",
-        href: "/suspensions",
-        icon: ShieldAlert,
-      },
+      // {
+      //   title: "Suspensions",
+      //   href: "/suspensions",
+      //   icon: ShieldAlert,
+      // },
     ],
   },
 
