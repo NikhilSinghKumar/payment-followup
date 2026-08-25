@@ -9,12 +9,7 @@ export async function seedNotificationTemplates(): Promise<void> {
       name: "Bill Submitted",
       subject: "Invoice {{invoiceNumber}} Submitted",
       body: `
-Your invoice has been successfully submitted for your review and payment.
-
-Please review the invoice summary below and kindly arrange payment on or before the due date.
-
-If you have any questions or require any clarification regarding the invoice, please contact our Accounts Team.
-
+Please find the invoice details for your review and payment. If you require any clarification regarding the billing details, feel free to reach out to our Accounts Team.
 Thank you for your continued business.
 `,
       isDefault: true,
@@ -26,11 +21,9 @@ Thank you for your continued business.
       name: "Due Reminder",
       subject: "Gentle Payment Reminder - Invoice {{invoiceNumber}}",
       body: `
-This is a friendly reminder that payment for the invoice below is approaching its due date. We kindly request you to arrange payment before the due date to avoid any inconvenience.
-
+This is a friendly reminder that payment for the invoice below is approaching its due date. We kindly request you to arrange payment before the due date to avoid any inconvenience. Please ignore this email, if payment is already made.
 Thank you for your continued business. 
-
-If payment has already been made, please disregard this reminder.
+, .
 
 `,
       isDefault: true,
@@ -73,20 +66,12 @@ Thank you for your prompt attention.
       companyId: null,
       type: "OVERDUE_REMINDER",
       name: "Overdue Reminder",
-      subject: "Overdue Payment Reminder - Invoice {{invoiceNumber}}",
+      subject: "Overdue Payment Reminder- PAFEX",
       body: `
 
-This is a reminder that the invoice below is due today.
-
-Kindly arrange payment at your earliest convenience to avoid further reminders.
-
-We appreciate your prompt attention.
-
-If payment has already been made, please disregard this reminder.
-
-Thank you for your continued business.
-
-If you have any questions or require any assistance, please contact our accounts team.
+      Hope this email finds you well.
+      This is a gentle reminder regarding your account balance with PAFEX. Our records indicate that you have one or more invoices that are currently overdue. Please arrange for the settlement of these invoices at your earliest convenience to avoid any temporary service suspension.
+      Thank you for your prompt attention and continued partnership.
 `,
       isDefault: true,
       isActive: true,
@@ -96,14 +81,13 @@ If you have any questions or require any assistance, please contact our accounts
       companyId: null,
       type: "PAYMENT_RECEIVED",
       name: "Payment Received",
-      subject: "Payment Received - Invoice {{invoiceNumber}}",
+      subject: "Payment Received - PAFEX",
       body: `      
-Thank you for your payment.
+Thank you for your recent payment.
 
-We have successfully received your payment and updated our records.
-
-We sincerely appreciate your prompt payment and continued trust in our services.
-
+We have received your payment and settled it against the following invoice(s). We sincerely appreciate your prompt payment and continued trust in our services.
+If you have any concerns or discrepancies regarding this settlement, please raise them with the PAFEX Accounts Team within 48 hours of receiving this notice; otherwise, this allocation will be considered final and permanently recorded against your account.
+Thank you for your business and prompt cooperation.
 `,
       isDefault: true,
       isActive: true,
