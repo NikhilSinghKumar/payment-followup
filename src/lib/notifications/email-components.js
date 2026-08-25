@@ -369,7 +369,7 @@ line-height:1.6;
 color:#334155;
 ">
 
-Warm Regards,<br><br>
+Best Regards,<br><br>
 
 <strong>${senderCompany}</strong><br>
 

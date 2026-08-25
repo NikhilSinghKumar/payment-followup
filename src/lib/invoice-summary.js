@@ -12,7 +12,7 @@ export function enrichInvoice(invoice) {
 
     ...calculateInvoiceStatus({
       netPayable: invoice.netPayableAmount,
-      paid: invoice.paidAmount,
+      paid: invoice.paidAmount ?? invoice.paid ?? 0,
       dueDate: invoice.dueDate,
     }),
   };

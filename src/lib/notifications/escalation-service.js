@@ -11,6 +11,7 @@ import {
   invoiceEscalationStates,
   notificationLogs,
   clientContacts,
+  clientContactEmails,
   followups,
   followupInvoices,
 } from "@/db/schema";
@@ -142,7 +143,7 @@ export async function evaluateAndRunEscalations(companyId) {
 
     const now = new Date();
 
-    // 3. Fetch all active invoices for this company
+    // 3. Fetch all active clients with pending/overdue invoices for this company
     const allInvoices = await db
       .select({
         id: invoices.id,
@@ -155,13 +156,16 @@ export async function evaluateAndRunEscalations(companyId) {
         outstandingAmount: invoices.outstandingAmount,
         clientName: clients.companyName,
         clientEmail: clients.email,
-        clientPhone: clients.mobile,
+        clientPhone: clients.phone,
       })
       .from(invoices)
       .leftJoin(clients, eq(invoices.clientId, clients.id))
       .where(
         and(eq(invoices.companyId, companyId), isNull(invoices.deletedAt)),
       );
+
+    // Group invoices by client
+    const clientInvoicesMap = new Map();
 
     for (const inv of allInvoices) {
       summary.evaluated++;
@@ -195,69 +199,124 @@ export async function evaluateAndRunEscalations(companyId) {
         continue;
       }
 
-      // Check if overdue
-      if (!inv.dueDate) {
-        summary.skipped++;
-        continue;
-      }
+      if (!inv.clientId) continue;
 
-      const dueDateTime = new Date(inv.dueDate);
-      const diffMs = now.getTime() - dueDateTime.getTime();
-      const daysOverdue = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-      if (daysOverdue < 0) {
-        // Not overdue yet
-        summary.skipped++;
-        continue;
-      }
-
-      summary.totalOverdueInvoices++;
-
-      const currentTier = existingState?.currentTier || 0;
-
-      // Find next qualifying tier rule
-      const nextRule = rules.find(
-        (r) => r.tierLevel > currentTier && daysOverdue >= r.daysAfterDue,
-      );
-
-      if (!nextRule) {
-        summary.skipped++;
-        continue;
-      }
-
-      // We need to escalate to nextRule.tierLevel!
-      const targetEmails = await resolveEscalationRecipients(
-        companyId,
-        nextRule,
-        inv.clientId,
-      );
-
-      if (targetEmails.length === 0) {
-        summary.errors.push(
-          `Invoice ${inv.invoiceNumber}: No recipients found for Tier ${nextRule.tierLevel}`,
-        );
-      } else {
-        // Construct and send escalation email
-        const formattedAmount = new Intl.NumberFormat("en-IN", {
-          style: "currency",
-          currency: "INR",
-        }).format(outstanding);
-
-        const emailHtml = generateEscalationEmailHtml({
-          companyName: company?.companyName || "PAFEX Logistics",
-          invoiceNumber: inv.invoiceNumber,
+      let clientEntry = clientInvoicesMap.get(inv.clientId);
+      if (!clientEntry) {
+        clientEntry = {
+          clientId: inv.clientId,
           clientName: inv.clientName || "Valued Client",
           clientEmail: inv.clientEmail,
           clientPhone: inv.clientPhone,
-          dueDate: dueDateTime.toLocaleDateString("en-IN"),
-          daysOverdue,
-          outstandingAmount: formattedAmount,
-          tierLevel: nextRule.tierLevel,
-          tierDescription: nextRule.description,
-          invoiceId: inv.id,
+          invoices: [],
+          escalatableInvoices: [],
+        };
+        clientInvoicesMap.set(inv.clientId, clientEntry);
+      }
+
+      const dueDateTime = inv.dueDate ? new Date(inv.dueDate) : null;
+      let daysOverdue = 0;
+      let isOverdue = false;
+
+      if (dueDateTime) {
+        const todayDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+        );
+        const dueDateClean = new Date(
+          dueDateTime.getFullYear(),
+          dueDateTime.getMonth(),
+          dueDateTime.getDate(),
+        );
+        const diffMs = todayDate.getTime() - dueDateClean.getTime();
+        daysOverdue = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        isOverdue = daysOverdue > 0;
+      }
+
+      const invoiceItem = {
+        id: inv.id,
+        invoiceNumber: inv.invoiceNumber,
+        invoiceDate: inv.invoiceDate,
+        dueDate: inv.dueDate,
+        outstandingAmount: outstanding,
+        netPayableAmount: Number(inv.netPayableAmount || 0),
+        status: inv.status,
+        daysOverdue: Math.max(0, daysOverdue),
+        isOverdue,
+        existingState,
+      };
+
+      clientEntry.invoices.push(invoiceItem);
+
+      if (isOverdue) {
+        summary.totalOverdueInvoices++;
+        const currentTier = existingState?.currentTier || 0;
+        const nextRule = rules.find(
+          (r) => r.tierLevel > currentTier && daysOverdue >= r.daysAfterDue,
+        );
+
+        if (nextRule) {
+          invoiceItem.nextRule = nextRule;
+          clientEntry.escalatableInvoices.push(invoiceItem);
+        } else {
+          summary.skipped++;
+        }
+      } else {
+        summary.skipped++;
+      }
+    }
+
+    // Now process escalations per client, grouping by highest qualifying tier
+    for (const [clientId, clientEntry] of clientInvoicesMap.entries()) {
+      if (clientEntry.escalatableInvoices.length === 0) {
+        continue;
+      }
+
+      // Group escalatable invoices by tier rule
+      const tierGroups = new Map();
+      for (const inv of clientEntry.escalatableInvoices) {
+        const tier = inv.nextRule.tierLevel;
+        if (!tierGroups.has(tier)) {
+          tierGroups.set(tier, {
+            rule: inv.nextRule,
+            invoices: [],
+          });
+        }
+        tierGroups.get(tier).invoices.push(inv);
+      }
+
+      for (const [tierLevel, group] of tierGroups.entries()) {
+        const rule = group.rule;
+        const targetEmails = await resolveEscalationRecipients(companyId, rule);
+
+        if (targetEmails.length === 0) {
+          summary.errors.push(
+            `Client ${clientEntry.clientName}: No recipients found for Tier ${tierLevel}`,
+          );
+          continue;
+        }
+
+        const maxDaysOverdue = Math.max(
+          ...group.invoices.map((inv) => inv.daysOverdue),
+        );
+
+        const emailHtml = generateClientEscalationEmailHtml({
+          companyName: company?.companyName || "PAFEX Logistics",
+          clientName: clientEntry.clientName,
+          clientEmail: clientEntry.clientEmail,
+          clientPhone: clientEntry.clientPhone,
+          allClientInvoices: clientEntry.invoices,
+          escalatedInvoices: group.invoices,
+          tierLevel,
+          tierDescription: rule.description,
+          maxDaysOverdue,
         });
 
-        const subject = `[ESCALATION TIER ${nextRule.tierLevel}] Overdue Invoice ${inv.invoiceNumber} - ${inv.clientName} (${daysOverdue} Days Overdue)`;
+        const invoiceNumbersStr = group.invoices
+          .map((i) => i.invoiceNumber)
+          .join(", ");
+        const subject = `[ESCALATION TIER ${tierLevel}] Outstanding Invoices (${group.invoices.length} Overdue) - ${clientEntry.clientName}`;
 
         let isDelivered = false;
         let errorMessage = null;
@@ -274,11 +333,12 @@ export async function evaluateAndRunEscalations(companyId) {
           errorMessage = err?.message || "Email dispatch failed";
         }
 
-        // Log notification in notification_logs
+        // Log notification in notification_logs for the client and primary invoice
+        const primaryInvoice = group.invoices[0];
         await db.insert(notificationLogs).values({
           companyId,
-          clientId: inv.clientId,
-          invoiceId: inv.id,
+          clientId,
+          invoiceId: primaryInvoice?.id || null,
           channel: "EMAIL",
           recipient: targetEmails.join(", "),
           subject,
@@ -287,49 +347,51 @@ export async function evaluateAndRunEscalations(companyId) {
           sentAt: new Date(),
         });
 
-        // Determine if next tier exists
-        const subsequentRule = rules.find(
-          (r) => r.tierLevel > nextRule.tierLevel,
-        );
-        const nextDueAt = subsequentRule
-          ? new Date(
-              dueDateTime.getTime() +
-                subsequentRule.daysAfterDue * 24 * 60 * 60 * 1000,
-            )
-          : null;
+        // Update escalation states for each escalated invoice in this group
+        for (const inv of group.invoices) {
+          const subsequentRule = rules.find((r) => r.tierLevel > tierLevel);
+          const dueDateTime = inv.dueDate ? new Date(inv.dueDate) : now;
+          const nextDueAt = subsequentRule
+            ? new Date(
+                dueDateTime.getTime() +
+                  subsequentRule.daysAfterDue * 24 * 60 * 60 * 1000,
+              )
+            : null;
 
-        const newStatus = subsequentRule ? "PENDING" : "MAX_TIER_REACHED";
+          const newStatus = subsequentRule ? "PENDING" : "MAX_TIER_REACHED";
 
-        if (existingState) {
-          await db
-            .update(invoiceEscalationStates)
-            .set({
-              currentTier: nextRule.tierLevel,
+          if (inv.existingState) {
+            await db
+              .update(invoiceEscalationStates)
+              .set({
+                currentTier: tierLevel,
+                lastEscalatedAt: new Date(),
+                nextEscalationDueAt: nextDueAt,
+                status: newStatus,
+                notes: `Escalated to Tier ${tierLevel} (${inv.daysOverdue} days overdue). Grouped Client Notice. Recipients: ${targetEmails.join(", ")}`,
+                updatedAt: new Date(),
+              })
+              .where(eq(invoiceEscalationStates.id, inv.existingState.id));
+          } else {
+            await db.insert(invoiceEscalationStates).values({
+              invoiceId: inv.id,
+              companyId,
+              currentTier: tierLevel,
               lastEscalatedAt: new Date(),
               nextEscalationDueAt: nextDueAt,
               status: newStatus,
-              notes: `Escalated to Tier ${nextRule.tierLevel} (${daysOverdue} days overdue). Recipients: ${targetEmails.join(", ")}`,
-              updatedAt: new Date(),
-            })
-            .where(eq(invoiceEscalationStates.id, existingState.id));
-        } else {
-          await db.insert(invoiceEscalationStates).values({
-            invoiceId: inv.id,
-            companyId,
-            currentTier: nextRule.tierLevel,
-            lastEscalatedAt: new Date(),
-            nextEscalationDueAt: nextDueAt,
-            status: newStatus,
-            notes: `Escalated to Tier ${nextRule.tierLevel} (${daysOverdue} days overdue). Recipients: ${targetEmails.join(", ")}`,
-          });
+              notes: `Escalated to Tier ${tierLevel} (${inv.daysOverdue} days overdue). Grouped Client Notice. Recipients: ${targetEmails.join(", ")}`,
+            });
+          }
+
+          summary.escalated++;
         }
 
-        summary.escalated++;
         summary.details.push({
-          invoiceNumber: inv.invoiceNumber,
-          client: inv.clientName,
-          tier: nextRule.tierLevel,
-          daysOverdue,
+          client: clientEntry.clientName,
+          invoices: invoiceNumbersStr,
+          tier: tierLevel,
+          daysOverdue: maxDaysOverdue,
           recipients: targetEmails,
         });
       }
@@ -345,9 +407,9 @@ export async function evaluateAndRunEscalations(companyId) {
 }
 
 /**
- * Helper to resolve target user emails based on rule and role
+ * Helper to resolve target user emails based on rule and role (INTERNAL TEAM ONLY).
  */
-async function resolveEscalationRecipients(companyId, rule, clientId) {
+async function resolveEscalationRecipients(companyId, rule) {
   const emails = new Set();
 
   if (rule.customEmail) {
@@ -362,7 +424,13 @@ async function resolveEscalationRecipients(companyId, rule, clientId) {
     const [u] = await db
       .select({ email: users.email })
       .from(users)
-      .where(and(eq(users.id, rule.targetUserId), eq(users.isActive, true)))
+      .where(
+        and(
+          eq(users.id, rule.targetUserId),
+          eq(users.isActive, true),
+          isNull(users.deletedAt),
+        ),
+      )
       .limit(1);
 
     if (u?.email) emails.add(u.email);
@@ -373,6 +441,7 @@ async function resolveEscalationRecipients(companyId, rule, clientId) {
     const deptConditions = [
       eq(companyUsers.companyId, companyId),
       eq(companyUsers.departmentId, rule.targetDepartmentId),
+      eq(companyUsers.isActive, true),
       eq(users.isActive, true),
       isNull(users.deletedAt),
     ];
@@ -401,6 +470,7 @@ async function resolveEscalationRecipients(companyId, rule, clientId) {
         and(
           eq(companyUsers.companyId, companyId),
           eq(companyUsers.roleId, rule.targetRoleId),
+          eq(companyUsers.isActive, true),
           eq(users.isActive, true),
           isNull(users.deletedAt),
         ),
@@ -411,30 +481,299 @@ async function resolveEscalationRecipients(companyId, rule, clientId) {
     });
   }
 
-  // Also include client escalation contacts if configured
-  if (clientId) {
-    const escalationContacts = await db
-      .select({ email: clientContacts.email })
-      .from(clientContacts)
+  // Fallback to company admin/finance users or company email if no specific recipient resolved
+  if (emails.size === 0) {
+    // Attempt to resolve active company admin/finance users
+    const adminUsers = await db
+      .select({ email: users.email })
+      .from(companyUsers)
+      .innerJoin(users, eq(users.id, companyUsers.userId))
       .where(
         and(
-          eq(clientContacts.clientId, clientId),
-          eq(clientContacts.receivesEscalation, true),
-          eq(clientContacts.status, "active"),
-          isNull(clientContacts.deletedAt),
+          eq(companyUsers.companyId, companyId),
+          eq(companyUsers.isActive, true),
+          eq(users.isActive, true),
+          isNull(users.deletedAt),
         ),
-      );
+      )
+      .limit(5);
 
-    escalationContacts.forEach((c) => {
-      if (c.email) emails.add(c.email);
+    adminUsers.forEach((au) => {
+      if (au.email) emails.add(au.email);
     });
+
+    if (emails.size === 0) {
+      const [comp] = await db
+        .select({ email: companies.email })
+        .from(companies)
+        .where(eq(companies.id, companyId))
+        .limit(1);
+
+      if (comp?.email) {
+        emails.add(comp.email);
+      }
+    }
   }
 
   return Array.from(emails);
 }
 
 /**
- * Generates an internal HTML email for escalated overdue invoices.
+ * Generates an internal HTML email for a client's escalated overdue invoices with complete invoice list table.
+ */
+function generateClientEscalationEmailHtml({
+  companyName,
+  clientName,
+  clientEmail,
+  clientPhone,
+  allClientInvoices = [],
+  escalatedInvoices = [],
+  tierLevel,
+  tierDescription,
+  maxDaysOverdue,
+}) {
+  const tierColor =
+    tierLevel === 1 ? "#d97706" : tierLevel === 2 ? "#dc2626" : "#7f1d1d";
+  const tierBadge =
+    tierLevel === 1
+      ? "TIER 1 (COLLECTIONS & AR)"
+      : tierLevel === 2
+        ? "TIER 2 (MANAGEMENT ESCALATION)"
+        : "TIER 3 (EXECUTIVE CRITICAL ESCALATION)";
+
+  const formatCurrency = (val) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 2,
+    }).format(Number(val || 0));
+
+  const formatDate = (val) => {
+    if (!val) return "—";
+    const d = new Date(val);
+    return isNaN(d.getTime())
+      ? "—"
+      : d.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+  };
+
+  const totalOutstandingAll = allClientInvoices.reduce(
+    (sum, inv) => sum + Number(inv.outstandingAmount || 0),
+    0,
+  );
+  const totalOverdueAmount = allClientInvoices
+    .filter((inv) => inv.isOverdue)
+    .reduce((sum, inv) => sum + Number(inv.outstandingAmount || 0), 0);
+  const overdueCount = allClientInvoices.filter((inv) => inv.isOverdue).length;
+
+  const invoiceRows = allClientInvoices
+    .map((inv, idx) => {
+      const isEscalatedThisTier = escalatedInvoices.some(
+        (e) => e.id === inv.id,
+      );
+      const isPastDue = inv.isOverdue;
+      const rowBg = isEscalatedThisTier
+        ? "#FEF2F2"
+        : idx % 2 === 1
+          ? "#F8FAFC"
+          : "#FFFFFF";
+
+      let statusBadge = "";
+      if (isPastDue) {
+        statusBadge = `
+          <span style="background: #FEE2E2; color: #991B1B; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; display: inline-block; white-space: nowrap;">
+            ${inv.daysOverdue}d Overdue
+          </span>
+        `;
+      } else {
+        statusBadge = `
+          <span style="background: #DCFCE7; color: #166534; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap;">
+            Current / Due Soon
+          </span>
+        `;
+      }
+
+      return `
+        <tr style="background-color: ${rowBg}; border-bottom: 1px solid #E2E8F0;">
+          <td style="padding: 10px 12px; font-size: 13px; font-weight: 600; color: #0F172A; white-space: nowrap;">
+            ${inv.invoiceNumber}
+            ${
+              isEscalatedThisTier
+                ? `<span style="display: block; font-size: 10px; color: ${tierColor}; font-weight: 700; margin-top: 2px;">● Escalating (Tier ${tierLevel})</span>`
+                : ""
+            }
+          </td>
+          <td style="padding: 10px 10px; font-size: 12px; color: #475569; white-space: nowrap;">
+            ${formatDate(inv.invoiceDate)}
+          </td>
+          <td style="padding: 10px 10px; font-size: 12px; font-weight: 600; color: ${isPastDue ? "#DC2626" : "#334155"}; white-space: nowrap;">
+            ${formatDate(inv.dueDate)}
+          </td>
+          <td style="padding: 10px 10px; font-size: 12px; text-align: center; white-space: nowrap;">
+            ${statusBadge}
+          </td>
+          <td style="padding: 10px 10px; font-size: 13px; text-align: right; color: #475569; white-space: nowrap;">
+            ${formatCurrency(inv.netPayableAmount || inv.outstandingAmount)}
+          </td>
+          <td style="padding: 10px 12px; font-size: 13px; text-align: right; font-weight: 700; color: ${isPastDue ? "#DC2626" : "#0F172A"}; white-space: nowrap;">
+            ${formatCurrency(inv.outstandingAmount)}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <style>
+        @media only screen and (max-width: 600px) {
+          .email-card-container {
+            width: 100% !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            border-left: none !important;
+            border-right: none !important;
+          }
+          .email-card-body {
+            padding: 16px 12px !important;
+          }
+          .table-scroll-wrapper {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          .statement-table {
+            min-width: 580px !important;
+            width: 100% !important;
+          }
+          .scroll-hint {
+            display: block !important;
+          }
+        }
+      </style>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+      <div class="email-card-container" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 680px; width: 100%; margin: 16px auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+        <!-- Header Banner -->
+        <div style="background-color: ${tierColor}; padding: 18px 20px; color: #ffffff; border-top-left-radius: 11px; border-top-right-radius: 11px;">
+          <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.05em; background: rgba(255,255,255,0.25); padding: 3px 8px; border-radius: 4px; display: inline-block;">
+            ${tierBadge}
+          </span>
+          <h2 style="margin: 8px 0 0 0; font-size: 19px; font-weight: 700; color: #ffffff; line-height: 1.3;">
+            Client Dues Escalation: ${clientName}
+          </h2>
+          <p style="margin: 4px 0 0 0; font-size: 12px; color: rgba(255,255,255,0.9); line-height: 1.4;">
+            ${tierDescription || "Overdue payment threshold reached. Immediate action required by internal team."}
+          </p>
+        </div>
+
+        <div class="email-card-body" style="padding: 20px 18px;">
+          <p style="color: #334155; font-size: 14px; line-height: 1.5; margin-top: 0;">
+            Attention Team,
+          </p>
+          <p style="color: #334155; font-size: 13px; line-height: 1.6;">
+            This internal escalation notice has been triggered for <strong>${clientName}</strong>. 
+            There are <strong>${overdueCount} overdue invoice(s)</strong> totaling <strong style="color: ${tierColor};">${formatCurrency(totalOverdueAmount)}</strong> (Oldest is <span style="font-weight: 700;">${maxDaysOverdue} days overdue</span>).
+          </p>
+
+          <!-- Client Overview Box -->
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px 16px; margin: 16px 0;">
+            <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+              <tr>
+                <td style="color: #64748b; padding: 4px 0; width: 130px; font-size: 12px;">Client Name:</td>
+                <td style="font-weight: 700; color: #0f172a;">${clientName}</td>
+              </tr>
+              ${
+                clientPhone
+                  ? `<tr><td style="color: #64748b; padding: 4px 0; font-size: 12px;">Phone:</td><td style="color: #0f172a;">${clientPhone}</td></tr>`
+                  : ""
+              }
+              ${
+                clientEmail
+                  ? `<tr><td style="color: #64748b; padding: 4px 0; font-size: 12px;">Email:</td><td style="color: #0f172a; word-break: break-all;">${clientEmail}</td></tr>`
+                  : ""
+              }
+              <tr>
+                <td style="color: #64748b; padding: 4px 0; font-size: 12px;">Total Dues:</td>
+                <td style="font-size: 13px; font-weight: 800; color: #0F172A;">${formatCurrency(totalOutstandingAll)} (${allClientInvoices.length} Invoices)</td>
+              </tr>
+              <tr>
+                <td style="color: #64748b; padding: 4px 0; font-size: 12px;">Total Overdue:</td>
+                <td style="font-size: 14px; font-weight: 800; color: ${tierColor};">${formatCurrency(totalOverdueAmount)} (${overdueCount} Overdue)</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Invoices List Table Section -->
+          <div style="margin: 20px 0 10px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-size: 14px; font-weight: 700; color: #0F172A;">
+                Statement of Open & Overdue Invoices
+              </div>
+            </div>
+            
+            <!-- Mobile Horizontal Scroll Tip -->
+            <div class="scroll-hint" style="font-size: 11px; color: #64748b; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">
+              👉 <em>Swipe horizontally to view all columns</em>
+            </div>
+
+            <!-- Scrollable Table Wrapper -->
+            <div class="table-scroll-wrapper" style="width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #E2E8F0; border-radius: 8px;">
+              <table class="statement-table" style="width: 100%; min-width: 580px; font-size: 12px; border-collapse: collapse; background-color: #ffffff;">
+                <thead>
+                  <tr style="background: #F1F5F9; border-bottom: 1px solid #CBD5E1; color: #475569; font-weight: 700;">
+                    <th style="padding: 10px 12px; text-align: left; white-space: nowrap;">Invoice #</th>
+                    <th style="padding: 10px 10px; text-align: left; white-space: nowrap;">Date</th>
+                    <th style="padding: 10px 10px; text-align: left; white-space: nowrap;">Due Date</th>
+                    <th style="padding: 10px 10px; text-align: center; white-space: nowrap;">Aging Status</th>
+                    <th style="padding: 10px 10px; text-align: right; white-space: nowrap;">Total (₹)</th>
+                    <th style="padding: 10px 12px; text-align: right; white-space: nowrap;">Balance Due (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${invoiceRows}
+                </tbody>
+                <tfoot>
+                  <tr style="background: #F8FAFC; border-top: 2px solid #E2E8F0; font-weight: 700;">
+                    <td colspan="4" style="padding: 10px 12px; text-align: right; color: #0F172A; font-size: 13px;">
+                      Total Outstanding:
+                    </td>
+                    <td colspan="2" style="padding: 10px 12px; text-align: right; color: ${tierColor}; font-size: 14px; font-weight: 800; white-space: nowrap;">
+                      ${formatCurrency(totalOutstandingAll)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; text-align: center;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || ""}/invoices" style="display: inline-block; background-color: #2563eb; color: #ffffff; font-size: 13px; font-weight: 700; text-decoration: none; padding: 11px 22px; border-radius: 8px;">
+              Open Collections Dashboard & Record Follow-up
+            </a>
+          </div>
+        </div>
+
+        <div style="background-color: #f1f5f9; padding: 12px 20px; font-size: 11px; color: #64748b; text-align: center; border-top: 1px solid #e2e8f0; border-bottom-left-radius: 11px; border-bottom-right-radius: 11px;">
+          ${companyName} Automated Escalation & AR Recovery Engine
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Generates an internal HTML email for single invoice escalation (fallback).
  */
 function generateEscalationEmailHtml({
   companyName,
@@ -515,9 +854,13 @@ function generateEscalationEmailHtml({
           </table>
         </div>
 
-        <div style="margin-top: 20px; text-align: center;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || ""}/invoices/${invoiceId}" style="display: inline-block; background-color: #2563eb; color: #ffffff; font-size: 13px; font-weight: 700; text-decoration: none; padding: 10px 20px; border-radius: 8px;">
-            Open Invoice Details & Record Follow-up
+        <div style="margin-top: 24px; text-align: center;">
+          <a
+            href="#"
+            onclick="return false;"
+            style="display: inline-block; background-color: #9ca3af; color: #ffffff; font-size: 13px; font-weight: 700; text-decoration: none; padding: 11px 22px; border-radius: 8px; cursor: not-allowed;"
+          >
+            Open Collections Dashboard & Record Follow-up
           </a>
         </div>
       </div>
