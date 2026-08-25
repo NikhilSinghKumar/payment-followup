@@ -32,6 +32,7 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
       // Client
       clientId: clients.id,
       clientName: clients.companyName,
+      clientEmail: clients.email,
 
       // Invoice
       invoiceId: invoices.id,
@@ -94,51 +95,45 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
   });
 
   // =====================================
-  // FIND CONTACT
+  // RESOLVE RECIPIENT EMAIL (Tiered)
   // =====================================
 
-  const contacts = await db
-    .select({
-      contactId: clientContacts.id,
-    })
-    .from(clientContacts)
-    .where(
-      and(
-        eq(clientContacts.clientId, invoice.clientId),
-        eq(clientContacts.receivesInvoice, true),
-        eq(clientContacts.status, "active"),
-        isNull(clientContacts.deletedAt),
-      ),
-    )
-    .limit(1);
+  let recipientEmail = null;
+  try {
+    const contactEmails = await db
+      .select({
+        email: clientContactEmails.email,
+        isPrimary: clientContactEmails.isPrimary,
+        receivesInvoice: clientContacts.receivesInvoice,
+      })
+      .from(clientContacts)
+      .innerJoin(
+        clientContactEmails,
+        eq(clientContactEmails.contactId, clientContacts.id),
+      )
+      .where(
+        and(
+          eq(clientContacts.clientId, invoice.clientId),
+          isNull(clientContacts.deletedAt),
+          isNull(clientContactEmails.deletedAt),
+          eq(clientContactEmails.isActive, true),
+        ),
+      );
 
-  if (!contacts.length) {
-    return null;
+    if (contactEmails.length > 0) {
+      const invoiceContact = contactEmails.find((c) => c.receivesInvoice);
+      const primaryContact = contactEmails.find((c) => c.isPrimary);
+      recipientEmail =
+        invoiceContact?.email ||
+        primaryContact?.email ||
+        contactEmails[0]?.email;
+    }
+  } catch (err) {
+    console.warn(`[getInvoiceNotificationData - contact email]`, err.message);
   }
 
-  const contact = contacts[0];
-
-  // =====================================
-  // FIND EMAIL
-  // =====================================
-
-  const emails = await db
-    .select({
-      email: clientContactEmails.email,
-    })
-    .from(clientContactEmails)
-    .where(
-      and(
-        eq(clientContactEmails.contactId, contact.contactId),
-        eq(clientContactEmails.isPrimary, true),
-        eq(clientContactEmails.isActive, true),
-        isNull(clientContactEmails.deletedAt),
-      ),
-    )
-    .limit(1);
-
-  if (!emails.length) {
-    return null;
+  if (!recipientEmail && invoice.clientEmail) {
+    recipientEmail = invoice.clientEmail;
   }
 
   // =====================================
@@ -153,7 +148,7 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
     paymentId,
 
     // Recipient
-    email: emails[0].email,
+    email: recipientEmail,
 
     // Client
     clientName: invoice.clientName,
@@ -484,8 +479,235 @@ export async function getClientPaymentReminderData(clientId = null) {
   return Array.from(clientsMap.values());
 }
 
-const data = await getClientPaymentReminderData();
+/**
+ * Loads client & settlement details for a payment received event (single or multiple invoices)
+ */
+export async function getClientPaymentReceivedData({
+  clientId,
+  companyId,
+  paymentId = null,
+  paymentDetails = {},
+  settledInvoices = [], // Array of { invoiceId, settledAmount, invoiceNumber, etc. }
+}) {
+  // 1. Fetch Client info & primary email
+  let clientQuery;
+  try {
+    clientQuery = await db
+      .select({
+        clientId: clients.id,
+        clientName: clients.companyName,
+        companyId: clients.companyId,
+        email: clients.email,
+      })
+      .from(clients)
+      .where(eq(clients.id, clientId))
+      .limit(1);
+  } catch (err) {
+    throw new Error(
+      `[getClientPaymentReceivedData - Query 1 (client)] ${err.message}`,
+    );
+  }
 
-const testClient = data.find((client) => client.clientId === 488);
+  if (!clientQuery || !clientQuery.length) return null;
+  const client = clientQuery[0];
+  const activeCompanyId = companyId || client.companyId;
 
-console.dir(testClient, { depth: null });
+  // 2. Fetch Sender Company
+  let companyQuery;
+  try {
+    companyQuery = await db
+      .select({
+        senderCompany: companies.companyName,
+        senderEmail: companies.email,
+        senderPhone: companies.phone,
+        senderLogo: companies.logo,
+        address: companies.address,
+        city: companies.city,
+        state: companies.state,
+        pincode: companies.pincode,
+      })
+      .from(companies)
+      .where(eq(companies.id, activeCompanyId))
+      .limit(1);
+  } catch (err) {
+    throw new Error(
+      `[getClientPaymentReceivedData - Query 2 (company)] ${err.message}`,
+    );
+  }
+
+  const company = companyQuery[0] || {};
+
+  // 3. Fetch Client Contact Email (Tiered resolution: receivesInvoice -> isPrimary -> any contact email -> client.email)
+  let recipientEmail = null;
+  try {
+    const contactEmailQuery = await db
+      .select({
+        email: clientContactEmails.email,
+        isPrimary: clientContactEmails.isPrimary,
+        receivesInvoice: clientContacts.receivesInvoice,
+      })
+      .from(clientContacts)
+      .innerJoin(
+        clientContactEmails,
+        eq(clientContactEmails.contactId, clientContacts.id),
+      )
+      .where(
+        and(
+          eq(clientContacts.clientId, clientId),
+          isNull(clientContacts.deletedAt),
+          isNull(clientContactEmails.deletedAt),
+          eq(clientContactEmails.isActive, true),
+        ),
+      );
+
+    if (contactEmailQuery.length > 0) {
+      const invoiceContact = contactEmailQuery.find((c) => c.receivesInvoice);
+      const primaryContact = contactEmailQuery.find((c) => c.isPrimary);
+      recipientEmail =
+        invoiceContact?.email ||
+        primaryContact?.email ||
+        contactEmailQuery[0]?.email;
+    }
+  } catch (err) {
+    console.warn(
+      `[getClientPaymentReceivedData - Query 3 (contactEmail)]`,
+      err.message,
+    );
+  }
+
+  if (!recipientEmail && client.email) {
+    recipientEmail = client.email;
+  }
+
+  // 4. Resolve full invoice data if only IDs provided
+  let enrichedSettledInvoices = [];
+  if (Array.isArray(settledInvoices) && settledInvoices.length > 0) {
+    try {
+      enrichedSettledInvoices = await Promise.all(
+        settledInvoices.map(async (item) => {
+          if (item.invoiceNumber && item.invoiceAmount) {
+            return item;
+          }
+          const rows = await db
+            .select({
+              id: invoices.id,
+              invoiceNumber: invoices.invoiceNumber,
+              invoiceDate: invoices.invoiceDate,
+              dueDate: invoices.dueDate,
+              invoiceAmount: invoices.invoiceAmount,
+              netPayableAmount: invoices.netPayableAmount,
+            })
+            .from(invoices)
+            .where(eq(invoices.id, item.invoiceId))
+            .limit(1);
+          const inv = rows[0];
+
+          const totalAmount = Number(
+            inv?.netPayableAmount || inv?.invoiceAmount || 0,
+          );
+          const settledAmount = Number(item.settledAmount || item.amount || 0);
+          const remainingBalance =
+            item.remainingBalance !== undefined
+              ? Number(item.remainingBalance)
+              : Math.max(0, totalAmount - settledAmount);
+
+          return {
+            invoiceId: item.invoiceId,
+            invoiceNumber:
+              inv?.invoiceNumber ||
+              item.invoiceNumber ||
+              `INV-${item.invoiceId}`,
+            invoiceDate: inv?.invoiceDate || item.invoiceDate,
+            dueDate: inv?.dueDate || item.dueDate,
+            invoiceAmount: totalAmount,
+            settledAmount,
+            remainingBalance,
+          };
+        }),
+      );
+    } catch (err) {
+      throw new Error(
+        `[getClientPaymentReceivedData - Query 4 (invoices)] ${err.message}`,
+      );
+    }
+  }
+
+  // 5. Compute total current account outstanding
+  let allClientInvoices = [];
+  try {
+    allClientInvoices = await db
+      .select({
+        id: invoices.id,
+        netPayableAmount: invoices.netPayableAmount,
+        invoiceAmount: invoices.invoiceAmount,
+        paidAmount: sql`
+          COALESCE(
+            SUM(${paymentAllocations.allocatedAmount}),
+            0
+          )
+        `,
+      })
+      .from(invoices)
+      .leftJoin(
+        paymentAllocations,
+        and(
+          eq(paymentAllocations.invoiceId, invoices.id),
+          isNull(paymentAllocations.deletedAt),
+        ),
+      )
+      .where(
+        and(
+          eq(invoices.clientId, clientId),
+          eq(invoices.companyId, activeCompanyId),
+          eq(invoices.status, "ACTIVE"),
+        ),
+      )
+      .groupBy(invoices.id, invoices.netPayableAmount, invoices.invoiceAmount);
+  } catch (err) {
+    throw new Error(
+      `[getClientPaymentReceivedData - Query 5 (outstanding)] ${err.message}`,
+    );
+  }
+
+  let totalAccountOutstanding = 0;
+  for (const inv of allClientInvoices) {
+    const total = Number(inv.netPayableAmount || inv.invoiceAmount || 0);
+    const paid = Number(inv.paidAmount || 0);
+    const due = Math.max(0, total - paid);
+    totalAccountOutstanding += due;
+  }
+
+  const totalPaymentAmount =
+    paymentDetails.amount !== undefined
+      ? Number(paymentDetails.amount)
+      : enrichedSettledInvoices.reduce(
+          (sum, i) => sum + Number(i.settledAmount || 0),
+          0,
+        );
+
+  return {
+    companyId: activeCompanyId,
+    clientId,
+    paymentId,
+    email: recipientEmail,
+    clientName: client.clientName,
+
+    paymentAmount: totalPaymentAmount,
+    paymentDate: paymentDetails.paymentDate || new Date().toISOString(),
+    paymentMethod:
+      paymentDetails.paymentMethod ||
+      paymentDetails.method ||
+      "Bank Transfer / RTGS / NEFT",
+    referenceNumber:
+      paymentDetails.referenceNumber || paymentDetails.reference || "N/A",
+
+    settledInvoices: enrichedSettledInvoices,
+    totalAccountOutstanding,
+
+    senderCompany: company.senderCompany || "PAFEX Logistics",
+    senderEmail: company.senderEmail || "",
+    senderPhone: company.senderPhone || "",
+    senderLogo: company.senderLogo || "",
+    company,
+  };
+}

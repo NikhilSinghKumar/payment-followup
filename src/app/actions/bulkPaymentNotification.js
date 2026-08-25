@@ -331,7 +331,7 @@ export async function sendBulkPaymentConfirmationEmails({
       });
 
       // Build Subject
-      const defaultSubject = `Official Payment Acknowledgment & Receipt (₹${formattedTotal}) - ${clientName}`;
+      const defaultSubject = `Official Payment Acknowledgment & Receipt - PAFEX`;
       const emailSubject = subjectTemplate
         ? subjectTemplate
             .replace("{clientName}", clientName)
@@ -533,13 +533,13 @@ function renderBulkPaymentReceiptEmailHtml({
     </div>
 
     ${renderParagraph(
-      "Your account ledger has been updated accordingly. If you have any questions or require an updated consolidated statement of account, please feel free to reach out to our billing team.",
+      "Your account ledger has been updated accordingly. If you have any questions, pleae contact Pafex accounts team before 48 hours of this email, otherwise this settlement will be considered final.",
     )}
 
     ${renderBankDetails(company)}
 
     ${renderSignature({
-      senderCompany: company.companyName || "PAFEX Logistics",
+      senderCompany: company.companyName || "PAFEX",
       senderEmail: company.email || "",
       senderPhone: company.phone || "",
       senderLogo: company.logoUrl || "",

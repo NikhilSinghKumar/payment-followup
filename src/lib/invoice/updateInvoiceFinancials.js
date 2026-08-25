@@ -8,9 +8,13 @@ export async function updateInvoiceFinancials(invoiceId) {
   // GET INVOICE
   // =====================================
 
-  const invoice = await db.query.invoices.findFirst({
-    where: and(eq(invoices.id, invoiceId), isNull(invoices.deletedAt)),
-  });
+  const invoiceRows = await db
+    .select()
+    .from(invoices)
+    .where(and(eq(invoices.id, invoiceId), isNull(invoices.deletedAt)))
+    .limit(1);
+
+  const invoice = invoiceRows[0] || null;
 
   if (!invoice) {
     throw new Error("Invoice not found.");

@@ -5,6 +5,7 @@ import {
   renderStatusBanner,
   renderInvoiceSummary,
   renderClientOutstandingInvoices,
+  renderClientPaymentSettlementTable,
   renderAlertBox,
   renderButton,
   renderSignature,
@@ -89,28 +90,47 @@ export function renderEmail({ type, body, variables, actionUrl }) {
   }
 
   // ======================================================
-  // Client-level payment reminder
+  // Client-level payment reminder or payment received settlement
   // ======================================================
 
   const isClientPaymentReminder =
     type === NOTIFICATION_TYPES.DUE_REMINDER ||
     type === NOTIFICATION_TYPES.OVERDUE_REMINDER;
 
+  const isClientPaymentSettlement =
+    type === NOTIFICATION_TYPES.PAYMENT_RECEIVED &&
+    Array.isArray(variables.settledInvoices) &&
+    variables.settledInvoices.length > 0;
+
   // ======================================================
-  // Invoice Summary
+  // Invoice Summary / Breakdown
   // ======================================================
 
-  const invoiceSummary = isClientPaymentReminder
-    ? renderClientOutstandingInvoices(variables.invoices)
-    : renderInvoiceSummary({
-        invoiceNumber: variables.invoiceNumber,
-        invoiceDate: variables.invoiceDate,
-        dueDate: variables.dueDate,
-        invoiceAmount: variables.invoiceAmount,
-        paidAmount: variables.paidAmount,
-        outstandingAmount: variables.outstandingAmount,
-        showPaymentDetails: config.showPaymentDetails,
-      });
+  let invoiceSummary = "";
+  if (isClientPaymentSettlement) {
+    invoiceSummary = renderClientPaymentSettlementTable({
+      settledInvoices: variables.settledInvoices,
+      paymentInfo: {
+        amount: variables.paymentAmount,
+        paymentDate: variables.paymentDate,
+        method: variables.paymentMethod,
+        reference: variables.referenceNumber,
+      },
+      totalAccountOutstanding: variables.totalAccountOutstanding,
+    });
+  } else if (isClientPaymentReminder) {
+    invoiceSummary = renderClientOutstandingInvoices(variables.invoices);
+  } else {
+    invoiceSummary = renderInvoiceSummary({
+      invoiceNumber: variables.invoiceNumber,
+      invoiceDate: variables.invoiceDate,
+      dueDate: variables.dueDate,
+      invoiceAmount: variables.invoiceAmount,
+      paidAmount: variables.paidAmount,
+      outstandingAmount: variables.outstandingAmount,
+      showPaymentDetails: config.showPaymentDetails,
+    });
+  }
 
   // ======================================================
   // Content

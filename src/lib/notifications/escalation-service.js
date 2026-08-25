@@ -722,9 +722,9 @@ function generateClientEscalationEmailHtml({
             </div>
             
             <!-- Mobile Horizontal Scroll Tip -->
-            <div class="scroll-hint" style="font-size: 11px; color: #64748b; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">
-              👉 <em>Swipe horizontally to view all columns</em>
-            </div>
+            // <div class="scroll-hint" style="font-size: 11px; color: #64748b; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">
+            //   👉 <em>Swipe horizontally to view all columns</em>
+            // </div>
 
             <!-- Scrollable Table Wrapper -->
             <div class="table-scroll-wrapper" style="width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #E2E8F0; border-radius: 8px;">

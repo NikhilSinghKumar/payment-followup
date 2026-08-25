@@ -1,7 +1,9 @@
 import { DEFAULT_FROM } from "./email-constants";
 
 export function buildFromAddress() {
-  return `"${DEFAULT_FROM.name}" <${DEFAULT_FROM.email}>`;
+  const name = DEFAULT_FROM.name || "PAFEX Logistics";
+  const email = DEFAULT_FROM.email || "billing@pafex.in";
+  return `"${name}" <${email}>`;
 }
 
 export function normalizeRecipients(recipients) {

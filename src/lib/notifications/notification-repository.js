@@ -2,13 +2,30 @@ import { db } from "@/db";
 import { notifications } from "@/db/schema";
 import { and, desc, eq, isNotNull, isNull, lt } from "drizzle-orm";
 
+function sanitizeNotificationPayload(data) {
+  return {
+    companyId: data.companyId,
+    userId: data.userId || null,
+    clientId: data.clientId || null,
+    invoiceId: data.invoiceId || null,
+    paymentId: data.paymentId || null,
+    type: data.type,
+    priority: data.priority || "LOW",
+    title: data.title || "Notification",
+    message: data.message || "",
+    actionUrl: data.actionUrl || null,
+    icon: data.icon || null,
+    color: data.color || null,
+  };
+}
+
 /**
  * Create a notification
  */
 export async function createNotification(data) {
   const [notification] = await db
     .insert(notifications)
-    .values(data)
+    .values(sanitizeNotificationPayload(data))
     .returning();
 
   return notification;
@@ -18,54 +35,46 @@ export async function createNotification(data) {
  * Bulk create notifications
  */
 export async function createNotifications(data) {
-  return db.insert(notifications).values(data).returning();
+  if (!Array.isArray(data) || data.length === 0) return [];
+  const sanitized = data.map(sanitizeNotificationPayload);
+  return db.insert(notifications).values(sanitized).returning();
 }
 
 /**
  * Get notification by id
  */
 export async function getNotificationById(id) {
-  return db.query.notifications.findFirst({
-    where: eq(notifications.id, id),
+  const rows = await db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.id, id))
+    .limit(1);
 
-    with: {
-      client: true,
-      invoice: true,
-      payment: true,
-      user: true,
-    },
-  });
+  return rows[0] || null;
 }
 
 /**
  * Get user notifications
  */
 export async function getUserNotifications(userId) {
-  return db.query.notifications.findMany({
-    where: eq(notifications.userId, userId),
-
-    with: {
-      client: true,
-      invoice: true,
-      payment: true,
-    },
-
-    orderBy: desc(notifications.createdAt),
-  });
+  return db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt));
 }
 
 /**
  * Get unread notifications
  */
 export async function getUnreadNotifications(userId) {
-  return db.query.notifications.findMany({
-    where: and(
-      eq(notifications.userId, userId),
-      eq(notifications.isRead, false),
-    ),
-
-    orderBy: desc(notifications.createdAt),
-  });
+  return db
+    .select()
+    .from(notifications)
+    .where(
+      and(eq(notifications.userId, userId), eq(notifications.isRead, false)),
+    )
+    .orderBy(desc(notifications.createdAt));
 }
 
 /**
@@ -116,13 +125,16 @@ export async function archiveNotification(id) {
 }
 
 export async function getArchivedNotifications(userId) {
-  return db.query.notifications.findMany({
-    where: and(
-      eq(notifications.userId, userId),
-      isNotNull(notifications.archivedAt),
-    ),
-    orderBy: desc(notifications.createdAt),
-  });
+  return db
+    .select()
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        isNotNull(notifications.archivedAt),
+      ),
+    )
+    .orderBy(desc(notifications.createdAt));
 }
 
 /**

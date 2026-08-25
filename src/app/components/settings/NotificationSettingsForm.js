@@ -15,11 +15,17 @@ import {
   Building,
   Sparkles,
   HelpCircle,
+  Eye,
+  Smartphone,
+  Monitor,
+  X,
 } from "lucide-react";
 import {
   updateNotificationSettings,
   triggerManualSchedulerRun,
   testNotificationEmail,
+  previewPaymentReceivedEmailAction,
+  sendTestPaymentReceivedEmailAction,
 } from "@/app/actions/notificationSettings";
 
 export default function NotificationSettingsForm({
@@ -47,12 +53,21 @@ export default function NotificationSettingsForm({
   });
 
   const [testEmail, setTestEmail] = useState("");
+  const [paymentTestEmail, setPaymentTestEmail] = useState("");
   const [isSaving, startSaveTransition] = useTransition();
   const [isTesting, startTestTransition] = useTransition();
+  const [isTestingPayment, startPaymentTestTransition] = useTransition();
+  const [isPreviewing, startPreviewTransition] = useTransition();
   const [isRunningCron, startCronTransition] = useTransition();
 
   const [feedback, setFeedback] = useState(null);
   const [cronReport, setCronReport] = useState(null);
+
+  // Email Preview Modal States
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewSubject, setPreviewSubject] = useState("");
+  const [previewDevice, setPreviewDevice] = useState("desktop"); // 'desktop' or 'mobile'
 
   function handleToggle(key) {
     setForm((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -103,6 +118,43 @@ export default function NotificationSettingsForm({
     setFeedback(null);
     startTestTransition(async () => {
       const res = await testNotificationEmail(testEmail);
+      if (res.success) {
+        setFeedback({ type: "success", message: res.message });
+      } else {
+        setFeedback({ type: "error", message: res.error });
+      }
+    });
+  }
+
+  function handlePreviewPaymentReceived() {
+    setFeedback(null);
+    startPreviewTransition(async () => {
+      const res = await previewPaymentReceivedEmailAction();
+      if (res.success) {
+        setPreviewHtml(res.html);
+        setPreviewSubject(res.subject);
+        setPreviewModalOpen(true);
+      } else {
+        setFeedback({
+          type: "error",
+          message: res.error || "Failed to generate preview",
+        });
+      }
+    });
+  }
+
+  function handleSendPaymentTestEmail() {
+    if (!paymentTestEmail || !paymentTestEmail.includes("@")) {
+      setFeedback({
+        type: "error",
+        message: "Please enter a valid email address to send test.",
+      });
+      return;
+    }
+
+    setFeedback(null);
+    startPaymentTestTransition(async () => {
+      const res = await sendTestPaymentReceivedEmailAction(paymentTestEmail);
       if (res.success) {
         setFeedback({ type: "success", message: res.message });
       } else {
@@ -700,6 +752,64 @@ export default function NotificationSettingsForm({
               </button>
             </div>
           </div>
+
+          {/* Payment Received Email Preview & Live Test Card */}
+          <div className="sm:col-span-2 flex flex-col justify-between rounded-xl border border-blue-200 p-4 bg-blue-50/40 dark:border-blue-900/60 dark:bg-blue-950/20">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block rounded-full bg-blue-600/10 px-2 py-0.5 text-[11px] font-bold text-blue-700 dark:text-blue-300">
+                    New Feature
+                  </span>
+                  <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                    Client Payment Received Email (Multi-Invoice Settlement)
+                  </h4>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                <button
+                  type="button"
+                  disabled={isPreviewing}
+                  onClick={handlePreviewPaymentReceived}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-2xs hover:bg-blue-50 disabled:opacity-50 dark:border-blue-800 dark:bg-zinc-800 dark:text-blue-300"
+                >
+                  <Eye size={14} />
+                  <span>
+                    {isPreviewing
+                      ? "Loading Preview..."
+                      : "Interactive Preview"}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-3.5 pt-3 border-t border-blue-200/60 dark:border-blue-900/40 flex flex-col sm:flex-row items-center gap-2">
+              <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
+                Send Live Sample:
+              </span>
+              <input
+                type="email"
+                placeholder="Enter email to receive test payment acknowledgment..."
+                value={paymentTestEmail}
+                onChange={(e) => setPaymentTestEmail(e.target.value)}
+                className="h-8 flex-1 w-full rounded-lg border border-blue-200 bg-white px-3 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              />
+              <button
+                type="button"
+                disabled={isTestingPayment}
+                onClick={handleSendPaymentTestEmail}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap transition"
+              >
+                <Send size={13} />
+                <span>
+                  {isTestingPayment
+                    ? "Sending Test..."
+                    : "Send Test to My Email"}
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Execution Report Preview */}
@@ -758,6 +868,103 @@ export default function NotificationSettingsForm({
           )}
         </button>
       </div>
+
+      {/* INTERACTIVE EMAIL PREVIEW MODAL (DESKTOP & MOBILE VIEWER) */}
+      {previewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-6 animate-in fade-in duration-150">
+          <div className="flex flex-col h-[90vh] w-full max-w-4xl rounded-2xl bg-white shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-5 py-3.5 dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/60 dark:text-blue-300">
+                  <Mail size={16} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                    Payment Received Email Preview
+                  </h3>
+                  <p className="text-[11px] text-zinc-500">
+                    Subject:{" "}
+                    <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+                      {previewSubject}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 dark:border-zinc-700 dark:bg-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDevice("desktop")}
+                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                      previewDevice === "desktop"
+                        ? "bg-blue-600 text-white shadow-2xs"
+                        : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400"
+                    }`}
+                  >
+                    <Monitor size={13} />
+                    <span>Desktop</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDevice("mobile")}
+                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                      previewDevice === "mobile"
+                        ? "bg-blue-600 text-white shadow-2xs"
+                        : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400"
+                    }`}
+                  >
+                    <Smartphone size={13} />
+                    <span>Mobile View (375px)</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewModalOpen(false)}
+                  className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body / iframe */}
+            <div className="flex-1 bg-zinc-100 dark:bg-zinc-950 p-4 overflow-auto flex items-center justify-center">
+              <div
+                className={`transition-all duration-200 shadow-xl rounded-xl overflow-hidden bg-white ${
+                  previewDevice === "mobile"
+                    ? "w-[390px] h-[720px] max-h-full border-[8px] border-zinc-800 rounded-3xl"
+                    : "w-full h-full max-w-3xl"
+                }`}
+              >
+                <iframe
+                  title="Email HTML Preview"
+                  srcDoc={previewHtml}
+                  className="w-full h-full border-0"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between border-t border-zinc-200 bg-white px-5 py-3 dark:border-zinc-800 dark:bg-zinc-900 text-xs text-zinc-500">
+              <span>
+                💡 Tip: Switch to <strong>Mobile View</strong> to test
+                horizontal touch scrolling on the invoice settlement breakdown.
+              </span>
+              <button
+                type="button"
+                onClick={() => setPreviewModalOpen(false)}
+                className="rounded-lg bg-zinc-100 px-4 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

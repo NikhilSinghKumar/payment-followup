@@ -49,15 +49,27 @@ export async function POST(req) {
     }
 
     // 🔹 Insert payment
-    await db.insert(payments).values({
-      invoiceId,
-      amount,
-      method,
-      reference,
-      notes,
-    });
+    const [insertedPayment] = await db
+      .insert(payments)
+      .values({
+        invoiceId,
+        amount,
+        method,
+        reference,
+        notes,
+      })
+      .returning();
 
-    return Response.json({ success: true });
+    // 🔹 Trigger client-wise payment received notification asynchronously
+    try {
+      const { processPaymentEvents } =
+        await import("@/lib/notifications/event-services");
+      await processPaymentEvents(invoiceId, insertedPayment?.id);
+    } catch (notifErr) {
+      console.error("[Payment API] Notification error:", notifErr);
+    }
+
+    return Response.json({ success: true, payment: insertedPayment });
   } catch (err) {
     console.error(err);
     return Response.json({ error: "Failed to add payment" }, { status: 500 });

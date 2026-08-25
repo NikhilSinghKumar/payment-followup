@@ -6,22 +6,29 @@ import { and, eq } from "drizzle-orm";
  * Get all notification preferences for a user
  */
 export async function getUserPreferences(userId) {
-  return db.query.notificationPreferences.findMany({
-    where: eq(notificationPreferences.userId, userId),
-  });
+  return db
+    .select()
+    .from(notificationPreferences)
+    .where(eq(notificationPreferences.userId, userId));
 }
 
 /**
  * Get a specific preference
  */
 export async function getPreference(userId, type, channel) {
-  return db.query.notificationPreferences.findFirst({
-    where: and(
-      eq(notificationPreferences.userId, userId),
-      eq(notificationPreferences.type, type),
-      eq(notificationPreferences.channel, channel),
-    ),
-  });
+  const rows = await db
+    .select()
+    .from(notificationPreferences)
+    .where(
+      and(
+        eq(notificationPreferences.userId, userId),
+        eq(notificationPreferences.type, type),
+        eq(notificationPreferences.channel, channel),
+      ),
+    )
+    .limit(1);
+
+  return rows[0] || null;
 }
 
 /**

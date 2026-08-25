@@ -17,9 +17,10 @@ export function renderGreeting(clientName) {
  * ======================================================
  */
 export function renderParagraph(text) {
-  const paragraphs = text
+  if (!text) return "";
+  const paragraphs = String(text)
     .trim()
-    .split(/\n\s*\n/) // split on blank lines
+    .split(/\n\s*\n/) // split on blank lines into distinct paragraphs
     .map(
       (p) => `
         <p style="
@@ -27,7 +28,7 @@ export function renderParagraph(text) {
           line-height:1.7;
           color:#334155;
         ">
-          ${p.trim()}
+          ${p.trim().replace(/\n/g, "<br />")}
         </p>
       `,
     )
@@ -369,7 +370,7 @@ line-height:1.6;
 color:#334155;
 ">
 
-Best Regards,<br><br>
+Warm Regards,<br><br>
 
 <strong>${senderCompany}</strong><br>
 
@@ -576,7 +577,7 @@ export function renderClientOutstandingInvoices(invoices = []) {
 
 <div
   style="
-    margin-bottom:10px;
+    margin-bottom:8px;
     font-size:16px;
     font-weight:700;
     color:#0F172A;
@@ -585,6 +586,12 @@ export function renderClientOutstandingInvoices(invoices = []) {
   Outstanding Invoice Summary
 </div>
 
+<!-- Mobile Scroll Tip -->
+<div style="font-size: 11px; color: #64748b; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">
+  👉 <em>Swipe horizontally to view full table</em>
+</div>
+
+<div class="responsive-table-scroll" style="width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #E2E8F0; border-radius: 10px;">
 <table
   width="100%"
   cellpadding="0"
@@ -592,11 +599,9 @@ export function renderClientOutstandingInvoices(invoices = []) {
   border="0"
   style="
     width:100%;
-    border:1px solid #E2E8F0;
-    border-radius:10px;
-    border-collapse:separate;
-    border-spacing:0;
-    overflow:hidden;
+    min-width: 600px;
+    border-collapse:collapse;
+    background:#ffffff;
   "
 >
 
@@ -798,5 +803,144 @@ ${rows}
 </table>
 
 </div>
+</div>
 `;
+}
+
+/**
+ * ======================================================
+ * Client Payment Received Settlement Table (Multi/Single Invoices)
+ * Fully responsive with mobile horizontal scrolling support
+ * ======================================================
+ */
+export function renderClientPaymentSettlementTable({
+  settledInvoices = [],
+  paymentInfo = {},
+  totalAccountOutstanding = null,
+}) {
+  if (!Array.isArray(settledInvoices) || settledInvoices.length === 0) {
+    return "";
+  }
+
+  const formatCurrency = (val) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 2,
+    }).format(Number(val || 0));
+
+  const formatDate = (val) => {
+    if (!val) return "—";
+    const d = new Date(val);
+    return isNaN(d.getTime())
+      ? "—"
+      : d.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+  };
+
+  let totalInvoiceAmount = 0;
+  let totalSettledNow = 0;
+  let totalRemainingBalance = 0;
+
+  const rows = settledInvoices
+    .map((inv, idx) => {
+      const invTotal = Number(
+        inv.invoiceAmount || inv.totalAmount || inv.netPayableAmount || 0,
+      );
+      const settled = Number(
+        inv.settledAmount || inv.amountSettled || inv.paidAmount || 0,
+      );
+      const remaining = Math.max(
+        0,
+        Number(inv.remainingBalance ?? invTotal - settled),
+      );
+      const isFullySettled = remaining <= 0;
+
+      totalInvoiceAmount += invTotal;
+      totalSettledNow += settled;
+      totalRemainingBalance += remaining;
+
+      const rowBg = idx % 2 === 1 ? "#F8FAFC" : "#FFFFFF";
+
+      return `
+        <tr style="background-color: ${rowBg}; border-bottom: 1px solid #E2E8F0;">
+          <td style="padding: 10px 12px; font-size: 13px; font-weight: 700; color: #0F172A; white-space: nowrap;">
+            ${inv.invoiceNumber}
+          </td>
+          <td style="padding: 10px 10px; font-size: 12px; color: #475569; white-space: nowrap;">
+            ${formatDate(inv.invoiceDate)}
+          </td>
+          <td style="padding: 10px 10px; font-size: 13px; text-align: right; color: #334155; white-space: nowrap;">
+            ${formatCurrency(invTotal)}
+          </td>
+          <td style="padding: 10px 12px; font-size: 13px; text-align: right; font-weight: 700; color: #16A34A; white-space: nowrap;">
+            ${formatCurrency(settled)}
+          </td>
+          <td style="padding: 10px 12px; font-size: 13px; text-align: right; font-weight: 600; color: ${remaining > 0 ? "#DC2626" : "#64748B"}; white-space: nowrap;">
+            ${formatCurrency(remaining)}
+          </td>
+          <td style="padding: 10px 12px; font-size: 12px; text-align: center; white-space: nowrap;">
+            ${
+              isFullySettled
+                ? `<span style="background: #DCFCE7; color: #166534; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; display: inline-block;">Fully Settled</span>`
+                : `<span style="background: #FEF3C7; color: #92400E; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; display: inline-block;">Partially Settled</span>`
+            }
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  return `
+    <div style="margin: 20px 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div style="font-size: 15px; font-weight: 700; color: #0F172A;">
+          Settlement Breakdown Against Invoices
+        </div>
+      </div>
+
+      <!-- Mobile Scroll Tip -->
+      <div style="font-size: 11px; color: #64748b; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">
+        👉 <em>Swipe horizontally to view full settlement breakdown</em>
+      </div>
+
+      <div style="width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #E2E8F0; border-radius: 8px;">
+        <table style="width: 100%; min-width: 580px; font-size: 12px; border-collapse: collapse; background-color: #ffffff;">
+          <thead>
+            <tr style="background: #F1F5F9; border-bottom: 1px solid #CBD5E1; color: #475569; font-weight: 700;">
+              <th style="padding: 10px 12px; text-align: left; white-space: nowrap;">Invoice #</th>
+              <th style="padding: 10px 10px; text-align: left; white-space: nowrap;">Invoice Date</th>
+              <th style="padding: 10px 10px; text-align: right; white-space: nowrap;">Invoice Total (₹)</th>
+              <th style="padding: 10px 12px; text-align: right; white-space: nowrap; color: #16A34A;">Settled Now (₹)</th>
+              <th style="padding: 10px 12px; text-align: right; white-space: nowrap;">Remaining Due (₹)</th>
+              <th style="padding: 10px 12px; text-align: center; white-space: nowrap;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+          <tfoot>
+            <tr style="background: #F8FAFC; border-top: 2px solid #E2E8F0; font-weight: 700;">
+              <td colspan="2" style="padding: 11px 12px; text-align: right; color: #0F172A; font-size: 13px;">
+                Total Settled in This Batch:
+              </td>
+              <td style="padding: 11px 10px; text-align: right; color: #334155; font-size: 13px; white-space: nowrap;">
+                ${formatCurrency(totalInvoiceAmount)}
+              </td>
+              <td style="padding: 11px 12px; text-align: right; color: #16A34A; font-size: 14px; font-weight: 800; white-space: nowrap;">
+                ${formatCurrency(totalSettledNow)}
+              </td>
+              <td style="padding: 11px 12px; text-align: right; color: ${totalRemainingBalance > 0 ? "#DC2626" : "#0F172A"}; font-size: 13px; font-weight: 700; white-space: nowrap;">
+                ${formatCurrency(totalRemainingBalance)}
+              </td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  `;
 }

@@ -17,7 +17,10 @@ import { getCurrentUser } from "@/lib/auth/auth";
 import { enrichInvoices } from "@/lib/invoice-summary";
 import { calculateClientSummary } from "@/lib/client-summary";
 import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
-import { processPaymentEvents } from "@/lib/notifications/event-services";
+import {
+  processPaymentEvents,
+  processClientPaymentSettlementEvent,
+} from "@/lib/notifications/event-services";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -51,17 +54,21 @@ export async function getInvoicesForPayment(clientId) {
   // Verify client
   // ------------------------------------------------------
 
-  const client = await db.query.clients.findFirst({
-    where: and(
-      eq(clients.id, parsedClientId),
-      eq(clients.companyId, currentUser.companyId),
-      isNull(clients.deletedAt),
-    ),
+  const clientRows = await db
+    .select({
+      id: clients.id,
+    })
+    .from(clients)
+    .where(
+      and(
+        eq(clients.id, parsedClientId),
+        eq(clients.companyId, currentUser.companyId),
+        isNull(clients.deletedAt),
+      ),
+    )
+    .limit(1);
 
-    columns: {
-      id: true,
-    },
-  });
+  const client = clientRows[0] || null;
 
   if (!client) {
     throw new Error("Invalid client.");
@@ -240,17 +247,21 @@ export async function createPayment(formData) {
   // VERIFY CLIENT
   // ======================================================
 
-  const client = await db.query.clients.findFirst({
-    where: and(
-      eq(clients.id, clientId),
-      eq(clients.companyId, currentUser.companyId),
-      isNull(clients.deletedAt),
-    ),
+  const clientRows = await db
+    .select({
+      id: clients.id,
+    })
+    .from(clients)
+    .where(
+      and(
+        eq(clients.id, clientId),
+        eq(clients.companyId, currentUser.companyId),
+        isNull(clients.deletedAt),
+      ),
+    )
+    .limit(1);
 
-    columns: {
-      id: true,
-    },
-  });
+  const client = clientRows[0] || null;
 
   if (!client) {
     throw new Error("Invalid client.");
@@ -433,11 +444,35 @@ export async function createPayment(formData) {
 
   for (const allocation of allocations) {
     await updateInvoiceFinancials(allocation.invoiceId);
-    for (const allocation of allocations) {
-      await updateInvoiceFinancials(allocation.invoiceId);
+  }
 
-      await processPaymentEvents(allocation.invoiceId, paymentId);
+  // ======================================================
+  // TRIGGER MULTI-INVOICE SETTLEMENT NOTIFICATION
+  // ======================================================
+
+  try {
+    if (allocations.length > 0) {
+      await processClientPaymentSettlementEvent({
+        clientId,
+        companyId: currentUser.companyId,
+        paymentId,
+        paymentDetails: {
+          amount,
+          paymentDate,
+          method,
+          referenceNumber: reference,
+        },
+        settledInvoices: allocations.map((a) => ({
+          invoiceId: a.invoiceId,
+          settledAmount: a.allocatedAmount,
+        })),
+      });
     }
+  } catch (notifErr) {
+    console.error(
+      "[createPayment] Error triggering payment notification:",
+      notifErr,
+    );
   }
 
   // ======================================================
@@ -488,40 +523,78 @@ export async function getPayments(
     endDate = maybeEndDate || "";
   }
 
-  const rows = await db.query.payments.findMany({
-    where: and(
-      eq(payments.companyId, currentUser.companyId),
-      isNull(payments.deletedAt),
-      eq(payments.isVoided, false),
-    ),
-
-    with: {
+  // 1. Fetch payments with client info
+  const paymentRows = await db
+    .select({
+      id: payments.id,
+      companyId: payments.companyId,
+      clientId: payments.clientId,
+      invoiceId: payments.invoiceId,
+      amount: payments.amount,
+      paymentDate: payments.paymentDate,
+      receiptNumber: payments.receiptNumber,
+      method: payments.method,
+      reference: payments.reference,
+      notes: payments.notes,
+      isVoided: payments.isVoided,
+      createdAt: payments.createdAt,
+      updatedAt: payments.updatedAt,
       client: {
-        columns: {
-          id: true,
-          companyName: true,
-          companyCode: true,
-        },
+        id: clients.id,
+        companyName: clients.companyName,
+        companyCode: clients.companyCode,
       },
+    })
+    .from(payments)
+    .leftJoin(clients, eq(payments.clientId, clients.id))
+    .where(
+      and(
+        eq(payments.companyId, currentUser.companyId),
+        isNull(payments.deletedAt),
+        eq(payments.isVoided, false),
+      ),
+    )
+    .orderBy(desc(payments.paymentDate), desc(payments.id));
 
-      allocations: {
-        with: {
-          invoice: {
-            columns: {
-              id: true,
-              invoiceNumber: true,
-            },
-          },
-        },
+  if (paymentRows.length === 0) {
+    return [];
+  }
+
+  const paymentIds = paymentRows.map((p) => p.id);
+
+  // 2. Fetch allocations with invoice numbers
+  const allocationRows = await db
+    .select({
+      id: paymentAllocations.id,
+      paymentId: paymentAllocations.paymentId,
+      invoiceId: paymentAllocations.invoiceId,
+      allocatedAmount: paymentAllocations.allocatedAmount,
+      invoice: {
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
       },
-    },
+    })
+    .from(paymentAllocations)
+    .leftJoin(invoices, eq(paymentAllocations.invoiceId, invoices.id))
+    .where(
+      and(
+        inArray(paymentAllocations.paymentId, paymentIds),
+        isNull(paymentAllocations.deletedAt),
+      ),
+    );
 
-    orderBy: [desc(payments.paymentDate)],
-  });
+  const allocationsByPayment = new Map();
+  for (const alloc of allocationRows) {
+    if (!allocationsByPayment.has(alloc.paymentId)) {
+      allocationsByPayment.set(alloc.paymentId, []);
+    }
+    allocationsByPayment.get(alloc.paymentId).push(alloc);
+  }
 
-  let results = rows.map((payment) => {
+  let results = paymentRows.map((payment) => {
+    const allocations = allocationsByPayment.get(payment.id) || [];
     const allocatedAmount =
-      payment.allocations?.reduce(
+      allocations.reduce(
         (sum, allocation) => sum + Number(allocation.allocatedAmount || 0),
         0,
       ) ?? 0;
@@ -530,9 +603,8 @@ export async function getPayments(
 
     return {
       ...payment,
-
+      allocations,
       allocatedAmount,
-
       unallocatedAmount: Math.max(paymentAmount - allocatedAmount, 0),
     };
   });
@@ -602,17 +674,21 @@ export async function getPaymentsByClient(clientId) {
   // VERIFY CLIENT
   // ======================================================
 
-  const client = await db.query.clients.findFirst({
-    where: and(
-      eq(clients.id, parsedClientId),
-      eq(clients.companyId, currentUser.companyId),
-      isNull(clients.deletedAt),
-    ),
+  const clientRows = await db
+    .select({
+      id: clients.id,
+    })
+    .from(clients)
+    .where(
+      and(
+        eq(clients.id, parsedClientId),
+        eq(clients.companyId, currentUser.companyId),
+        isNull(clients.deletedAt),
+      ),
+    )
+    .limit(1);
 
-    columns: {
-      id: true,
-    },
-  });
+  const client = clientRows[0] || null;
 
   if (!client) {
     return [];
@@ -622,33 +698,71 @@ export async function getPaymentsByClient(clientId) {
   // GET PAYMENTS
   // ======================================================
 
-  const rows = await db.query.payments.findMany({
-    where: and(
-      eq(payments.companyId, currentUser.companyId),
-      eq(payments.clientId, parsedClientId),
-      isNull(payments.deletedAt),
-      eq(payments.isVoided, false),
-    ),
+  const paymentRows = await db
+    .select({
+      id: payments.id,
+      companyId: payments.companyId,
+      clientId: payments.clientId,
+      invoiceId: payments.invoiceId,
+      amount: payments.amount,
+      paymentDate: payments.paymentDate,
+      receiptNumber: payments.receiptNumber,
+      method: payments.method,
+      reference: payments.reference,
+      notes: payments.notes,
+      isVoided: payments.isVoided,
+      createdAt: payments.createdAt,
+      updatedAt: payments.updatedAt,
+    })
+    .from(payments)
+    .where(
+      and(
+        eq(payments.companyId, currentUser.companyId),
+        eq(payments.clientId, parsedClientId),
+        isNull(payments.deletedAt),
+        eq(payments.isVoided, false),
+      ),
+    )
+    .orderBy(desc(payments.paymentDate), desc(payments.id));
 
-    with: {
-      allocations: {
-        with: {
-          invoice: {
-            columns: {
-              id: true,
-              invoiceNumber: true,
-            },
-          },
-        },
+  if (paymentRows.length === 0) {
+    return [];
+  }
+
+  const paymentIds = paymentRows.map((p) => p.id);
+
+  const allocationRows = await db
+    .select({
+      id: paymentAllocations.id,
+      paymentId: paymentAllocations.paymentId,
+      invoiceId: paymentAllocations.invoiceId,
+      allocatedAmount: paymentAllocations.allocatedAmount,
+      invoice: {
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
       },
-    },
+    })
+    .from(paymentAllocations)
+    .leftJoin(invoices, eq(paymentAllocations.invoiceId, invoices.id))
+    .where(
+      and(
+        inArray(paymentAllocations.paymentId, paymentIds),
+        isNull(paymentAllocations.deletedAt),
+      ),
+    );
 
-    orderBy: [desc(payments.paymentDate)],
-  });
+  const allocationsByPayment = new Map();
+  for (const alloc of allocationRows) {
+    if (!allocationsByPayment.has(alloc.paymentId)) {
+      allocationsByPayment.set(alloc.paymentId, []);
+    }
+    allocationsByPayment.get(alloc.paymentId).push(alloc);
+  }
 
-  return rows.map((payment) => {
+  return paymentRows.map((payment) => {
+    const allocations = allocationsByPayment.get(payment.id) || [];
     const allocatedAmount =
-      payment.allocations?.reduce(
+      allocations.reduce(
         (sum, allocation) => sum + Number(allocation.allocatedAmount || 0),
         0,
       ) ?? 0;
@@ -657,9 +771,8 @@ export async function getPaymentsByClient(clientId) {
 
     return {
       ...payment,
-
+      allocations,
       allocatedAmount,
-
       unallocatedAmount: Math.max(paymentAmount - allocatedAmount, 0),
     };
   });

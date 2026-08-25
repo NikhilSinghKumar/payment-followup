@@ -2,30 +2,54 @@ import { db } from "@/db";
 import { notificationTemplates } from "@/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { replaceTemplateVariables } from "./notification-utils";
+import { DEFAULT_NOTIFICATION_TEMPLATES } from "./seed-notification-templates";
 
 /**
  * Get notification template
  *
  * First checks company template.
- * Falls back to default template.
+ * Falls back to default template in DB.
+ * Falls back to in-memory DEFAULT_NOTIFICATION_TEMPLATES.
  */
 export async function getTemplate(companyId, type) {
-  let template = await db.query.notificationTemplates.findFirst({
-    where: and(
-      eq(notificationTemplates.companyId, companyId),
-      eq(notificationTemplates.type, type),
-      eq(notificationTemplates.isActive, true),
-    ),
-  });
+  let template = null;
+  try {
+    if (companyId) {
+      const rows = await db
+        .select()
+        .from(notificationTemplates)
+        .where(
+          and(
+            eq(notificationTemplates.companyId, companyId),
+            eq(notificationTemplates.type, type),
+            eq(notificationTemplates.isActive, true),
+          ),
+        )
+        .limit(1);
+      template = rows[0] || null;
+    }
+
+    if (!template) {
+      const defaultRows = await db
+        .select()
+        .from(notificationTemplates)
+        .where(
+          and(
+            isNull(notificationTemplates.companyId),
+            eq(notificationTemplates.type, type),
+            eq(notificationTemplates.isActive, true),
+          ),
+        )
+        .limit(1);
+      template = defaultRows[0] || null;
+    }
+  } catch (err) {
+    console.warn(`[getTemplate] DB lookup error for ${type}:`, err.message);
+  }
 
   if (!template) {
-    template = await db.query.notificationTemplates.findFirst({
-      where: and(
-        isNull(notificationTemplates.companyId),
-        eq(notificationTemplates.type, type),
-        eq(notificationTemplates.isActive, true),
-      ),
-    });
+    template =
+      DEFAULT_NOTIFICATION_TEMPLATES.find((t) => t.type === type) || null;
   }
 
   return template;
@@ -98,9 +122,10 @@ export async function deactivateTemplate(id) {
  * Get all templates for company
  */
 export async function getCompanyTemplates(companyId) {
-  return db.query.notificationTemplates.findMany({
-    where: eq(notificationTemplates.companyId, companyId),
-  });
+  return db
+    .select()
+    .from(notificationTemplates)
+    .where(eq(notificationTemplates.companyId, companyId));
 }
 
 export function isDefaultTemplate(template) {

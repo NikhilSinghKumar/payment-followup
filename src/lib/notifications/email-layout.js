@@ -32,12 +32,40 @@ export function renderEmailLayout({
 
 <title>${title}</title>
 
+<style type="text/css">
+  @media only screen and (max-width: 600px) {
+    body {
+      padding: 8px 4px !important;
+    }
+    .email-container-table {
+      width: 100% !important;
+      max-width: 100% !important;
+      border-radius: 6px !important;
+    }
+    .email-content-cell {
+      padding: 16px 12px !important;
+    }
+    .email-header-cell {
+      padding: 20px 16px !important;
+    }
+    .email-footer-cell {
+      padding: 14px 16px !important;
+    }
+    .responsive-table-scroll {
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      display: block !important;
+    }
+  }
+</style>
 </head>
 
 <body
   style="
     margin:0;
-    padding:28px 28px 0;
+    padding:20px 12px;
     background:#F3F6FB;
     font-family:Arial,Helvetica,sans-serif;
   "
@@ -55,14 +83,16 @@ export function renderEmailLayout({
 <td align="center">
 
 <table
+  class="email-container-table"
   width="600"
   cellpadding="0"
   cellspacing="0"
   border="0"
   style="
+    width: 100%;
+    max-width: 600px;
     background:#ffffff;
     border-radius:12px;
-    overflow:hidden;
     box-shadow:0 4px 20px rgba(0,0,0,.08);
   "
 >
@@ -74,9 +104,10 @@ export function renderEmailLayout({
 <tr>
 
 <td
+  class="email-header-cell"
   style="
     background:${bannerColor};
-    padding:30px;
+    padding:24px 28px;
     color:#ffffff;
   "
 >
@@ -89,7 +120,7 @@ export function renderEmailLayout({
 
 ${`<div
   style="
-  font-size:28px;
+  font-size:26px;
   font-weight:bold;
   "
   >
@@ -113,8 +144,9 @@ ${`<div
 <tr>
 
 <td
+  class="email-content-cell"
   style="
-    padding:28px 28px;
+    padding:24px 24px;
     color:#334155;
     font-size:15px;
     line-height:1.5;
@@ -134,8 +166,9 @@ ${content}
 <tr>
 
 <td
+  class="email-footer-cell"
   style="
-    padding:18px 28px;
+    padding:18px 24px;
     background:#F8FAFC;
     border-top:1px solid #E2E8F0;
   "

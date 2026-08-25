@@ -148,6 +148,17 @@ export const paymentReceived = (data) =>
     data,
   );
 
+/**
+ * Sends client-wise payment received acknowledgment email with multi/single invoice settlement table
+ */
+export const notifyClientPaymentReceived = async (clientPaymentData) => {
+  return sendNotification(
+    NOTIFICATION_TYPES.PAYMENT_RECEIVED,
+    TEMPLATE_TYPES.PAYMENT_RECEIVED,
+    clientPaymentData,
+  );
+};
+
 export const paymentCleared = (data) =>
   sendNotification(
     NOTIFICATION_TYPES.PAYMENT_CLEARED,
@@ -249,17 +260,12 @@ export async function processNotification(
 
   const log = await createLog({
     companyId: data.companyId,
-
-    clientId: data.clientId,
-
-    invoiceId: data.invoiceId,
-
-    paymentId: data.paymentId,
-
+    clientId: data.clientId || null,
+    invoiceId: data.invoiceId || null,
+    paymentId: data.paymentId || null,
     channel: DELIVERY_CHANNELS.EMAIL,
-
+    emailType: templateType || null,
     recipient: data.email,
-
     subject: emailContent.subject,
   });
 
@@ -283,15 +289,25 @@ export async function processNotification(
       html,
     });
 
-    await updateStatus(log.id, NOTIFICATION_STATUS.SENT, {
-      sentAt: new Date(),
-      provider: EMAIL_PROVIDER.SMTP,
-      providerMessageId: result.messageId,
-    });
+    if (log?.id) {
+      await updateStatus(log.id, NOTIFICATION_STATUS.SENT, {
+        sentAt: new Date(),
+        provider: EMAIL_PROVIDER.SMTP,
+        providerMessageId: result?.messageId || "sent",
+      });
+    }
   } catch (error) {
-    await markFailed(log.id, error.message);
-
-    throw error;
+    console.error("[processNotification] sendEmail failed:", error);
+    if (log?.id) {
+      await markFailed(log.id, error.message);
+    }
+    return {
+      success: false,
+      notification: savedNotification,
+      emailSent: false,
+      error: error.message,
+      logId: log?.id,
+    };
   }
 
   // ------------------------------------------

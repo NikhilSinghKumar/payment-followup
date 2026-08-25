@@ -23,6 +23,7 @@ export default function PaymentForm({ clients = [] }) {
   const [invoices, setInvoices] = useState([]);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const [values, setValues] = useState({
@@ -171,18 +172,48 @@ export default function PaymentForm({ clients = [] }) {
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
+          <Link
+            href="/payments"
+            className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-2xs transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            title="Back to Payments"
+          >
+            <ArrowLeft size={15} />
+          </Link>
           <div>
             <h1 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
               New Payment
             </h1>
           </div>
         </div>
+
+        {selectedClient && (
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+            <Building2 size={13} />
+            <span className="max-w-[200px] truncate">
+              {selectedClient.companyName}
+            </span>
+            {selectedClient.companyCode && (
+              <span className="opacity-75">({selectedClient.companyCode})</span>
+            )}
+          </span>
+        )}
       </div>
+
+      {errorMessage && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+          {errorMessage}
+        </div>
+      )}
 
       <form
         action={(formData) => {
+          setErrorMessage("");
           startTransition(async () => {
-            await createPayment(formData);
+            try {
+              await createPayment(formData);
+            } catch (err) {
+              setErrorMessage(err.message || "Failed to create payment.");
+            }
           });
         }}
         className="space-y-2.5"
@@ -376,6 +407,10 @@ export default function PaymentForm({ clients = [] }) {
           {/* Card Header */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50/80 px-3.5 py-2 dark:border-zinc-800 dark:bg-zinc-800/50">
             <div className="flex items-center gap-2">
+              <FileText
+                size={14}
+                className="text-zinc-500 dark:text-zinc-400"
+              />
               <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-200">
                 Outstanding Invoices to Settle
               </h2>
@@ -524,6 +559,20 @@ export default function PaymentForm({ clients = [] }) {
                           "en-IN",
                         )}
                       </div>
+                    </div>
+
+                    {/* Allocation Status Badge */}
+                    <div className="w-[130px] shrink-0 text-right">
+                      {isSelected ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                          <Check size={11} />
+                          Settling: ₹{currentAllocation.toLocaleString("en-IN")}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-zinc-400 font-normal">
+                          Click to settle
+                        </span>
+                      )}
                     </div>
                   </div>
                 );

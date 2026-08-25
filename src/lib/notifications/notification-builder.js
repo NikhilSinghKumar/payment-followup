@@ -104,11 +104,30 @@ function buildOverdueReminder(data) {
 }
 
 function buildPaymentReceived(data) {
+  const isMultiInvoice =
+    Array.isArray(data.settledInvoices) && data.settledInvoices.length > 0;
+  const description = isMultiInvoice
+    ? `Payment of ₹${data.paymentAmount} received from ${data.clientName || "Client"} and settled against ${data.settledInvoices.length} invoice(s).`
+    : `Payment of ₹${data.paymentAmount} received against invoice ${data.invoiceNumber || ""}.`;
+
+  const variables = isMultiInvoice
+    ? {
+        ...buildClientVariables(data),
+        paymentAmount: Number(data.paymentAmount || 0),
+        paymentDate: data.paymentDate || new Date().toISOString(),
+        paymentMethod: data.paymentMethod || data.method || "Bank Transfer",
+        referenceNumber: data.referenceNumber || data.reference || "N/A",
+        settledInvoices: data.settledInvoices,
+        totalAccountOutstanding: data.totalAccountOutstanding,
+        company: data.company,
+      }
+    : buildInvoiceVariables(data);
+
   return buildBaseNotification(
     NOTIFICATION_TYPES.PAYMENT_RECEIVED,
     data,
-    `Payment of ₹${data.paymentAmount} received against invoice ${data.invoiceNumber}.`,
-    buildInvoiceVariables(data),
+    description,
+    variables,
   );
 }
 
