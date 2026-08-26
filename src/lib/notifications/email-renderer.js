@@ -146,7 +146,7 @@ export function renderEmail({ type, body, variables, actionUrl }) {
     })}
 
     ${renderParagraph(body)}
-
+    ${variables.customNote ? renderCustomNote(variables.customNote, config.color) : ""}
     ${invoiceSummary}
 
     ${

@@ -14,16 +14,8 @@ import {
 import { and, eq, inArray, isNull, sql, desc } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
 import { sendEmail } from "@/lib/email";
-import { renderEmailLayout } from "@/lib/notifications/email-layout";
-import {
-  renderGreeting,
-  renderParagraph,
-  renderStatusBanner,
-  renderAlertBox,
-  renderBankDetails,
-  renderSignature,
-  renderCustomNote,
-} from "@/lib/notifications/email-components";
+import { renderEmail } from "@/lib/notifications/email-renderer";
+import { NOTIFICATION_TYPES } from "@/lib/notifications/notification-types";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -308,7 +300,11 @@ export async function sendBulkPaymentConfirmationEmails({
                 columns: {
                   id: true,
                   invoiceNumber: true,
+                  invoiceDate: true,
+                  dueDate: true,
+                  invoiceAmount: true,
                   netPayableAmount: true,
+                  paidAmount: true,
                   outstandingAmount: true,
                   status: true,
                 },
@@ -316,7 +312,7 @@ export async function sendBulkPaymentConfirmationEmails({
             },
           },
         },
-        orderBy: [desc(payments.paymentDate)],
+        orderBy: [desc(payments.paymentDate), desc(payments.createdAt)],
       });
 
       if (!clientPayments.length) continue;
@@ -330,8 +326,118 @@ export async function sendBulkPaymentConfirmationEmails({
         minimumFractionDigits: 2,
       });
 
-      // Build Subject
-      const defaultSubject = `Official Payment Acknowledgment & Receipt - PAFEX`;
+      // Aggregate settled invoices across payments
+      const settledInvoicesMap = new Map();
+
+      for (const payment of clientPayments) {
+        for (const alloc of payment.allocations || []) {
+          const inv = alloc.invoice;
+          if (!inv) continue;
+          const invId = inv.id;
+          const allocated = Number(alloc.allocatedAmount || 0);
+          const totalAmount = Number(
+            inv.netPayableAmount || inv.invoiceAmount || 0,
+          );
+
+          if (settledInvoicesMap.has(invId)) {
+            const existing = settledInvoicesMap.get(invId);
+            existing.settledAmount += allocated;
+            existing.remainingBalance = Math.max(
+              0,
+              existing.remainingBalance - allocated,
+            );
+          } else {
+            const remainingBalance = Number(
+              inv.outstandingAmount !== null &&
+                inv.outstandingAmount !== undefined
+                ? inv.outstandingAmount
+                : Math.max(0, totalAmount - Number(inv.paidAmount || 0)),
+            );
+
+            settledInvoicesMap.set(invId, {
+              invoiceId: inv.id,
+              invoiceNumber: inv.invoiceNumber || `INV-${inv.id}`,
+              invoiceDate: inv.invoiceDate,
+              dueDate: inv.dueDate,
+              invoiceAmount: totalAmount,
+              settledAmount: allocated,
+              remainingBalance,
+            });
+          }
+        }
+      }
+
+      const settledInvoices = Array.from(settledInvoicesMap.values());
+
+      // Query current total account outstanding
+      let totalAccountOutstanding = 0;
+      try {
+        const clientInvoices = await db
+          .select({
+            id: invoices.id,
+            netPayableAmount: invoices.netPayableAmount,
+            invoiceAmount: invoices.invoiceAmount,
+            paidAmount: sql`
+              COALESCE(
+                SUM(${paymentAllocations.allocatedAmount}),
+                0
+              )
+            `,
+          })
+          .from(invoices)
+          .leftJoin(
+            paymentAllocations,
+            and(
+              eq(paymentAllocations.invoiceId, invoices.id),
+              isNull(paymentAllocations.deletedAt),
+            ),
+          )
+          .where(
+            and(
+              eq(invoices.clientId, clientId),
+              eq(invoices.companyId, companyId),
+              isNull(invoices.deletedAt),
+              sql`${invoices.status} != 'cancelled'`,
+            ),
+          )
+          .groupBy(
+            invoices.id,
+            invoices.netPayableAmount,
+            invoices.invoiceAmount,
+          );
+
+        for (const inv of clientInvoices) {
+          const total = Number(inv.netPayableAmount || inv.invoiceAmount || 0);
+          const paid = Number(inv.paidAmount || 0);
+          totalAccountOutstanding += Math.max(0, total - paid);
+        }
+      } catch (err) {
+        console.warn(
+          "Error calculating totalAccountOutstanding for bulk receipt:",
+          err,
+        );
+      }
+
+      // Collect payment details
+      const uniqueMethods = Array.from(
+        new Set(clientPayments.map((p) => p.method).filter(Boolean)),
+      );
+      const paymentMethod =
+        uniqueMethods.length > 0
+          ? uniqueMethods.join(", ")
+          : "Bank Transfer / RTGS / NEFT";
+
+      const uniqueRefs = Array.from(
+        new Set(clientPayments.map((p) => p.reference).filter(Boolean)),
+      );
+      const referenceNumber =
+        uniqueRefs.length > 0 ? uniqueRefs.join(", ") : "N/A";
+
+      const latestPaymentDate =
+        clientPayments[0]?.paymentDate || new Date().toISOString();
+
+      // Subject
+      const defaultSubject = `Payment Received - ${senderCompany}`;
       const emailSubject = subjectTemplate
         ? subjectTemplate
             .replace("{clientName}", clientName)
@@ -339,13 +445,39 @@ export async function sendBulkPaymentConfirmationEmails({
             .replace("{count}", String(clientPayments.length))
         : defaultSubject;
 
-      // Render HTML Email
-      const emailHtml = renderBulkPaymentReceiptEmailHtml({
-        clientName,
-        payments: clientPayments,
-        company: company || {},
-        totalAmount: totalBatchAmount,
-        customNote: customNote || customMessage,
+      // Body text matching the manual payment standard template
+      const defaultBody =
+        settledInvoices.length > 0
+          ? `Payment of ₹${formattedTotal} received from ${clientName} and settled against ${settledInvoices.length} invoice(s).`
+          : `Payment of ₹${formattedTotal} received from ${clientName} and credited to your account ledger.`;
+
+      const finalCustomNote = customNote || customMessage || "";
+
+      // Render standard unified email using renderEmail (with NOTIFICATION_TYPES.PAYMENT_RECEIVED)
+      const emailHtml = renderEmail({
+        type: NOTIFICATION_TYPES.PAYMENT_RECEIVED,
+        body: defaultBody,
+        variables: {
+          clientName: clientName || "Valued Customer",
+          paymentAmount: totalBatchAmount,
+          paymentDate: latestPaymentDate,
+          paymentMethod,
+          referenceNumber,
+          settledInvoices,
+          totalAccountOutstanding,
+          customNote: finalCustomNote,
+          company: company || {},
+          senderCompany,
+          senderEmail,
+          senderPhone: company?.phone || "",
+          senderLogo: company?.logo || company?.logoUrl || "",
+          invoiceNumber:
+            settledInvoices.length === 1
+              ? settledInvoices[0].invoiceNumber
+              : settledInvoices.length > 1
+                ? `${settledInvoices[0].invoiceNumber} (+${settledInvoices.length - 1} more)`
+                : "",
+        },
       });
 
       // Send to each recipient email
@@ -425,135 +557,4 @@ export async function sendBulkPaymentConfirmationEmails({
       error: error?.message || "Failed to dispatch bulk payment confirmations.",
     };
   }
-}
-
-/**
- * HTML Renderer for Bulk Payment Receipts
- */
-function renderBulkPaymentReceiptEmailHtml({
-  clientName,
-  payments = [],
-  company = {},
-  totalAmount = 0,
-  customNote = "",
-}) {
-  const formattedTotal = Number(totalAmount || 0).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-  });
-
-  const paymentRowsHtml = payments
-    .map((p) => {
-      const paymentDate = p.paymentDate
-        ? new Date(p.paymentDate).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })
-        : "—";
-
-      const amountFormatted = Number(p.amount || 0).toLocaleString("en-IN", {
-        minimumFractionDigits: 2,
-      });
-
-      const allocationsSummary = (p.allocations || [])
-        .map(
-          (a) =>
-            `<span style="display: inline-block; background: #F1F5F9; color: #334155; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin: 1px 2px;">
-              #${a.invoice?.invoiceNumber || a.invoiceId}: ₹${Number(a.allocatedAmount || 0).toLocaleString("en-IN")}
-            </span>`,
-        )
-        .join(" ");
-
-      return `
-        <tr style="border-bottom: 1px solid #E2E8F0;">
-          <td style="padding: 10px 12px; font-size: 12px; font-weight: 600; color: #0F172A;">
-            ${p.receiptNumber || `PAY-${p.id}`}
-            ${p.reference ? `<div style="font-size: 11px; color: #64748B; font-weight: normal;">Ref: ${p.reference}</div>` : ""}
-          </td>
-          <td style="padding: 10px 12px; font-size: 12px; color: #475569;">
-            ${paymentDate}
-          </td>
-          <td style="padding: 10px 12px; font-size: 12px; text-transform: uppercase; color: #475569;">
-            ${p.method || "Bank"}
-          </td>
-          <td style="padding: 10px 12px; font-size: 12px; color: #475569;">
-            ${allocationsSummary || '<span style="color: #94A3B8; font-size: 11px;">Unallocated Credit</span>'}
-          </td>
-          <td style="padding: 10px 12px; font-size: 13px; font-weight: 700; color: #059669; text-align: right;">
-            ₹${amountFormatted}
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
-
-  const content = `
-    ${renderGreeting(clientName || "Valued Customer")}
-
-    ${renderStatusBanner({
-      title: "Payment Receipt Acknowledgment",
-      color: "#059669",
-      background: "#D1FAE5",
-    })}
-
-    ${renderParagraph(
-      `We gratefully acknowledge receipt of payment totaling <strong style="color: #059669; font-size: 15px;">₹${formattedTotal}</strong>. The credited amounts have been applied to your ledger and relevant account invoices as itemized below:`,
-    )}
-
-    ${customNote ? renderCustomNote(customNote, "#059669") : ""}
-
-    <div style="margin: 20px 0; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden; background: #FFFFFF;">
-      <div style="background: #F8FAFC; padding: 10px 14px; font-size: 12px; font-weight: 700; color: #334155; border-bottom: 1px solid #E2E8F0;">
-        Received Payment Breakdown (${payments.length} Transaction${payments.length > 1 ? "s" : ""})
-      </div>
-      <table style="width: 100%; border-collapse: collapse; text-align: left;">
-        <thead>
-          <tr style="background: #F1F5F9; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
-            <th style="padding: 8px 12px; font-weight: 600;">Receipt / Ref</th>
-            <th style="padding: 8px 12px; font-weight: 600;">Date</th>
-            <th style="padding: 8px 12px; font-weight: 600;">Mode</th>
-            <th style="padding: 8px 12px; font-weight: 600;">Applied Invoices</th>
-            <th style="padding: 8px 12px; font-weight: 600; text-align: right;">Amount (INR)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${paymentRowsHtml}
-        </tbody>
-        <tfoot>
-          <tr style="background: #F8FAFC; font-weight: 700;">
-            <td colspan="4" style="padding: 10px 12px; font-size: 13px; color: #1E293B; text-align: right;">
-              Total Payment Received:
-            </td>
-            <td style="padding: 10px 12px; font-size: 14px; color: #059669; text-align: right;">
-              ₹${formattedTotal}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-
-    ${renderParagraph(
-      "Your account ledger has been updated accordingly. If you have any questions, pleae contact Pafex accounts team before 48 hours of this email, otherwise this settlement will be considered final.",
-    )}
-
-    ${renderBankDetails(company)}
-
-    ${renderSignature({
-      senderCompany: company.companyName || "PAFEX",
-      senderEmail: company.email || "",
-      senderPhone: company.phone || "",
-      senderLogo: company.logoUrl || "",
-    })}
-  `;
-
-  return renderEmailLayout({
-    title: `Payment Receipt Acknowledgment - ${company.companyName || "PAFEX"}`,
-    bannerColor: "#053896",
-    companyName: company.companyName || "PAFEX",
-    content,
-    senderCompany: company.companyName || "PAFEX",
-    senderEmail: company.email || "",
-    senderPhone: company.phone || "",
-    logoUrl: company.logoUrl || "",
-  });
 }
