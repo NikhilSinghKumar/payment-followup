@@ -388,7 +388,7 @@ export function renderManualClientStatementReminderEmail({
       break;
     case "OVERDUE_NOTICE":
       title = `Overdue Statement of Account: ${clientSummary.overdueInvoices || 0} Overdue Invoices - ${client.companyName}`;
-      banner = "Overdue Statement Notice";
+      banner = "Overdue Statement Reminder";
       color = "#EA580C";
       background = "#FFEDD5";
       break;
@@ -518,7 +518,7 @@ export function renderManualBulkInvoicesReminderEmail({
       break;
     case "OVERDUE_NOTICE":
       title = `Overdue Statement of Account: ${overdueCount} Overdue Invoices - ${client.companyName}`;
-      banner = "Overdue Statement Notice";
+      banner = "Overdue Statement Reminder";
       color = "#EA580C";
       background = "#FFEDD5";
       break;
@@ -539,7 +539,7 @@ export function renderManualBulkInvoicesReminderEmail({
     reminderType === "SUSPENSION_WARNING"
       ? `Please find below the consolidated statement of your outstanding invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #DC2626;">₹${formattedTotalDue}</strong>. Kindly arrange immediate settlement to prevent any pause in service.`
       : overdueCount > 0
-        ? `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong> (${overdueCount} invoices past due). Kindly arrange payment at your earliest convenience.`
+        ? `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong>. Kindly arrange payment at your earliest convenience to avoid temporary suspension of PAFEX services.`
         : `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong>.`;
 
   const mappedInvoices = groupInvoices.map((inv) => ({
