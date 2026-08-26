@@ -460,7 +460,7 @@ export async function sendClientReminder({
         break;
       case "OVERDUE_NOTICE":
         subject = `Overdue Statement of Account: ${clientSummary.overdueInvoices} Overdue Invoices | ${client.companyName}`;
-        headerTitle = "Overdue Statement Notice";
+        headerTitle = "Overdue Statement Reminder";
         headerColor = "#ea580c";
         break;
       case "STATEMENT":
@@ -776,7 +776,7 @@ export async function sendBulkGroupedReminders({
           break;
         case "OVERDUE_NOTICE":
           subject = `Overdue Statement of Account: ${overdueCount} Overdue Invoices | ${companyName}`;
-          headerTitle = "Overdue Statement Notice";
+          headerTitle = "Overdue Statement Reminder";
           headerColor = "#ea580c";
           break;
         case "STATEMENT":
@@ -798,7 +798,7 @@ export async function sendBulkGroupedReminders({
         company,
         reminderType,
         customNote,
-        totalDue: groupTotalDue,
+        totalDue: totalDue || 0,
         overdueCount,
       });
 
