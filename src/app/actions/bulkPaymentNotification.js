@@ -548,7 +548,7 @@ function renderBulkPaymentReceiptEmailHtml({
 
   return renderEmailLayout({
     title: `Payment Receipt Acknowledgment - ${company.companyName || "PAFEX"}`,
-    bannerColor: "#059669",
+    bannerColor: "#053896",
     companyName: company.companyName || "PAFEX",
     content,
     senderCompany: company.companyName || "PAFEX",
