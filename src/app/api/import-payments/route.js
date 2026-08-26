@@ -293,6 +293,7 @@ export async function POST(req) {
         // =====================================
 
         let affectedInvoiceIds = [];
+        let createdPaymentId = null;
 
         await db.transaction(async (tx) => {
           // =====================================
@@ -326,6 +327,8 @@ export async function POST(req) {
             .returning({
               id: payments.id,
             });
+
+          createdPaymentId = payment?.id;
 
           // =====================================
           // CREATE ALLOCATIONS
@@ -366,8 +369,8 @@ export async function POST(req) {
           await updateInvoiceFinancials(invoiceId);
         }
 
-        if (payment?.id) {
-          insertedPaymentIds.push(payment.id);
+        if (createdPaymentId) {
+          insertedPaymentIds.push(createdPaymentId);
         }
 
         inserted++;
@@ -378,9 +381,9 @@ export async function POST(req) {
 
         errors.push({
           row: csvRow,
-          companyCode: row.client_code || "",
-          reference: row.reference || "",
-          reason: "Unexpected server error",
+          clientCode: clientCode || row.client_code || "",
+          reference: reference || row.reference || "",
+          reason: err?.message || "Unexpected server error",
         });
       }
     }
