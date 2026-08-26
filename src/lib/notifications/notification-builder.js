@@ -106,13 +106,26 @@ function buildOverdueReminder(data) {
 function buildPaymentReceived(data) {
   const isMultiInvoice =
     Array.isArray(data.settledInvoices) && data.settledInvoices.length > 0;
+  const formattedAmount = Number(data.paymentAmount || 0).toLocaleString(
+    "en-IN",
+    {
+      minimumFractionDigits: 2,
+    },
+  );
   const description = isMultiInvoice
-    ? `Payment of ₹${data.paymentAmount} received from ${data.clientName || "Client"} and settled against ${data.settledInvoices.length} invoice(s).`
-    : `Payment of ₹${data.paymentAmount} received against invoice ${data.invoiceNumber || ""}.`;
+    ? `We have received your payment of ₹${formattedAmount}, which has been successfully settled against ${data.settledInvoices.length} invoice(s).`
+    : `We have received your payment of ₹${formattedAmount} against invoice ${data.invoiceNumber || ""}.`;
+
+  const invoiceSummary = isMultiInvoice
+    ? data.settledInvoices.length === 1
+      ? data.settledInvoices[0].invoiceNumber
+      : `${data.settledInvoices[0]?.invoiceNumber || "Invoices"} (+${data.settledInvoices.length - 1} more)`
+    : data.invoiceNumber || "";
 
   const variables = isMultiInvoice
     ? {
         ...buildClientVariables(data),
+        invoiceNumber: invoiceSummary,
         paymentAmount: Number(data.paymentAmount || 0),
         paymentDate: data.paymentDate || new Date().toISOString(),
         paymentMethod: data.paymentMethod || data.method || "Bank Transfer",

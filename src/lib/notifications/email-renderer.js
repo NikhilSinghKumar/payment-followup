@@ -146,11 +146,31 @@ export function renderEmail({ type, body, variables, actionUrl }) {
     })}
 
     ${renderParagraph(body)}
+
     ${variables.customNote ? renderCustomNote(variables.customNote, config.color) : ""}
+
     ${invoiceSummary}
 
     ${
-      !isClientPaymentReminder && variables.overdueDays > 0
+      type === NOTIFICATION_TYPES.PAYMENT_RECEIVED || isClientPaymentSettlement
+        ? `
+          <div style="margin-top: 18px; margin-bottom: 20px; line-height: 1.6; color: #334155; font-size: 14px;">
+            <p style="margin: 0 0 12px 0;">
+              Please review the settlement details and notify the PAFEX Accounts Team of any discrepancy or concern within 2 days of receiving this email. If we do not receive any communication within this period, the settlement will be considered final and recorded in our accounts.
+            </p>
+            <p style="margin: 0;">
+              Thank you for your continued trust and business with PAFEX.
+            </p>
+          </div>
+        `
+        : ""
+    }
+
+    ${
+      !isClientPaymentReminder &&
+      !isClientPaymentSettlement &&
+      type !== NOTIFICATION_TYPES.PAYMENT_RECEIVED &&
+      variables.overdueDays > 0
         ? renderAlertBox(
             `This invoice is overdue by ${formatDateDifference(
               variables.dueDate,
@@ -159,7 +179,11 @@ export function renderEmail({ type, body, variables, actionUrl }) {
         : ""
     }
 
-    ${renderBankDetails(variables.company || {})}
+    ${
+      type !== NOTIFICATION_TYPES.PAYMENT_RECEIVED && !isClientPaymentSettlement
+        ? renderBankDetails(variables.company || {})
+        : ""
+    }
 
     ${renderSignature({
       senderCompany: variables.senderCompany,
@@ -364,7 +388,7 @@ export function renderManualClientStatementReminderEmail({
       break;
     case "OVERDUE_NOTICE":
       title = `Overdue Statement of Account: ${clientSummary.overdueInvoices || 0} Overdue Invoices - ${client.companyName}`;
-      banner = "Overdue Statement Reminder";
+      banner = "Overdue Statement Notice";
       color = "#EA580C";
       background = "#FFEDD5";
       break;
@@ -494,7 +518,7 @@ export function renderManualBulkInvoicesReminderEmail({
       break;
     case "OVERDUE_NOTICE":
       title = `Overdue Statement of Account: ${overdueCount} Overdue Invoices - ${client.companyName}`;
-      banner = "Overdue Statement Reminder";
+      banner = "Overdue Statement Notice";
       color = "#EA580C";
       background = "#FFEDD5";
       break;
@@ -515,7 +539,7 @@ export function renderManualBulkInvoicesReminderEmail({
     reminderType === "SUSPENSION_WARNING"
       ? `Please find below the consolidated statement of your outstanding invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #DC2626;">₹${formattedTotalDue}</strong>. Kindly arrange immediate settlement to prevent any pause in service.`
       : overdueCount > 0
-        ? `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong> (${overdueCount} invoices past due). Kindly arrange payment at your earliest convenience, so that PAFEX services can be continued uninterrupted.`
+        ? `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong> (${overdueCount} invoices past due). Kindly arrange payment at your earliest convenience.`
         : `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong>.`;
 
   const mappedInvoices = groupInvoices.map((inv) => ({
@@ -556,7 +580,7 @@ export function renderManualBulkInvoicesReminderEmail({
     ${renderBankDetails(company)}
 
     <p style="font-size: 13px; color: #64748B; margin: 16px 0 0 0;">
-      Kindly share transaction details / UTR number once payment is initiated. For any query, please contact PAFEX accounts team.
+      Kindly share transaction details / UTR number once payment is initiated.
     </p>
 
     ${renderSignature({

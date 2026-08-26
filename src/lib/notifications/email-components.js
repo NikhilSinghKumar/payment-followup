@@ -362,6 +362,18 @@ export function renderSignature({
   senderPhone,
   senderLogo,
 }) {
+  let logoSrc = senderLogo;
+  if (
+    !logoSrc ||
+    logoSrc.includes("payfolo.vercel.app") ||
+    logoSrc === "/pafex_logo.png" ||
+    logoSrc === "pafex_logo.png" ||
+    logoSrc.startsWith("/") ||
+    logoSrc.includes("cid:")
+  ) {
+    logoSrc = "https://pafex.in/assets/img/logo.png";
+  }
+
   return `
 <div
 style="
@@ -372,23 +384,25 @@ color:#334155;
 
 Warm Regards,<br><br>
 
-<strong>${senderCompany}</strong><br>
+<strong>${senderCompany || "Prakash Air Freight India Pvt Ltd"}</strong><br>
 
-Email: ${senderEmail}<br>
+Email: ${senderEmail || "accounts@pafex.in"}<br>
 
-Mobile: ${senderPhone}<br><br>
+Mobile: ${senderPhone || "9289901837"}<br><br>
 
 ${
-  senderLogo
+  logoSrc
     ? `
       <img
-        src="${senderLogo}"
-        alt="${senderCompany}"
-        width="150"
+        src="${logoSrc}"
+        alt="${senderCompany || "PAFEX"}"
+        width="140"
         style="
           display:block;
           border:0;
-          margin-top:4px;
+          margin-top:6px;
+          max-width:160px;
+          height:auto;
         "
       />
     `
@@ -587,9 +601,9 @@ export function renderClientOutstandingInvoices(invoices = []) {
 </div>
 
 <!-- Mobile Scroll Tip -->
-// <div style="font-size: 11px; color: #64748b; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">
-//   👉 <em>Swipe horizontally to view full table</em>
-// </div>
+<div style="font-size: 11px; color: #64748b; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">
+  👉 <em>Swipe horizontally to view full table</em>
+</div>
 
 <div class="responsive-table-scroll" style="width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #E2E8F0; border-radius: 10px;">
 <table

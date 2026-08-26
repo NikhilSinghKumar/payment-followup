@@ -445,11 +445,11 @@ export async function sendBulkPaymentConfirmationEmails({
             .replace("{count}", String(clientPayments.length))
         : defaultSubject;
 
-      // Body text matching the manual payment standard template
+      // Body text matching the requested standard wording
       const defaultBody =
         settledInvoices.length > 0
-          ? `Payment of ₹${formattedTotal} received from ${clientName} and settled against ${settledInvoices.length} invoice(s).`
-          : `Payment of ₹${formattedTotal} received from ${clientName} and credited to your account ledger.`;
+          ? `We have received your payment of ₹${formattedTotal}, which has been successfully settled against ${settledInvoices.length} invoice(s).`
+          : `We have received your payment of ₹${formattedTotal}, which has been credited to your account ledger.`;
 
       const finalCustomNote = customNote || customMessage || "";
 

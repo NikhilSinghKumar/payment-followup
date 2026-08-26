@@ -65,11 +65,7 @@ Thank you for your prompt attention and continued partnership.`,
     type: "PAYMENT_RECEIVED",
     name: "Payment Received",
     subject: "Payment Received - PAFEX",
-    body: `Thank you for your recent payment.
-
-We have received your payment and settled it against the following invoice(s). We sincerely appreciate your prompt payment and continued trust in our services.
-If you have any concerns or discrepancies regarding this settlement, please raise them with the PAFEX Accounts Team within 48 hours of receiving this notice; otherwise, this allocation will be considered final and permanently recorded against your account.
-Thank you for your business and prompt cooperation.`,
+    body: `We have received your payment of ₹{{amount}}, which has been successfully settled against {{count}} invoice(s).`,
     isDefault: true,
     isActive: true,
   },
