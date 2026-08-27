@@ -360,17 +360,18 @@ export async function getClientPaymentReminderData(clientId = null) {
     // -----------------------------------------------
 
     const invoiceDate = row.invoiceDate ? new Date(row.invoiceDate) : null;
-
     const dueDate = row.dueDate ? new Date(row.dueDate) : null;
 
     let creditDays = 0;
 
     if (invoiceDate && dueDate) {
+      const invD = new Date(invoiceDate);
+      const dueD = new Date(dueDate);
+      invD.setHours(0, 0, 0, 0);
+      dueD.setHours(0, 0, 0, 0);
       creditDays = Math.max(
-        Math.ceil(
-          (dueDate.getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24),
-        ),
         0,
+        Math.round((dueD.getTime() - invD.getTime()) / (1000 * 60 * 60 * 24)),
       );
     }
 

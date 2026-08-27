@@ -568,18 +568,6 @@ export function renderClientOutstandingInvoices(invoices = []) {
 </td>
 
 <!-- Credit Days -->
-<td
-  style="
-    padding:10px 8px;
-    border-bottom:1px solid #E2E8F0;
-    color:#475569;
-    font-size:13px;
-    text-align:center;
-    white-space:nowrap;
-  "
->
-  ${invoice.creditDays ?? 0} days
-</td>
 
 </tr>
 `,
@@ -601,9 +589,6 @@ export function renderClientOutstandingInvoices(invoices = []) {
 </div>
 
 <!-- Mobile Scroll Tip -->
-<div style="font-size: 11px; color: #64748b; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">
-  👉 <em>Swipe horizontally to view full table</em>
-</div>
 
 <div class="responsive-table-scroll" style="width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #E2E8F0; border-radius: 10px;">
 <table
@@ -721,19 +706,6 @@ export function renderClientOutstandingInvoices(invoices = []) {
   Aging / Status
 </th>
 
-<th
-  align="center"
-  style="
-    padding:11px 8px;
-    border-bottom:1px solid #E2E8F0;
-    color:#475569;
-    font-size:12px;
-    font-weight:600;
-    white-space:nowrap;
-  "
->
-  Credit Days
-</th>
 
 </tr>
 
