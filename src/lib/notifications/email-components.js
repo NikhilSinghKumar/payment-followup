@@ -467,8 +467,20 @@ export function renderClientOutstandingInvoices(invoices = []) {
   // ======================================================
 
   const rows = invoices
-    .map(
-      (invoice) => `
+    .map((invoice) => {
+      let creditDays = Number(invoice.creditDays || 0);
+      if (!creditDays && invoice.invoiceDate && invoice.dueDate) {
+        const invD = new Date(invoice.invoiceDate);
+        const dueD = new Date(invoice.dueDate);
+        invD.setHours(0, 0, 0, 0);
+        dueD.setHours(0, 0, 0, 0);
+        creditDays = Math.max(
+          0,
+          Math.round((dueD.getTime() - invD.getTime()) / (1000 * 60 * 60 * 24)),
+        );
+      }
+
+      return `
 <tr>
 
 <!-- Invoice Number -->
@@ -568,10 +580,22 @@ export function renderClientOutstandingInvoices(invoices = []) {
 </td>
 
 <!-- Credit Days -->
+<td
+  style="
+    padding:10px 8px;
+    border-bottom:1px solid #E2E8F0;
+    color:#475569;
+    font-size:13px;
+    text-align:center;
+    white-space:nowrap;
+  "
+>
+  ${creditDays} days
+</td>
 
 </tr>
-`,
-    )
+`;
+    })
     .join("");
 
   return `
@@ -589,7 +613,6 @@ export function renderClientOutstandingInvoices(invoices = []) {
 </div>
 
 <!-- Mobile Scroll Tip -->
-
 <div class="responsive-table-scroll" style="width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #E2E8F0; border-radius: 10px;">
 <table
   width="100%"
@@ -706,6 +729,19 @@ export function renderClientOutstandingInvoices(invoices = []) {
   Aging / Status
 </th>
 
+<th
+  align="center"
+  style="
+    padding:11px 8px;
+    border-bottom:1px solid #E2E8F0;
+    color:#475569;
+    font-size:12px;
+    font-weight:600;
+    white-space:nowrap;
+  "
+>
+  Credit Days
+</th>
 
 </tr>
 

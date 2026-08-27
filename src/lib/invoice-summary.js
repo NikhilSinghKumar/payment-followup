@@ -7,8 +7,21 @@ import { calculateInvoiceStatus } from "@/lib/invoice-status";
  * @returns {Object}
  */
 export function enrichInvoice(invoice) {
+  let creditDays = 0;
+  if (invoice?.invoiceDate && invoice?.dueDate) {
+    const start = new Date(invoice.invoiceDate);
+    const end = new Date(invoice.dueDate);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    creditDays = Math.max(
+      0,
+      Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
+    );
+  }
+
   return {
     ...invoice,
+    creditDays,
 
     ...calculateInvoiceStatus({
       netPayable: invoice.netPayableAmount,

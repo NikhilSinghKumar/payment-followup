@@ -12,7 +12,7 @@ import {
   paymentAllocations,
 } from "@/db/schema";
 
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
 
 export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
@@ -660,7 +660,8 @@ export async function getClientPaymentReceivedData({
         and(
           eq(invoices.clientId, clientId),
           eq(invoices.companyId, activeCompanyId),
-          eq(invoices.status, "ACTIVE"),
+          isNull(invoices.deletedAt),
+          ne(invoices.status, "cancelled"),
         ),
       )
       .groupBy(invoices.id, invoices.netPayableAmount, invoices.invoiceAmount);

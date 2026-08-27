@@ -388,7 +388,7 @@ export function renderManualClientStatementReminderEmail({
       break;
     case "OVERDUE_NOTICE":
       title = `Overdue Statement of Account: ${clientSummary.overdueInvoices || 0} Overdue Invoices - ${client.companyName}`;
-      banner = "Overdue Statement Reminder";
+      banner = "Overdue Statement Notice";
       color = "#EA580C";
       background = "#FFEDD5";
       break;
@@ -420,25 +420,39 @@ export function renderManualClientStatementReminderEmail({
         : `Please find below the consolidated statement of your open invoices with ${company.companyName || "our team"}. There are currently <strong>${invoices.length} outstanding invoices</strong> with a total pending balance of <strong style="color: #2563EB;">₹${formattedTotalOutstanding}</strong>.`;
 
   // Transform invoices into format expected by renderClientOutstandingInvoices
-  const mappedInvoices = invoices.map((inv) => ({
-    invoiceNumber: inv.invoiceNumber,
-    invoiceDate: inv.invoiceDate,
-    dueDate: inv.dueDate,
-    invoiceAmount: inv.invoiceAmount,
-    paidAmount: inv.paidAmount || 0,
-    outstandingAmount: inv.due || inv.outstandingAmount || 0,
-    agingStatus: inv.isOverdue
-      ? `${inv.dueDays}d Overdue`
-      : inv.isDueToday
-        ? "Due Today"
-        : "Current",
-    agingColor: inv.isOverdue
-      ? "#DC2626"
-      : inv.isDueToday
-        ? "#D97706"
-        : "#16A34A",
-    creditDays: inv.creditDays || 0,
-  }));
+  const mappedInvoices = invoices.map((inv) => {
+    let creditDays = Number(inv.creditDays || 0);
+    if (!creditDays && inv.invoiceDate && inv.dueDate) {
+      const invD = new Date(inv.invoiceDate);
+      const dueD = new Date(inv.dueDate);
+      invD.setHours(0, 0, 0, 0);
+      dueD.setHours(0, 0, 0, 0);
+      creditDays = Math.max(
+        0,
+        Math.round((dueD.getTime() - invD.getTime()) / (1000 * 60 * 60 * 24)),
+      );
+    }
+
+    return {
+      invoiceNumber: inv.invoiceNumber,
+      invoiceDate: inv.invoiceDate,
+      dueDate: inv.dueDate,
+      invoiceAmount: inv.invoiceAmount,
+      paidAmount: inv.paidAmount || 0,
+      outstandingAmount: inv.due || inv.outstandingAmount || 0,
+      agingStatus: inv.isOverdue
+        ? `${inv.dueDays}d Overdue`
+        : inv.isDueToday
+          ? "Due Today"
+          : "Current",
+      agingColor: inv.isOverdue
+        ? "#DC2626"
+        : inv.isDueToday
+          ? "#D97706"
+          : "#16A34A",
+      creditDays,
+    };
+  });
 
   const content = `
     ${renderGreeting(client.companyName || client.name || "Finance & Accounts Team")}
@@ -518,7 +532,7 @@ export function renderManualBulkInvoicesReminderEmail({
       break;
     case "OVERDUE_NOTICE":
       title = `Overdue Statement of Account: ${overdueCount} Overdue Invoices - ${client.companyName}`;
-      banner = "Overdue Statement Reminder";
+      banner = "Overdue Statement Notice";
       color = "#EA580C";
       background = "#FFEDD5";
       break;
@@ -539,20 +553,34 @@ export function renderManualBulkInvoicesReminderEmail({
     reminderType === "SUSPENSION_WARNING"
       ? `Please find below the consolidated statement of your outstanding invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #DC2626;">₹${formattedTotalDue}</strong>. Kindly arrange immediate settlement to prevent any pause in service.`
       : overdueCount > 0
-        ? `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong>. Kindly arrange payment at your earliest convenience to avoid temporary suspension of PAFEX services. Please ignore this email, if payment already made.`
+        ? `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong>. Kindly arrange payment at your earliest convenience to avoid temporary suspension of PAFEX services. Please ignore this email, if payment has already been done.`
         : `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong>.`;
 
-  const mappedInvoices = groupInvoices.map((inv) => ({
-    invoiceNumber: inv.invoiceNumber,
-    invoiceDate: inv.invoiceDate,
-    dueDate: inv.dueDate,
-    invoiceAmount: inv.invoiceAmount,
-    paidAmount: inv.paidAmount || 0,
-    outstandingAmount: inv.due || inv.outstandingAmount || 0,
-    agingStatus: inv.isOverdue ? `${inv.dueDays || 0}d Overdue` : "Current",
-    agingColor: inv.isOverdue ? "#DC2626" : "#16A34A",
-    // creditDays: inv.creditDays || 0,
-  }));
+  const mappedInvoices = groupInvoices.map((inv) => {
+    let creditDays = Number(inv.creditDays || 0);
+    if (!creditDays && inv.invoiceDate && inv.dueDate) {
+      const invD = new Date(inv.invoiceDate);
+      const dueD = new Date(inv.dueDate);
+      invD.setHours(0, 0, 0, 0);
+      dueD.setHours(0, 0, 0, 0);
+      creditDays = Math.max(
+        0,
+        Math.round((dueD.getTime() - invD.getTime()) / (1000 * 60 * 60 * 24)),
+      );
+    }
+
+    return {
+      invoiceNumber: inv.invoiceNumber,
+      invoiceDate: inv.invoiceDate,
+      dueDate: inv.dueDate,
+      invoiceAmount: inv.invoiceAmount,
+      paidAmount: inv.paidAmount || 0,
+      outstandingAmount: inv.due || inv.outstandingAmount || 0,
+      agingStatus: inv.isOverdue ? `${inv.dueDays || 0}d Overdue` : "Current",
+      agingColor: inv.isOverdue ? "#DC2626" : "#16A34A",
+      creditDays,
+    };
+  });
 
   const content = `
     ${renderGreeting(client.companyName || client.name || "Finance & Accounts Team")}

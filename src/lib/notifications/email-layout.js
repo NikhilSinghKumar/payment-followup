@@ -12,7 +12,7 @@
 
 export function renderEmailLayout({
   title = "Notification",
-  bannerColor = "#2563EB",
+  bannerColor = "#143781",
   companyName = "PAFEX",
   logoUrl = "",
   content = "",

@@ -1,3 +1,5 @@
+import path from "path";
+import fs from "fs";
 import { transporter } from "./transporter";
 
 import {
@@ -23,6 +25,25 @@ import {
 export async function sendEmail(options) {
   validateEmailOptions(options);
 
+  const attachments = Array.isArray(options.attachments)
+    ? [...options.attachments]
+    : [];
+
+  // Automatically attach inline PAFEX logo if cid:pafex_logo is referenced in the HTML
+  if (options.html && options.html.includes("cid:pafex_logo")) {
+    const hasLogoCid = attachments.some((a) => a && a.cid === "pafex_logo");
+    if (!hasLogoCid) {
+      const logoPath = path.join(process.cwd(), "public", "pafex_logo.png");
+      if (fs.existsSync(logoPath)) {
+        attachments.push({
+          filename: "pafex_logo.png",
+          path: logoPath,
+          cid: "pafex_logo",
+        });
+      }
+    }
+  }
+
   const mailOptions = {
     from: buildFromAddress(),
     to: normalizeRecipients(options.to),
@@ -31,12 +52,20 @@ export async function sendEmail(options) {
     subject: options.subject,
     html: options.html,
     text: options.text,
-    attachments: options.attachments ?? [],
+    attachments,
   };
 
   const result = await transporter.sendMail(mailOptions);
 
-  return result;
+  return {
+    success: true,
+    id: result?.messageId || result?.id,
+    messageId: result?.messageId,
+    accepted: result?.accepted || [],
+    rejected: result?.rejected || [],
+    response: result?.response,
+    ...result,
+  };
 }
 
 /**

@@ -497,7 +497,13 @@ export async function sendBulkPaymentConfirmationEmails({
             html: emailHtml,
           });
 
-          isSuccess = Boolean(sendResult?.id || sendResult?.success);
+          isSuccess = Boolean(
+            sendResult?.success ||
+            sendResult?.messageId ||
+            sendResult?.id ||
+            (Array.isArray(sendResult?.accepted) &&
+              sendResult.accepted.length > 0),
+          );
           if (!isSuccess && sendResult?.error) {
             errorMsg = sendResult.error;
           }

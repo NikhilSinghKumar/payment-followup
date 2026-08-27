@@ -363,18 +363,24 @@ export async function sendInvoiceReminder({
       customNote,
     });
 
-    // Send email to each recipient
-    const sendPromises = recipientEmails.map(async (email) => {
+    // Send email sequentially to each recipient to avoid parallel SMTP auth flooding
+    for (const email of recipientEmails) {
       let emailSuccess = false;
       let errorMsg = null;
 
       try {
-        await sendEmail({
+        const sendResult = await sendEmail({
           to: email,
           subject,
           html: htmlBody,
         });
-        emailSuccess = true;
+        emailSuccess = Boolean(
+          sendResult?.success ||
+          sendResult?.messageId ||
+          sendResult?.id ||
+          (Array.isArray(sendResult?.accepted) &&
+            sendResult.accepted.length > 0),
+        );
       } catch (err) {
         console.error("Failed to send email to", email, err);
         errorMsg = err?.message || "Failed to send email";
@@ -396,11 +402,7 @@ export async function sendInvoiceReminder({
       } catch (logErr) {
         console.error("Failed to write notification log:", logErr);
       }
-
-      return { email, success: emailSuccess };
-    });
-
-    await Promise.all(sendPromises);
+    }
 
     revalidatePath(`/invoices/${invoiceId}`);
     revalidatePath(`/clients/${client.id}`);
@@ -460,7 +462,7 @@ export async function sendClientReminder({
         break;
       case "OVERDUE_NOTICE":
         subject = `Overdue Statement of Account: ${clientSummary.overdueInvoices} Overdue Invoices | ${client.companyName}`;
-        headerTitle = "Overdue Statement Reminder";
+        headerTitle = "Overdue Statement Notice";
         headerColor = "#ea580c";
         break;
       case "STATEMENT":
@@ -492,18 +494,24 @@ export async function sendClientReminder({
       customNote,
     });
 
-    // Send email to each recipient
-    const sendPromises = recipientEmails.map(async (email) => {
+    // Send email sequentially to each recipient to avoid parallel SMTP auth flooding
+    for (const email of recipientEmails) {
       let emailSuccess = false;
       let errorMsg = null;
 
       try {
-        await sendEmail({
+        const sendResult = await sendEmail({
           to: email,
           subject,
           html: htmlBody,
         });
-        emailSuccess = true;
+        emailSuccess = Boolean(
+          sendResult?.success ||
+          sendResult?.messageId ||
+          sendResult?.id ||
+          (Array.isArray(sendResult?.accepted) &&
+            sendResult.accepted.length > 0),
+        );
       } catch (err) {
         console.error("Failed to send statement to", email, err);
         errorMsg = err?.message || "Failed to send email";
@@ -523,11 +531,7 @@ export async function sendClientReminder({
       } catch (logErr) {
         console.error("Failed to write notification log:", logErr);
       }
-
-      return { email, success: emailSuccess };
-    });
-
-    await Promise.all(sendPromises);
+    }
 
     revalidatePath(`/clients/${clientId}`);
 
@@ -776,7 +780,7 @@ export async function sendBulkGroupedReminders({
           break;
         case "OVERDUE_NOTICE":
           subject = `Overdue Statement of Account: ${overdueCount} Overdue Invoices | ${companyName}`;
-          headerTitle = "Overdue Statement Reminder";
+          headerTitle = "Overdue Statement Notice";
           headerColor = "#ea580c";
           break;
         case "STATEMENT":
@@ -808,13 +812,24 @@ export async function sendBulkGroupedReminders({
         let errorMsg = null;
 
         try {
-          await sendEmail({
+          const sendResult = await sendEmail({
             to: email,
             subject,
             html: htmlBody,
           });
-          emailSuccess = true;
-          totalEmailsSent += 1;
+          emailSuccess = Boolean(
+            sendResult?.success ||
+            sendResult?.messageId ||
+            sendResult?.id ||
+            (Array.isArray(sendResult?.accepted) &&
+              sendResult.accepted.length > 0),
+          );
+          if (emailSuccess) {
+            totalEmailsSent += 1;
+          } else {
+            errorMsg = sendResult?.error || "Failed to deliver email.";
+            errors.push(`${companyName} (${email}): ${errorMsg}`);
+          }
         } catch (err) {
           console.error(
             `Failed to send bulk reminder to ${email} for client ${companyName}:`,
