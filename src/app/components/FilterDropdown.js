@@ -8,15 +8,17 @@ export default function FilterDropdown() {
   const pathname = usePathname();
 
   const currentStatus = searchParams.get("status") || "";
-  const currentQuery = searchParams.get("q") || "";
 
   const handleChange = (e) => {
     const value = e.target.value;
 
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(searchParams.toString());
 
-    if (currentQuery) params.set("q", currentQuery);
-    if (value) params.set("status", value);
+    if (value) {
+      params.set("status", value);
+    } else {
+      params.delete("status");
+    }
 
     router.push(`${pathname}?${params.toString()}`);
   };

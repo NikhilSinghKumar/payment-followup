@@ -310,20 +310,37 @@ export async function getInvoices(
   maxAmount = "",
   alphabet = "",
 ) {
+  const currentUser = await getCurrentUser();
   const conditions = [isNull(invoices.deletedAt)];
+
+  if (currentUser?.companyId) {
+    conditions.push(eq(invoices.companyId, currentUser.companyId));
+  }
+
   if (financialYear) {
     conditions.push(eq(invoices.financialYear, financialYear));
   }
 
-  // SEARCH
-  if (search) {
-    conditions.push(
-      or(
-        ilike(clients.companyName, `%${search}%`),
-        ilike(clients.companyCode, `%${search}%`),
-        ilike(invoices.invoiceNumber, `%${search}%`),
-      ),
-    );
+  // SEARCH: by Invoice Number, Company Name, Company Code, GST Number
+  const rawSearch = typeof search === "string" ? search.trim() : "";
+  if (rawSearch) {
+    const pattern = `%${rawSearch}%`;
+    const cleanSearch = rawSearch.replace(/[\s\-_/]/g, "");
+
+    const searchConditions = [
+      ilike(clients.companyName, pattern),
+      ilike(clients.companyCode, pattern),
+      ilike(clients.gstNumber, pattern),
+      ilike(invoices.invoiceNumber, pattern),
+    ];
+
+    if (cleanSearch) {
+      searchConditions.push(
+        sql`REPLACE(REPLACE(REPLACE(${invoices.invoiceNumber}, '-', ''), '/', ''), ' ', '') ILIKE ${`%${cleanSearch}%`}`,
+      );
+    }
+
+    conditions.push(or(...searchConditions));
   }
 
   if (alphabet) {

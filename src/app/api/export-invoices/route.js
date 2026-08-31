@@ -1,5 +1,7 @@
 import { getInvoices } from "@/app/actions/invoice";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
 
@@ -9,7 +11,8 @@ export async function GET(request) {
   const aging = searchParams.get("aging") || "";
   const financialYear = searchParams.get("financialYear") || "";
   const month = searchParams.get("month") || "";
-  const amountRange = searchParams.get("amountRange") || "";
+  const minAmount = searchParams.get("minAmount") || "";
+  const maxAmount = searchParams.get("maxAmount") || "";
   const alphabet = searchParams.get("alphabet") || "";
 
   const invoices = await getInvoices(
@@ -19,7 +22,8 @@ export async function GET(request) {
     aging,
     financialYear,
     month,
-    amountRange,
+    minAmount,
+    maxAmount,
     alphabet,
   );
 
