@@ -94,8 +94,6 @@ export async function POST(req) {
 
         if (!companyCode) rowErrors.push("Client Code is required");
 
-        if (!subClientCode) rowErrors.push("Subclient code is required");
-
         if (!invoiceNumber) rowErrors.push("Invoice Number is required");
 
         if (!invoiceDate || isNaN(invoiceDate.getTime()))
