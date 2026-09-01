@@ -2,10 +2,6 @@ import Link from "next/link";
 
 const tabs = [
   {
-    key: "overview",
-    label: "Overview",
-  },
-  {
     key: "sub-clients",
     label: "Sub Clients",
   },
