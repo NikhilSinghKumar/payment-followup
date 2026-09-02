@@ -1,10 +1,12 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { Search, X } from "lucide-react";
 
-export default function SearchBox() {
+export default function SearchBox({
+  placeholder = "Search by invoice number, company, GST...",
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -13,52 +15,71 @@ export default function SearchBox() {
   const urlQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(urlQuery);
 
-  // Sync state if URL query param changes externally
+  // Track what value this component last dispatched to prevent server response echo
+  const lastDispatchedRef = useRef(urlQuery.trim());
+  const isFocusedRef = useRef(false);
+
+  // Sync state ONLY if URL query changed externally (e.g., browser back/forward or tab switch)
+  // and the user is NOT actively typing inside the search input
   useEffect(() => {
-    setQuery(urlQuery);
+    const trimmedUrlQuery = urlQuery.trim();
+    if (
+      trimmedUrlQuery !== lastDispatchedRef.current &&
+      !isFocusedRef.current
+    ) {
+      setQuery(urlQuery);
+      lastDispatchedRef.current = trimmedUrlQuery;
+    }
   }, [urlQuery]);
 
+  // Debounced search dispatch
   useEffect(() => {
     const timer = setTimeout(() => {
-      const currentUrlQuery = searchParams.get("q") || "";
-      if (query.trim() !== currentUrlQuery.trim()) {
+      const trimmedQuery = query.trim();
+      const currentUrlQuery = (searchParams.get("q") || "").trim();
+
+      if (trimmedQuery !== currentUrlQuery) {
+        lastDispatchedRef.current = trimmedQuery;
         const params = new URLSearchParams(searchParams.toString());
 
-        if (query.trim()) {
-          params.set("q", query.trim());
+        if (trimmedQuery) {
+          params.set("q", trimmedQuery);
         } else {
           params.delete("q");
         }
 
         startTransition(() => {
-          router.push(`${pathname}?${params.toString()}`);
+          router.replace(`${pathname}?${params.toString()}`, { scroll: false });
         });
       }
-    }, 350);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [query, pathname, router, searchParams]);
 
   function handleClear() {
     setQuery("");
+    lastDispatchedRef.current = "";
     const params = new URLSearchParams(searchParams.toString());
     params.delete("q");
     startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     });
   }
 
   function handleKeyDown(e) {
     if (e.key === "Enter") {
       e.preventDefault();
+      const trimmedQuery = query.trim();
+      lastDispatchedRef.current = trimmedQuery;
       const params = new URLSearchParams(searchParams.toString());
-      if (query.trim()) {
-        params.set("q", query.trim());
+      if (trimmedQuery) {
+        params.set("q", trimmedQuery);
       } else {
         params.delete("q");
       }
       startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       });
     }
   }
@@ -71,8 +92,14 @@ export default function SearchBox() {
 
       <input
         type="text"
-        placeholder="Search by invoice number, company, GST..."
+        placeholder={placeholder}
         value={query}
+        onFocus={() => {
+          isFocusedRef.current = true;
+        }}
+        onBlur={() => {
+          isFocusedRef.current = false;
+        }}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
         className="h-9 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-8 text-xs text-zinc-800 placeholder-zinc-400 shadow-2xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder-zinc-500"

@@ -19,7 +19,7 @@ export default async function ClientsPage({ searchParams }) {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex w-full items-center gap-2 lg:max-w-lg">
           <div className="flex-1 min-w-0">
-            <SearchBox />
+            <SearchBox placeholder="Search clients by name, code, GST..." />
           </div>
           <div className="shrink-0">
             <ClientAlphabetDropdown />

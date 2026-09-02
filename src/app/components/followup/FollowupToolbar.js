@@ -48,7 +48,7 @@ export default function FollowupToolbar({ totalCount = 0 }) {
           params.delete("q");
         }
         startTransition(() => {
-          router.push(`${pathname}?${params.toString()}`);
+          router.replace(`${pathname}?${params.toString()}`, { scroll: false });
         });
       }
     }, 350);

@@ -29,7 +29,7 @@ export default async function ClientsPage({ searchParams }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <SearchBox />
+          <SearchBox placeholder="Search clients by name, code, GST..." />
           <ImportBox />
           <a
             href="/api/import-client-sample"
