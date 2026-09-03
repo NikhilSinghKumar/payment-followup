@@ -928,6 +928,9 @@ export const invoices = pgTable(
     // TDS setting used while creating invoice
     tdsApplicableUsed: boolean("tds_applicable_used").notNull().default(false),
 
+    // Snapshot of opening balance status
+    isOpeningBalance: boolean("is_opening_balance").notNull().default(false),
+
     // paid
     paidAmount: numeric("paid_amount", {
       precision: 12,

@@ -67,9 +67,14 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                       <td className="px-4 py-3">
                         <Link
                           href={`/invoices/${invoice.id}`}
-                          className="block font-medium text-zinc-800"
+                          className="flex items-center gap-2 font-medium text-zinc-800"
                         >
-                          {invoice.invoiceNumber}
+                          <span>{invoice.invoiceNumber}</span>
+                          {invoice.isOpeningBalance && (
+                            <span className="inline-flex items-center rounded-md bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                              Opening Bal
+                            </span>
+                          )}
                         </Link>
                       </td>
 

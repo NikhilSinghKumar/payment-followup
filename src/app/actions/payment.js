@@ -96,6 +96,7 @@ export async function getInvoicesForPayment(clientId) {
 
       subClientId: invoices.subClientId,
       subClientName: clientSubClients.companyName,
+      isOpeningBalance: invoices.isOpeningBalance,
     })
     .from(invoices)
 

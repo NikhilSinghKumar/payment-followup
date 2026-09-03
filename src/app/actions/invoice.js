@@ -365,6 +365,7 @@ export async function getInvoices(
       paidAmount: invoices.paidAmount,
       outstandingAmount: invoices.outstandingAmount,
       status: invoices.status,
+      isOpeningBalance: invoices.isOpeningBalance,
     })
     .from(invoices)
     .leftJoin(clients, eq(invoices.clientId, clients.id))

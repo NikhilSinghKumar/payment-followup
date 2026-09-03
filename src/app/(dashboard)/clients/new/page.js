@@ -107,6 +107,57 @@ export default function NewClientPage() {
               </label>
             </div>
 
+            {/* Opening Balance (Optional) */}
+            <div className="rounded-xl border border-purple-100 bg-purple-50/40 p-4 space-y-3 dark:border-purple-900/40 dark:bg-purple-950/20">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-300">
+                  Opening Balance (Optional)
+                </span>
+                <span className="text-[11px] text-zinc-400">
+                  For historical/un-invoiced debt
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs text-zinc-600 mb-1 block">
+                    Amount (₹)
+                  </label>
+                  <input
+                    name="openingBalance"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    className="input-primary focus:ring-purple-500 caret-purple-500 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-zinc-600 mb-1 block">
+                    As of Date
+                  </label>
+                  <input
+                    name="openingBalanceDate"
+                    type="date"
+                    defaultValue={new Date().toISOString().split("T")[0]}
+                    className="input-primary focus:ring-purple-500 caret-purple-500 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-zinc-600 mb-1 block">
+                  Notes / Reference
+                </label>
+                <input
+                  name="openingBalanceNotes"
+                  placeholder="e.g. Previous FY carried forward balance"
+                  className="input-primary focus:ring-purple-500 caret-purple-500 bg-white"
+                />
+              </div>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"

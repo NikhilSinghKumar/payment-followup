@@ -521,7 +521,12 @@ export default function PaymentForm({ clients = [] }) {
                         <span className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                           {invoice.invoiceNumber}
                         </span>
-                        {invoice.isOverdue && (
+                        {invoice.isOpeningBalance && (
+                          <span className="shrink-0 rounded bg-purple-100 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:bg-purple-950/70 dark:text-purple-300">
+                            Opening Bal
+                          </span>
+                        )}
+                        {invoice.isOverdue && !invoice.isOpeningBalance && (
                           <span className="shrink-0 rounded bg-red-100 px-1 py-0.2 text-[9px] font-bold uppercase text-red-700 dark:bg-red-950/70 dark:text-red-300">
                             Overdue
                           </span>

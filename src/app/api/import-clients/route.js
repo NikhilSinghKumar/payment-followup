@@ -1,8 +1,10 @@
 import { db } from "@/db";
-import { clients } from "@/db/schema";
+import { clients, invoices } from "@/db/schema";
 import { parse } from "csv-parse/sync";
 import { inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
+import { getFinancialYear } from "@/lib/financial-year";
+import { calculateInvoiceStatus } from "@/lib/invoice-status";
 
 export async function POST(req) {
   const currentUser = await getCurrentUser();
@@ -127,6 +129,12 @@ export async function POST(req) {
         continue;
       }
 
+      const rawOpeningBalance = row.opening_balance?.toString().trim();
+      const openingBalance = rawOpeningBalance
+        ? parseFloat(rawOpeningBalance)
+        : 0;
+      const openingBalanceDate = row.opening_balance_date?.toString().trim();
+
       toInsert.push({
         companyId: currentUser.companyId,
         companyName,
@@ -135,6 +143,9 @@ export async function POST(req) {
         companyCode,
         gstNumber,
         tdsApplicable,
+        _openingBalance:
+          !isNaN(openingBalance) && openingBalance > 0 ? openingBalance : 0,
+        _openingBalanceDate: openingBalanceDate || null,
       });
 
       existingSet.add(companyCode);
@@ -142,7 +153,57 @@ export async function POST(req) {
 
     // ✅ Insert (safe + fast)
     if (toInsert.length > 0) {
-      await db.insert(clients).values(toInsert).onConflictDoNothing(); // extra safety
+      for (const clientItem of toInsert) {
+        const { _openingBalance, _openingBalanceDate, ...clientData } =
+          clientItem;
+        const [insertedClient] = await db
+          .insert(clients)
+          .values(clientData)
+          .onConflictDoNothing()
+          .returning({ id: clients.id });
+
+        if (insertedClient?.id && _openingBalance > 0) {
+          const asOfDate = _openingBalanceDate
+            ? new Date(_openingBalanceDate)
+            : new Date();
+          const validDate = isNaN(asOfDate.getTime()) ? new Date() : asOfDate;
+          const financialYear = getFinancialYear(validDate);
+          const invoiceNumber = `OPENING-BAL-${clientData.companyCode}-${financialYear}`;
+
+          const statusResult = calculateInvoiceStatus({
+            netPayable: _openingBalance,
+            paid: 0,
+            dueDate: validDate,
+          });
+
+          await db.insert(invoices).values({
+            companyId: currentUser.companyId,
+            clientId: insertedClient.id,
+            subClientId: null,
+            financialYear,
+            invoiceNumber,
+            invoiceDate: validDate,
+            dueDate: validDate,
+            paymentTerms: 0,
+            invoiceAmount: _openingBalance.toFixed(2),
+            basicAmount: _openingBalance.toFixed(2),
+            cgstAmount: "0.00",
+            sgstAmount: "0.00",
+            igstAmount: "0.00",
+            tdsAmount: "0.00",
+            deductionAmount: "0.00",
+            otherCharges: "0.00",
+            netPayableAmount: _openingBalance.toFixed(2),
+            paidAmount: "0.00",
+            outstandingAmount: _openingBalance.toFixed(2),
+            gstNumberUsed: clientData.gstNumber || null,
+            tdsApplicableUsed: clientData.tdsApplicable || false,
+            status: statusResult.status,
+            isOpeningBalance: true,
+            notes: "Imported Opening Balance",
+          });
+        }
+      }
       inserted = toInsert.length;
     }
 

@@ -1,9 +1,11 @@
 "use server";
 
 import { db } from "@/db";
-import { clients } from "@/db/schema";
+import { clients, invoices } from "@/db/schema";
 import { ilike, or, and, sql, eq, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
+import { getFinancialYear } from "@/lib/financial-year";
+import { calculateInvoiceStatus } from "@/lib/invoice-status";
 
 // Create client
 export async function createClient(prevState, formData) {
@@ -14,6 +16,12 @@ export async function createClient(prevState, formData) {
   const gstNumber = formData.get("gstNumber")?.trim().toUpperCase();
 
   const tdsApplicable = formData.get("tdsApplicable") === "on";
+
+  const rawOpeningBalance = formData.get("openingBalance");
+  const openingBalance = rawOpeningBalance ? parseFloat(rawOpeningBalance) : 0;
+  const openingBalanceDateStr = formData.get("openingBalanceDate");
+  const openingBalanceNotes =
+    formData.get("openingBalanceNotes")?.trim() || "Opening Balance";
 
   const currentUser = await getCurrentUser();
 
@@ -42,15 +50,63 @@ export async function createClient(prevState, formData) {
   }
 
   try {
-    await db.insert(clients).values({
-      companyId: currentUser.companyId,
-      companyName,
-      companyCode,
-      email,
-      phone,
-      gstNumber,
-      tdsApplicable,
-    });
+    const [newClient] = await db
+      .insert(clients)
+      .values({
+        companyId: currentUser.companyId,
+        companyName,
+        companyCode,
+        email,
+        phone,
+        gstNumber,
+        tdsApplicable,
+      })
+      .returning({
+        id: clients.id,
+      });
+
+    // Automatically create opening balance virtual invoice if specified
+    if (newClient?.id && openingBalance > 0) {
+      const asOfDate = openingBalanceDateStr
+        ? new Date(openingBalanceDateStr)
+        : new Date();
+      const validDate = isNaN(asOfDate.getTime()) ? new Date() : asOfDate;
+      const financialYear = getFinancialYear(validDate);
+      const invoiceNumber = `OPENING-BAL-${companyCode}-${financialYear}`;
+
+      const statusResult = calculateInvoiceStatus({
+        netPayable: openingBalance,
+        paid: 0,
+        dueDate: validDate,
+      });
+
+      await db.insert(invoices).values({
+        companyId: currentUser.companyId,
+        clientId: newClient.id,
+        subClientId: null,
+        financialYear,
+        invoiceNumber,
+        invoiceDate: validDate,
+        dueDate: validDate,
+        paymentTerms: 0,
+        invoiceAmount: openingBalance.toFixed(2),
+        basicAmount: openingBalance.toFixed(2),
+        cgstAmount: "0.00",
+        sgstAmount: "0.00",
+        igstAmount: "0.00",
+        tdsAmount: "0.00",
+        deductionAmount: "0.00",
+        otherCharges: "0.00",
+        netPayableAmount: openingBalance.toFixed(2),
+        paidAmount: "0.00",
+        outstandingAmount: openingBalance.toFixed(2),
+        gstNumberUsed: gstNumber || null,
+        tdsApplicableUsed: tdsApplicable || false,
+        status: statusResult.status,
+        isOpeningBalance: true,
+        notes: openingBalanceNotes,
+      });
+    }
 
     return { success: true };
   } catch (err) {

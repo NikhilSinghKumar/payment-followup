@@ -11,6 +11,7 @@ import { getClientById } from "@/app/actions/client";
 import { enrichInvoices } from "@/lib/invoice-summary";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import ClientTabs from "@/app/components/client/clientTabs";
+import ClientOverviewTab from "@/app/components/client/tabs/clientOverviewTab";
 import ClientSubClientsTab from "@/app/components/client/tabs/clientSubClientsTab";
 import ClientInvoicesTab from "@/app/components/client/tabs/clientInvoicesTab";
 import ClientLocationsTab from "@/app/components/client/tabs/clientLocationsTab";
@@ -18,6 +19,8 @@ import ClientContactsTab from "@/app/components/client/tabs/clientContactsTab";
 import ClientPaymentsTab from "@/app/components/client/tabs/clientPaymentsTab";
 import ClientFollowupsTab from "@/app/components/client/tabs/clientFollowupsTab";
 import SendClientReminderModal from "@/app/components/reminder/SendClientReminderModal";
+import OpeningBalanceModal from "@/app/components/client/OpeningBalanceModal";
+import { getOpeningBalanceByClientId } from "@/app/actions/openingBalance";
 import { getClientLocationsByClientId } from "@/app/actions/clientLocations";
 import { getClientContactsByClientId } from "@/app/actions/clientContacts";
 import { getSubClientsByClientId } from "@/app/actions/sub-client";
@@ -32,7 +35,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
   const clientId = Number(id);
   const contacts = await getClientContactsByClientId(clientId);
 
-  const activeTab = resolvedSearchParams?.tab || "sub-clients";
+  const activeTab = resolvedSearchParams?.tab || "overview";
 
   let clientFollowups = [];
   let clientPayments = [];
@@ -47,6 +50,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
 
   const clientLocations = await getClientLocationsByClientId(clientId);
   const subClients = await getSubClientsByClientId(clientId);
+  const openingBalanceRecord = await getOpeningBalanceByClientId(clientId);
 
   if (isNaN(clientId)) {
     return <div className="p-6 text-red-500">Invalid client ID</div>;
@@ -102,6 +106,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
       status: invoices.status,
 
       dueDate: invoices.dueDate,
+      isOpeningBalance: invoices.isOpeningBalance,
 
       awbCount: sql`
       COALESCE(${awbCounts.awbCount}, 0)
@@ -218,6 +223,11 @@ export default async function ClientDetailPage({ params, searchParams }) {
 
             {/* RIGHT ACTIONS */}
             <div className="flex flex-wrap items-center gap-2">
+              <OpeningBalanceModal
+                clientId={client.id}
+                clientName={client.companyName}
+                existingOpeningBalance={openingBalanceRecord}
+              />
               <SendClientReminderModal
                 clientId={client.id}
                 clientName={client.companyName}
@@ -320,6 +330,10 @@ export default async function ClientDetailPage({ params, searchParams }) {
         {/* ===================================== */}
         {/* TAB CONTENT */}
         {/* ===================================== */}
+
+        {activeTab === "overview" && (
+          <ClientOverviewTab client={client} invoices={normalizedInvoiceData} />
+        )}
 
         {activeTab === "sub-clients" && (
           <ClientSubClientsTab
