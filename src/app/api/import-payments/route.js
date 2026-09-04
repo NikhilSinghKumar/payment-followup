@@ -1,5 +1,11 @@
 import { db } from "@/db";
-import { clients, invoices, payments, paymentAllocations } from "@/db/schema";
+import {
+  clients,
+  clientSubClients,
+  invoices,
+  payments,
+  paymentAllocations,
+} from "@/db/schema";
 
 import { parse } from "csv-parse/sync";
 import { and, eq, isNull, inArray } from "drizzle-orm";
@@ -74,6 +80,14 @@ export async function POST(req) {
         // ---------------------------------
 
         const clientCode = row.client_code ?? row["Client Code"] ?? "";
+
+        const subClientCode = (
+          row.sub_client_code ??
+          row["Subclient Code"] ??
+          row["Sub Client Code"] ??
+          row.subclient_code ??
+          ""
+        ).trim();
 
         const invoiceCell = row.invoices ?? row["Invoice Number"] ?? "";
 
@@ -188,6 +202,7 @@ export async function POST(req) {
             .select({
               id: invoices.id,
               invoiceNumber: invoices.invoiceNumber,
+              subClientId: invoices.subClientId,
               outstandingAmount: invoices.outstandingAmount,
             })
             .from(invoices)
@@ -218,6 +233,52 @@ export async function POST(req) {
             });
 
             continue;
+          }
+        }
+
+        // =====================================
+        // RESOLVE SUBCLIENT (IF ANY)
+        // =====================================
+        let targetSubClientId = null;
+
+        if (subClientCode) {
+          const subClientRows = await db
+            .select({
+              id: clientSubClients.id,
+            })
+            .from(clientSubClients)
+            .where(
+              and(
+                eq(clientSubClients.companyId, companyId),
+                eq(clientSubClients.clientId, clientData.id),
+                eq(clientSubClients.companyCode, subClientCode),
+                isNull(clientSubClients.deletedAt),
+              ),
+            )
+            .limit(1);
+
+          if (subClientRows.length === 0) {
+            skipped++;
+
+            errors.push({
+              row: csvRow,
+              clientCode,
+              reference,
+              reason: `Subclient with code '${subClientCode}' does not exist for this client.`,
+            });
+
+            continue;
+          }
+
+          targetSubClientId = subClientRows[0].id;
+        } else if (invoiceRows.length > 0 && invoiceRows[0].subClientId) {
+          // If no subclient specified explicitly, check if all invoices belong to one subclient
+          const commonSubId = invoiceRows[0].subClientId;
+          const allSameSubclient = invoiceRows.every(
+            (inv) => inv.subClientId === commonSubId,
+          );
+          if (allSameSubclient) {
+            targetSubClientId = commonSubId;
           }
         }
 
@@ -306,6 +367,7 @@ export async function POST(req) {
               companyId,
 
               clientId: clientData.id,
+              subClientId: targetSubClientId || null,
 
               invoiceId: null,
 

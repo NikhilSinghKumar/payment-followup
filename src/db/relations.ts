@@ -153,6 +153,7 @@ export const clientSubClientsRelations = relations(
     }),
 
     invoices: many(invoices),
+    payments: many(payments),
   }),
 );
 
@@ -187,6 +188,11 @@ export const paymentsRelations = relations(payments, ({ one, many }) => ({
   client: one(clients, {
     fields: [payments.clientId],
     references: [clients.id],
+  }),
+
+  subClient: one(clientSubClients, {
+    fields: [payments.subClientId],
+    references: [clientSubClients.id],
   }),
 
   invoice: one(invoices, {

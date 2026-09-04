@@ -1107,6 +1107,12 @@ export const payments = pgTable(
       .references(() => clients.id)
       .notNull(),
 
+    // Optional: sub-client who made this payment
+    subClientId: integer("sub_client_id").references(
+      () => clientSubClients.id,
+      { onDelete: "set null" },
+    ),
+
     // =====================================
     // PAYMENT INFO
     // =====================================
