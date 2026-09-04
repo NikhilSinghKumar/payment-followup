@@ -72,7 +72,7 @@ export async function createClient(prevState, formData) {
         : new Date();
       const validDate = isNaN(asOfDate.getTime()) ? new Date() : asOfDate;
       const financialYear = getFinancialYear(validDate);
-      const invoiceNumber = `OPENING-BAL-${companyCode}-${financialYear}`;
+      const invoiceNumber = `OPENING-BAL`;
 
       const statusResult = calculateInvoiceStatus({
         netPayable: openingBalance,

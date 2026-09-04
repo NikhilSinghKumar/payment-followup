@@ -149,7 +149,7 @@ export async function saveClientOpeningBalance(formData) {
       }
     } else if (amount > 0) {
       // Create new opening balance invoice
-      const invoiceNumber = `OPENING-BAL-${client.companyCode || "CL"}-${financialYear}`;
+      const invoiceNumber = `OPENING-BAL`;
       const netPayable = amount;
       const outstanding = amount;
 

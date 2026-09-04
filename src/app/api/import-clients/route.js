@@ -168,7 +168,7 @@ export async function POST(req) {
             : new Date();
           const validDate = isNaN(asOfDate.getTime()) ? new Date() : asOfDate;
           const financialYear = getFinancialYear(validDate);
-          const invoiceNumber = `OPENING-BAL-${clientData.companyCode}-${financialYear}`;
+          const invoiceNumber = `OPENING-BAL`;
 
           const statusResult = calculateInvoiceStatus({
             netPayable: _openingBalance,
