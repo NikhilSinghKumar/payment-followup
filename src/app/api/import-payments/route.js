@@ -1,14 +1,43 @@
 import { db } from "@/db";
-import { clients, invoices, payments, paymentAllocations } from "@/db/schema";
+import {
+  clients,
+  clientSubClients,
+  invoices,
+  payments,
+  paymentAllocations,
+} from "@/db/schema";
 
 import { parse } from "csv-parse/sync";
-import { and, eq, isNull, inArray } from "drizzle-orm";
+import { and, eq, isNull, inArray, or, ilike } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth/auth";
 import { parseImportDate } from "@/lib/date-parser";
 import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
 
 const VALID_METHODS = ["cash", "bank", "upi", "cheque", "adjustment"];
+
+function getRowValue(row, ...keys) {
+  if (!row || typeof row !== "object") return "";
+  for (const k of keys) {
+    if (
+      row[k] !== undefined &&
+      row[k] !== null &&
+      String(row[k]).trim() !== ""
+    ) {
+      return String(row[k]).trim();
+    }
+  }
+  const cleanKeys = keys.map((k) => k.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  for (const [rawKey, val] of Object.entries(row)) {
+    if (val === undefined || val === null || String(val).trim() === "")
+      continue;
+    const cleanRawKey = rawKey.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (cleanKeys.includes(cleanRawKey)) {
+      return String(val).trim();
+    }
+  }
+  return "";
+}
 
 export async function POST(req) {
   try {
@@ -47,11 +76,21 @@ export async function POST(req) {
 
     const text = await file.text();
 
-    const records = parse(text, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-    });
+    let records;
+    try {
+      records = parse(text, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+      });
+    } catch (parseErr) {
+      return Response.json(
+        {
+          error: `CSV Parsing Error: ${parseErr?.message || "Invalid CSV format"}`,
+        },
+        { status: 400 },
+      );
+    }
 
     let inserted = 0;
     let skipped = 0;
@@ -68,43 +107,98 @@ export async function POST(req) {
       const row = records[i];
       const csvRow = i + 2;
 
+      const clientCode = getRowValue(
+        row,
+        "client_code",
+        "Client Code",
+        "company_code",
+        "Company Code",
+        "client",
+        "company",
+      );
+
+      const subClientCode = getRowValue(
+        row,
+        "sub_client_code",
+        "Subclient Code",
+        "Sub Client Code",
+        "subclient_code",
+        "sub_client",
+        "subclient",
+        "Sub Client",
+        "Subclient",
+      );
+
+      const invoiceCell = getRowValue(
+        row,
+        "invoices",
+        "Invoice Number",
+        "invoice_number",
+        "Invoice No",
+        "invoice_no",
+      );
+
+      const invoiceNumbers = invoiceCell
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean);
+
+      const rawDate = getRowValue(
+        row,
+        "payment_date",
+        "Payment Date",
+        "date",
+        "Date",
+      );
+      const paymentDate = parseImportDate(rawDate);
+
+      const rawAmount = getRowValue(
+        row,
+        "amount",
+        "Amount",
+        "payment_amount",
+        "Payment Amount",
+      );
+      const amount = parseFloat(rawAmount.replace(/,/g, "") || "0");
+
+      const rawMethod = getRowValue(
+        row,
+        "method",
+        "Method",
+        "payment_method",
+        "Payment Method",
+      );
+      const method = rawMethod.toLowerCase();
+
+      const receiptNumber = getRowValue(
+        row,
+        "receipt_number",
+        "Receipt Number",
+        "Receipt",
+        "receipt",
+        "Receipt No",
+      );
+
+      const reference = getRowValue(
+        row,
+        "reference",
+        "Reference",
+        "transaction_id",
+        "Transaction ID",
+        "utr",
+        "UTR",
+      );
+
+      const notes = getRowValue(
+        row,
+        "notes",
+        "Notes",
+        "remark",
+        "remarks",
+        "Remarks",
+      );
+
       try {
-        // ---------------------------------
-        // Read CSV
-        // ---------------------------------
-
-        const clientCode = row.client_code ?? row["Client Code"] ?? "";
-
-        const invoiceCell = row.invoices ?? row["Invoice Number"] ?? "";
-
-        const invoiceNumbers = invoiceCell
-          .split(",")
-          .map((x) => x.trim())
-          .filter(Boolean);
-
-        const paymentDate = parseImportDate(
-          row.payment_date ?? row["Payment Date"] ?? row["Date"],
-        );
-
-        const amount = parseFloat(
-          String(row.amount ?? row.Amount ?? "0")
-            .replace(/,/g, "")
-            .trim(),
-        );
-
-        const method = (row.method ?? row.Method ?? "").trim().toLowerCase();
-
-        const receiptNumber = (
-          row.receipt_number ??
-          row.Receipt ??
-          row["Receipt Number"] ??
-          ""
-        ).trim();
-
-        const reference = (row.reference ?? row.Reference ?? "").trim();
-
-        const notes = (row.notes ?? row.Notes ?? "").trim();
-
         // ---------------------------------
         // Validation
         // ---------------------------------
@@ -116,7 +210,7 @@ export async function POST(req) {
         }
 
         if (!paymentDate || isNaN(paymentDate.getTime())) {
-          rowErrors.push("Invalid Payment Date");
+          rowErrors.push(`Invalid Payment Date '${rawDate || "empty"}'`);
         }
 
         if (isNaN(amount) || amount <= 0) {
@@ -126,7 +220,9 @@ export async function POST(req) {
         if (!method) {
           rowErrors.push("Payment Method is required");
         } else if (!VALID_METHODS.includes(method)) {
-          rowErrors.push(`Invalid Payment Method '${method}'`);
+          rowErrors.push(
+            `Invalid Payment Method '${method}'. Allowed: ${VALID_METHODS.join(", ")}`,
+          );
         }
 
         if (rowErrors.length > 0) {
@@ -134,9 +230,11 @@ export async function POST(req) {
 
           errors.push({
             row: csvRow,
-            clientCode,
-            reference,
-            reason: rowErrors.join(", "),
+            clientCode: clientCode || "—",
+            subClientCode: subClientCode || "—",
+            invoices: invoiceNumbers.join(", ") || "—",
+            reference: reference || receiptNumber || "—",
+            reason: rowErrors.join("; "),
           });
 
           continue;
@@ -151,13 +249,18 @@ export async function POST(req) {
             id: clients.id,
             companyName: clients.companyName,
             companyCode: clients.companyCode,
+            isActive: clients.isActive,
           })
           .from(clients)
           .where(
             and(
               eq(clients.companyId, companyId),
-              eq(clients.companyCode, clientCode),
               isNull(clients.deletedAt),
+              or(
+                eq(clients.companyCode, clientCode),
+                ilike(clients.companyCode, clientCode),
+                ilike(clients.companyName, clientCode),
+              ),
             ),
           )
           .limit(1);
@@ -168,14 +271,32 @@ export async function POST(req) {
           errors.push({
             row: csvRow,
             clientCode,
-            reference,
-            reason: "Client not found",
+            subClientCode: subClientCode || "—",
+            invoices: invoiceNumbers.join(", ") || "—",
+            reference: reference || receiptNumber || "—",
+            reason: `Client with code or name '${clientCode}' does not exist.`,
           });
 
           continue;
         }
 
         const clientData = client[0];
+
+        // Check if active
+        if (clientData.isActive === false) {
+          skipped++;
+
+          errors.push({
+            row: csvRow,
+            clientCode: clientData.companyCode || clientCode,
+            subClientCode: subClientCode || "—",
+            invoices: invoiceNumbers.join(", ") || "—",
+            reference: reference || receiptNumber || "—",
+            reason: `Client '${clientData.companyName}' (${clientData.companyCode || clientCode}) is inactive.`,
+          });
+
+          continue;
+        }
 
         // =====================================
         // FIND & VALIDATE INVOICES
@@ -188,6 +309,7 @@ export async function POST(req) {
             .select({
               id: invoices.id,
               invoiceNumber: invoices.invoiceNumber,
+              subClientId: invoices.subClientId,
               outstandingAmount: invoices.outstandingAmount,
             })
             .from(invoices)
@@ -208,13 +330,98 @@ export async function POST(req) {
             .filter(Boolean);
 
           if (invoiceRows.length !== invoiceNumbers.length) {
+            const foundNumbers = invoiceRows.map((x) => x.invoiceNumber);
+            const missing = invoiceNumbers.filter(
+              (x) => !foundNumbers.includes(x),
+            );
+
             skipped++;
 
             errors.push({
               row: csvRow,
-              clientCode,
-              reference,
-              reason: "One or more invoice numbers are invalid.",
+              clientCode: clientData.companyCode || clientCode,
+              subClientCode: subClientCode || "—",
+              invoices: invoiceNumbers.join(", "),
+              reference: reference || receiptNumber || "—",
+              reason: `Invoice(s) not found for this client: ${missing.join(", ")}`,
+            });
+
+            continue;
+          }
+        }
+
+        // =====================================
+        // RESOLVE SUBCLIENT (IF ANY)
+        // =====================================
+        let targetSubClientId = null;
+        let matchedSubClientLabel = subClientCode;
+
+        if (subClientCode) {
+          const subClientRows = await db
+            .select({
+              id: clientSubClients.id,
+              companyName: clientSubClients.companyName,
+              companyCode: clientSubClients.companyCode,
+            })
+            .from(clientSubClients)
+            .where(
+              and(
+                eq(clientSubClients.clientId, clientData.id),
+                isNull(clientSubClients.deletedAt),
+                or(
+                  eq(clientSubClients.companyCode, subClientCode),
+                  ilike(clientSubClients.companyCode, subClientCode),
+                  ilike(clientSubClients.companyName, subClientCode),
+                ),
+              ),
+            )
+            .limit(1);
+
+          if (subClientRows.length === 0) {
+            skipped++;
+
+            errors.push({
+              row: csvRow,
+              clientCode: clientData.companyCode || clientCode,
+              subClientCode,
+              invoices: invoiceNumbers.join(", ") || "—",
+              reference: reference || receiptNumber || "—",
+              reason: `Subclient '${subClientCode}' does not exist for client '${clientData.companyName}' (${clientData.companyCode || clientCode}).`,
+            });
+
+            continue;
+          }
+
+          targetSubClientId = subClientRows[0].id;
+          matchedSubClientLabel = subClientRows[0].companyCode
+            ? `${subClientRows[0].companyName} (${subClientRows[0].companyCode})`
+            : subClientRows[0].companyName;
+        } else if (invoiceRows.length > 0 && invoiceRows[0].subClientId) {
+          // If no subclient specified explicitly, check if all invoices belong to one subclient
+          const commonSubId = invoiceRows[0].subClientId;
+          const allSameSubclient = invoiceRows.every(
+            (inv) => inv.subClientId === commonSubId,
+          );
+          if (allSameSubclient) {
+            targetSubClientId = commonSubId;
+          }
+        }
+
+        // Validate invoice subclient affinity if subclient is specified
+        if (targetSubClientId && invoiceRows.length > 0) {
+          const conflictingInvoices = invoiceRows.filter(
+            (inv) => inv.subClientId && inv.subClientId !== targetSubClientId,
+          );
+          if (conflictingInvoices.length > 0) {
+            skipped++;
+
+            errors.push({
+              row: csvRow,
+              clientCode: clientData.companyCode || clientCode,
+              subClientCode: matchedSubClientLabel || subClientCode,
+              invoices: invoiceNumbers.join(", "),
+              reference: reference || receiptNumber || "—",
+              reason: `Invoice(s) ${conflictingInvoices.map((inv) => inv.invoiceNumber).join(", ")} belong to a different subclient than '${matchedSubClientLabel}'.`,
             });
 
             continue;
@@ -245,9 +452,11 @@ export async function POST(req) {
 
             errors.push({
               row: csvRow,
-              clientCode,
-              reference,
-              reason: `Receipt '${receiptNumber}' already exists`,
+              clientCode: clientData.companyCode || clientCode,
+              subClientCode: matchedSubClientLabel || subClientCode || "—",
+              invoices: invoiceNumbers.join(", ") || "—",
+              reference: reference || receiptNumber,
+              reason: `Receipt number '${receiptNumber}' already exists in system.`,
             });
 
             continue;
@@ -279,9 +488,11 @@ export async function POST(req) {
 
             errors.push({
               row: csvRow,
-              clientCode,
+              clientCode: clientData.companyCode || clientCode,
+              subClientCode: matchedSubClientLabel || subClientCode || "—",
+              invoices: invoiceNumbers.join(", ") || "—",
               reference,
-              reason: `Payment reference '${reference}' already exists for this client`,
+              reason: `Payment reference '${reference}' already exists for this client.`,
             });
 
             continue;
@@ -306,6 +517,7 @@ export async function POST(req) {
               companyId,
 
               clientId: clientData.id,
+              subClientId: targetSubClientId || null,
 
               invoiceId: null,
 
@@ -381,9 +593,11 @@ export async function POST(req) {
 
         errors.push({
           row: csvRow,
-          clientCode: clientCode || row.client_code || "",
-          reference: reference || row.reference || "",
-          reason: err?.message || "Unexpected server error",
+          clientCode: clientCode || "—",
+          subClientCode: subClientCode || "—",
+          invoices: invoiceNumbers.join(", ") || "—",
+          reference: reference || receiptNumber || "—",
+          reason: err?.message || "Unexpected row processing error",
         });
       }
     }
@@ -406,12 +620,14 @@ export async function POST(req) {
       errors,
     });
   } catch (err) {
-    console.error("Payment Import Error:", err);
+    console.error("Payment Import Critical Error:", err);
 
     return Response.json(
       {
         status: "error",
-        error: "Import failed.",
+        error:
+          err?.message ||
+          "Payment import failed due to an unexpected server error.",
       },
       {
         status: 500,

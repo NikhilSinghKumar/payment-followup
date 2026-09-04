@@ -13,15 +13,23 @@ const PAYMENT_ERROR_COLUMNS = [
   },
   {
     key: "clientCode",
-    label: "Client Code",
+    label: "Client",
+  },
+  {
+    key: "subClientCode",
+    label: "Subclient",
+  },
+  {
+    key: "invoices",
+    label: "Invoices",
   },
   {
     key: "reference",
-    label: "Reference",
+    label: "Reference / Receipt",
   },
   {
     key: "reason",
-    label: "Reason",
+    label: "Error Details",
   },
 ];
 
@@ -63,7 +71,12 @@ export default function ImportPayments() {
         body: formData,
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = { error: "Failed to parse response from server." };
+      }
 
       // =====================================
       // API ERROR
@@ -80,9 +93,13 @@ export default function ImportPayments() {
           errors: [
             {
               row: "—",
-              clientCode: "",
-              reference: "",
-              reason: data.error || "Payment import failed",
+              clientCode: "—",
+              subClientCode: "—",
+              invoices: "—",
+              reference: "—",
+              reason:
+                data?.error ||
+                `Server error (${res.status}): Payment import failed. Please verify your file.`,
             },
           ],
         });
@@ -121,9 +138,13 @@ export default function ImportPayments() {
         errors: [
           {
             row: "—",
-            clientCode: "",
-            reference: "",
-            reason: "Unexpected server error",
+            clientCode: "—",
+            subClientCode: "—",
+            invoices: "—",
+            reference: "—",
+            reason:
+              err?.message ||
+              "Unexpected network or client error during import.",
           },
         ],
       });
