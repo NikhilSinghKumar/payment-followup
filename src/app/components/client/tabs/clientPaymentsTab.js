@@ -96,16 +96,6 @@ export default function ClientPaymentsTab({ clientId, payments = [] }) {
                       <span className="text-sm font-medium text-zinc-800">
                         {payment.receiptNumber || "—"}
                       </span>
-                      {payment.subClient?.companyName && (
-                        <div className="mt-0.5">
-                          <span
-                            className="inline-block max-w-[150px] truncate rounded bg-purple-50 px-1.5 py-0.2 text-[10px] font-medium text-purple-700"
-                            title={`Paid by subclient: ${payment.subClient.companyName}`}
-                          >
-                            {payment.subClient.companyName}
-                          </span>
-                        </div>
-                      )}
                     </td>
 
                     {/* Payment Amount */}

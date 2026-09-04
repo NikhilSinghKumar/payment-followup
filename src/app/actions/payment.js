@@ -177,26 +177,9 @@ export async function getInvoicesForPayment(clientId) {
     awbs: awbMap[inv.id] || [],
   }));
 
-  const subClients = await db
-    .select({
-      id: clientSubClients.id,
-      companyName: clientSubClients.companyName,
-      companyCode: clientSubClients.companyCode,
-    })
-    .from(clientSubClients)
-    .where(
-      and(
-        eq(clientSubClients.clientId, parsedClientId),
-        isNull(clientSubClients.deletedAt),
-        eq(clientSubClients.isActive, true),
-      ),
-    )
-    .orderBy(clientSubClients.companyName);
-
   return {
     clientSummary,
     invoices: invoicesWithAwbs,
-    subClients,
   };
 }
 
@@ -241,12 +224,6 @@ export async function createPayment(formData) {
 
   const notes = formData.get("notes")?.trim() || null;
 
-  const subClientIdRaw = formData.get("subClientId");
-  const subClientId =
-    subClientIdRaw && subClientIdRaw !== "" && !isNaN(Number(subClientIdRaw))
-      ? Number(subClientIdRaw)
-      : null;
-
   // ======================================================
   // BASIC VALIDATION
   // ======================================================
@@ -289,31 +266,6 @@ export async function createPayment(formData) {
 
   if (!client) {
     throw new Error("Invalid client.");
-  }
-
-  // ======================================================
-  // VERIFY SUBCLIENT (IF PROVIDED)
-  // ======================================================
-
-  let verifiedSubClientId = null;
-  if (subClientId) {
-    const subClientRows = await db
-      .select({ id: clientSubClients.id })
-      .from(clientSubClients)
-      .where(
-        and(
-          eq(clientSubClients.id, subClientId),
-          eq(clientSubClients.clientId, clientId),
-          isNull(clientSubClients.deletedAt),
-        ),
-      )
-      .limit(1);
-
-    if (!subClientRows.length) {
-      throw new Error("Invalid subclient selected.");
-    }
-
-    verifiedSubClientId = subClientRows[0].id;
   }
 
   // ======================================================
@@ -441,7 +393,6 @@ export async function createPayment(formData) {
         invoiceId: null,
 
         clientId,
-        subClientId: verifiedSubClientId,
 
         amount: amount.toString(),
 
@@ -579,7 +530,6 @@ export async function getPayments(
       id: payments.id,
       companyId: payments.companyId,
       clientId: payments.clientId,
-      subClientId: payments.subClientId,
       invoiceId: payments.invoiceId,
       amount: payments.amount,
       paymentDate: payments.paymentDate,
@@ -595,15 +545,9 @@ export async function getPayments(
         companyName: clients.companyName,
         companyCode: clients.companyCode,
       },
-      subClient: {
-        id: clientSubClients.id,
-        companyName: clientSubClients.companyName,
-        companyCode: clientSubClients.companyCode,
-      },
     })
     .from(payments)
     .leftJoin(clients, eq(payments.clientId, clients.id))
-    .leftJoin(clientSubClients, eq(payments.subClientId, clientSubClients.id))
     .where(
       and(
         eq(payments.companyId, currentUser.companyId),
@@ -760,7 +704,6 @@ export async function getPaymentsByClient(clientId) {
       id: payments.id,
       companyId: payments.companyId,
       clientId: payments.clientId,
-      subClientId: payments.subClientId,
       invoiceId: payments.invoiceId,
       amount: payments.amount,
       paymentDate: payments.paymentDate,
@@ -771,14 +714,8 @@ export async function getPaymentsByClient(clientId) {
       isVoided: payments.isVoided,
       createdAt: payments.createdAt,
       updatedAt: payments.updatedAt,
-      subClient: {
-        id: clientSubClients.id,
-        companyName: clientSubClients.companyName,
-        companyCode: clientSubClients.companyCode,
-      },
     })
     .from(payments)
-    .leftJoin(clientSubClients, eq(payments.subClientId, clientSubClients.id))
     .where(
       and(
         eq(payments.companyId, currentUser.companyId),

@@ -361,7 +361,6 @@ export async function addInvoicePayment(invoiceId, formData) {
           companyId: currentUser.companyId,
           invoiceId,
           clientId: invoiceData.clientId,
-          subClientId: invoiceData.subClientId || null,
           amount: String(amount),
           paymentDate,
           receiptNumber,

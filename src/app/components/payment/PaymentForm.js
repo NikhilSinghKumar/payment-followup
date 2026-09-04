@@ -21,9 +21,6 @@ export default function PaymentForm({ clients = [] }) {
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientSummary, setClientSummary] = useState(null);
   const [invoices, setInvoices] = useState([]);
-  const [subClients, setSubClients] = useState([]);
-  const [selectedSubClientId, setSelectedSubClientId] = useState("");
-  const [filterSubClientId, setFilterSubClientId] = useState("ALL");
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -39,15 +36,6 @@ export default function PaymentForm({ clients = [] }) {
   });
 
   const paymentAmount = Number(values.amount || 0);
-
-  // Filtered invoices according to selected tab/filter
-  const displayedInvoices = useMemo(() => {
-    if (!filterSubClientId || filterSubClientId === "ALL") {
-      return invoices;
-    }
-    const targetSubId = Number(filterSubClientId);
-    return invoices.filter((inv) => Number(inv.subClientId) === targetSubId);
-  }, [invoices, filterSubClientId]);
 
   // Calculate selected total due
   const selectedInvoicesList = invoices.filter((inv) =>
@@ -103,24 +91,11 @@ export default function PaymentForm({ clients = [] }) {
     }));
   }
 
-  function handleSubClientChange(e) {
-    const val = e.target.value;
-    setSelectedSubClientId(val);
-    if (val) {
-      setFilterSubClientId(val);
-    } else {
-      setFilterSubClientId("ALL");
-    }
-  }
-
   async function handleClientChange(client) {
     setSelectedClient(client);
     setClientSummary(null);
     setInvoices([]);
     setSelectedInvoiceIds([]);
-    setSubClients([]);
-    setSelectedSubClientId("");
-    setFilterSubClientId("ALL");
     setValues((prev) => ({
       ...prev,
       amount: "",
@@ -133,7 +108,6 @@ export default function PaymentForm({ clients = [] }) {
       const result = await getInvoicesForPayment(client.id);
       setClientSummary(result.clientSummary);
       setInvoices(result.invoices || []);
-      setSubClients(result.subClients || []);
     } finally {
       setLoadingInvoices(false);
     }
@@ -164,13 +138,9 @@ export default function PaymentForm({ clients = [] }) {
   }
 
   function selectAllInvoices() {
-    const targetList =
-      filterSubClientId !== "ALL" && displayedInvoices.length > 0
-        ? displayedInvoices
-        : invoices;
-    const allIds = targetList.map((inv) => inv.id);
+    const allIds = invoices.map((inv) => inv.id);
     setSelectedInvoiceIds(allIds);
-    const sum = targetList.reduce((s, inv) => s + Number(inv.due || 0), 0);
+    const sum = invoices.reduce((s, inv) => s + Number(inv.due || 0), 0);
     setValues((prev) => ({
       ...prev,
       amount: sum > 0 ? String(sum) : prev.amount,
@@ -185,17 +155,7 @@ export default function PaymentForm({ clients = [] }) {
     if (paymentAmount <= 0) return;
     let remaining = paymentAmount;
     const selected = [];
-
-    // Prioritize displayed/filtered invoices first if filtered
-    const targetInvoices =
-      displayedInvoices.length > 0 && filterSubClientId !== "ALL"
-        ? [
-            ...displayedInvoices,
-            ...invoices.filter((inv) => !displayedInvoices.includes(inv)),
-          ]
-        : invoices;
-
-    for (const inv of targetInvoices) {
+    for (const inv of invoices) {
       if (remaining <= 0) break;
       const due = Number(inv.due || 0);
       if (due <= 0) continue;
@@ -225,6 +185,18 @@ export default function PaymentForm({ clients = [] }) {
             </h1>
           </div>
         </div>
+
+        {selectedClient && (
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+            <Building2 size={13} />
+            <span className="max-w-[200px] truncate">
+              {selectedClient.companyName}
+            </span>
+            {selectedClient.companyCode && (
+              <span className="opacity-75">({selectedClient.companyCode})</span>
+            )}
+          </span>
+        )}
       </div>
 
       {errorMessage && (
@@ -248,11 +220,6 @@ export default function PaymentForm({ clients = [] }) {
       >
         {/* Hidden Form Inputs */}
         <input type="hidden" name="clientId" value={selectedClient?.id ?? ""} />
-        <input
-          type="hidden"
-          name="subClientId"
-          value={selectedSubClientId || ""}
-        />
 
         {/* Hidden Allocation Form Inputs */}
         {Object.entries(allocations).map(([invId, allocAmt]) => (
@@ -276,38 +243,6 @@ export default function PaymentForm({ clients = [] }) {
                 onSelect={handleClientChange}
                 placeholder="Search client..."
               />
-            </div>
-
-            {/* Sub-Client Selector */}
-            <div className="sm:col-span-3">
-              <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                Subclient{" "}
-                <span className="text-[10px] font-normal text-zinc-400">
-                  (Optional)
-                </span>
-              </label>
-              <select
-                value={selectedSubClientId}
-                onChange={handleSubClientChange}
-                disabled={!selectedClient || subClients.length === 0}
-                className="h-8.5 w-full rounded-lg border border-zinc-200 bg-white px-2 text-xs text-zinc-800 shadow-2xs outline-none transition focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:disabled:bg-zinc-800/50"
-              >
-                {!selectedClient ? (
-                  <option value="">Select client first</option>
-                ) : subClients.length === 0 ? (
-                  <option value="">Directly by Client (No subclients)</option>
-                ) : (
-                  <>
-                    <option value="">Directly by Client (Default)</option>
-                    {subClients.map((sc) => (
-                      <option key={sc.id} value={sc.id}>
-                        {sc.companyName}{" "}
-                        {sc.companyCode ? `(${sc.companyCode})` : ""}
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
             </div>
 
             {/* Payment Amount */}
@@ -351,17 +286,18 @@ export default function PaymentForm({ clients = [] }) {
                 />
               </div>
             </div>
-          </div>
 
-          {/* Method, Reference & Notes Row */}
-          <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-12">
+            {/* Method */}
             <div className="sm:col-span-3">
+              <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Method
+              </label>
               <select
                 name="method"
                 value={values.method}
                 onChange={handleChange}
                 disabled={!selectedClient}
-                className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-2 text-xs text-zinc-800 shadow-2xs outline-none transition focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:disabled:bg-zinc-800/50"
+                className="h-8.5 w-full rounded-lg border border-zinc-200 bg-white px-2 text-xs text-zinc-800 shadow-2xs outline-none transition focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:disabled:bg-zinc-800/50"
               >
                 <option value="bank">Bank Transfer / NEFT / RTGS</option>
                 <option value="upi">UPI / QR Code</option>
@@ -370,7 +306,11 @@ export default function PaymentForm({ clients = [] }) {
                 <option value="adjustment">Adjustment / Credit</option>
               </select>
             </div>
-            <div className="sm:col-span-3">
+          </div>
+
+          {/* Reference & Notes Row */}
+          <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-12">
+            <div className="sm:col-span-4">
               <input
                 type="text"
                 name="reference"
@@ -381,18 +321,18 @@ export default function PaymentForm({ clients = [] }) {
                 className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 shadow-2xs outline-none transition placeholder:text-zinc-400 focus:border-blue-500 disabled:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:disabled:bg-zinc-800/50"
               />
             </div>
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-3">
               <input
                 type="text"
                 name="receiptNumber"
                 value={values.receiptNumber}
                 onChange={handleChange}
                 disabled={!selectedClient}
-                placeholder="Receipt / Voucher..."
+                placeholder="Receipt / Voucher No..."
                 className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 shadow-2xs outline-none transition placeholder:text-zinc-400 focus:border-blue-500 disabled:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:disabled:bg-zinc-800/50"
               />
             </div>
-            <div className="sm:col-span-4">
+            <div className="sm:col-span-5">
               <input
                 type="text"
                 name="notes"
@@ -466,10 +406,19 @@ export default function PaymentForm({ clients = [] }) {
         <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
           {/* Card Header */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50/80 px-3.5 py-2 dark:border-zinc-800 dark:bg-zinc-800/50">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2">
+              <FileText
+                size={14}
+                className="text-zinc-500 dark:text-zinc-400"
+              />
               <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-200">
-                Outstanding Invoices
+                Outstanding Invoices to Settle
               </h2>
+              {invoices.length > 0 && (
+                <span className="rounded-full bg-zinc-200 px-2 py-0.2 text-[10px] font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                  {invoices.length}
+                </span>
+              )}
             </div>
 
             {selectedClient && invoices.length > 0 && (
@@ -511,6 +460,10 @@ export default function PaymentForm({ clients = [] }) {
               <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 No Client Selected
               </p>
+              <p className="mt-0.5 max-w-sm text-[11px] text-zinc-400 dark:text-zinc-500">
+                Choose a client above to list outstanding invoices and settle
+                payments.
+              </p>
             </div>
           ) : loadingInvoices ? (
             <div className="flex items-center justify-center p-8 text-center">
@@ -532,22 +485,9 @@ export default function PaymentForm({ clients = [] }) {
                 unallocated on-account payment.
               </p>
             </div>
-          ) : displayedInvoices.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                No invoices found for the selected filter
-              </p>
-              <button
-                type="button"
-                onClick={() => setFilterSubClientId("ALL")}
-                className="mt-2.5 inline-flex items-center rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300"
-              >
-                View All Client Invoices ({invoices.length})
-              </button>
-            </div>
           ) : (
             <div className="max-h-[calc(100vh-340px)] min-h-[140px] overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800">
-              {displayedInvoices.map((invoice) => {
+              {invoices.map((invoice) => {
                 const isSelected = selectedInvoiceIds.includes(invoice.id);
                 const currentAllocation = allocations[invoice.id] || 0;
 
@@ -576,7 +516,7 @@ export default function PaymentForm({ clients = [] }) {
                     </div>
 
                     {/* Invoice Info & Sub-client */}
-                    <div className="w-[180px] shrink-0 min-w-0">
+                    <div className="w-[170px] shrink-0 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                           {invoice.invoiceNumber}
@@ -592,13 +532,13 @@ export default function PaymentForm({ clients = [] }) {
                           </span>
                         )}
                       </div>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-400">
+                      <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
                         {invoice.subClientName && (
                           <span
-                            className="inline-block max-w-[95px] truncate rounded bg-purple-50 px-1 py-0.2 font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300"
+                            className="truncate max-w-[85px]"
                             title={invoice.subClientName}
                           >
-                            {invoice.subClientName}
+                            {invoice.subClientName} •
                           </span>
                         )}
                         <span>Due: {formatDate(invoice.dueDate)}</span>
@@ -624,6 +564,20 @@ export default function PaymentForm({ clients = [] }) {
                           "en-IN",
                         )}
                       </div>
+                    </div>
+
+                    {/* Allocation Status Badge */}
+                    <div className="w-[130px] shrink-0 text-right">
+                      {isSelected ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                          <Check size={11} />
+                          Settling: ₹{currentAllocation.toLocaleString("en-IN")}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-zinc-400 font-normal">
+                          Click to settle
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
