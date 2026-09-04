@@ -217,13 +217,12 @@ export async function POST(req) {
           rowErrors.push("Payment Amount must be greater than 0");
         }
 
-        // if (!method) {
-        //   rowErrors.push("Payment Method is required");
-        // } else if (!VALID_METHODS.includes(method)) {
-        //   rowErrors.push(
-        //     `Invalid Payment Method '${method}'. Allowed: ${VALID_METHODS.join(", ")}`,
-        //   );
-        // }
+        // Only validate if a method was provided
+        if (method && !VALID_METHODS.includes(method)) {
+          rowErrors.push(
+            `Invalid Payment Method '${method}'. Allowed: ${VALID_METHODS.join(", ")}`,
+          );
+        }
 
         if (rowErrors.length > 0) {
           skipped++;
