@@ -92,11 +92,11 @@ export default function ImportPayments() {
 
           errors: [
             {
-              row: "—",
-              clientCode: "—",
-              subClientCode: "—",
-              invoices: "—",
-              reference: "—",
+              row: "-",
+              clientCode: "",
+              subClientCode: "",
+              invoices: "",
+              reference: "",
               reason:
                 data?.error ||
                 `Server error (${res.status}): Payment import failed. Please verify your file.`,
@@ -137,11 +137,11 @@ export default function ImportPayments() {
 
         errors: [
           {
-            row: "—",
-            clientCode: "—",
-            subClientCode: "—",
-            invoices: "—",
-            reference: "—",
+            row: "-",
+            clientCode: "",
+            subClientCode: "",
+            invoices: "",
+            reference: "",
             reason:
               err?.message ||
               "Unexpected network or client error during import.",

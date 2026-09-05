@@ -52,7 +52,16 @@ export default function DownloadErrorReport({
           return value.join("; ");
         }
 
-        return value ?? "";
+        if (
+          value === null ||
+          value === undefined ||
+          value === "—" ||
+          value === "-"
+        ) {
+          return "";
+        }
+
+        return value;
       }),
     );
 
@@ -66,9 +75,10 @@ export default function DownloadErrorReport({
       ...rows.map((row) =>
         row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
       ),
-    ].join("\n");
+    ].join("\r\n");
 
-    const blob = new Blob([csv], {
+    // Prepend UTF-8 BOM (\uFEFF) so Excel and spreadsheet apps decode properly
+    const blob = new Blob(["\uFEFF" + csv], {
       type: "text/csv;charset=utf-8;",
     });
 

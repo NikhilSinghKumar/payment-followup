@@ -22,7 +22,7 @@ export default function ExportContacts({ clientId }) {
 
       const csv = [headers.join(","), ...rows].join("\n");
 
-      const blob = new Blob([csv], {
+      const blob = new Blob(["\uFEFF" + csv], {
         type: "text/csv;charset=utf-8;",
       });
 

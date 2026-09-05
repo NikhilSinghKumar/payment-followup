@@ -173,7 +173,9 @@ export default function ImportErrorTable({
                             column.key === "row" ? "font-semibold" : ""
                           }`}
                         >
-                          {value ?? "—"}
+                          {value && String(value).trim().length > 0
+                            ? value
+                            : "-"}
                         </td>
                       );
                     })}

@@ -217,8 +217,9 @@ export async function POST(req) {
           rowErrors.push("Payment Amount must be greater than 0");
         }
 
-        // Only validate if a method was provided
-        if (method && !VALID_METHODS.includes(method)) {
+        if (!method) {
+          rowErrors.push("Payment Method is required");
+        } else if (!VALID_METHODS.includes(method)) {
           rowErrors.push(
             `Invalid Payment Method '${method}'. Allowed: ${VALID_METHODS.join(", ")}`,
           );
@@ -229,10 +230,10 @@ export async function POST(req) {
 
           errors.push({
             row: csvRow,
-            clientCode: clientCode || "—",
-            subClientCode: subClientCode || "—",
-            invoices: invoiceNumbers.join(", ") || "—",
-            reference: reference || receiptNumber || "—",
+            clientCode: clientCode || "",
+            subClientCode: subClientCode || "",
+            invoices: invoiceNumbers.join(", ") || "",
+            reference: reference || receiptNumber || "",
             reason: rowErrors.join("; "),
           });
 
@@ -270,9 +271,9 @@ export async function POST(req) {
           errors.push({
             row: csvRow,
             clientCode,
-            subClientCode: subClientCode || "—",
-            invoices: invoiceNumbers.join(", ") || "—",
-            reference: reference || receiptNumber || "—",
+            subClientCode: subClientCode || "",
+            invoices: invoiceNumbers.join(", ") || "",
+            reference: reference || receiptNumber || "",
             reason: `Client with code or name '${clientCode}' does not exist.`,
           });
 
@@ -288,9 +289,9 @@ export async function POST(req) {
           errors.push({
             row: csvRow,
             clientCode: clientData.companyCode || clientCode,
-            subClientCode: subClientCode || "—",
-            invoices: invoiceNumbers.join(", ") || "—",
-            reference: reference || receiptNumber || "—",
+            subClientCode: subClientCode || "",
+            invoices: invoiceNumbers.join(", ") || "",
+            reference: reference || receiptNumber || "",
             reason: `Client '${clientData.companyName}' (${clientData.companyCode || clientCode}) is inactive.`,
           });
 
@@ -339,9 +340,9 @@ export async function POST(req) {
             errors.push({
               row: csvRow,
               clientCode: clientData.companyCode || clientCode,
-              subClientCode: subClientCode || "—",
+              subClientCode: subClientCode || "",
               invoices: invoiceNumbers.join(", "),
-              reference: reference || receiptNumber || "—",
+              reference: reference || receiptNumber || "",
               reason: `Invoice(s) not found for this client: ${missing.join(", ")}`,
             });
 
@@ -383,8 +384,8 @@ export async function POST(req) {
               row: csvRow,
               clientCode: clientData.companyCode || clientCode,
               subClientCode,
-              invoices: invoiceNumbers.join(", ") || "—",
-              reference: reference || receiptNumber || "—",
+              invoices: invoiceNumbers.join(", ") || "",
+              reference: reference || receiptNumber || "",
               reason: `Subclient '${subClientCode}' does not exist for client '${clientData.companyName}' (${clientData.companyCode || clientCode}).`,
             });
 
@@ -419,7 +420,7 @@ export async function POST(req) {
               clientCode: clientData.companyCode || clientCode,
               subClientCode: matchedSubClientLabel || subClientCode,
               invoices: invoiceNumbers.join(", "),
-              reference: reference || receiptNumber || "—",
+              reference: reference || receiptNumber || "",
               reason: `Invoice(s) ${conflictingInvoices.map((inv) => inv.invoiceNumber).join(", ")} belong to a different subclient than '${matchedSubClientLabel}'.`,
             });
 
@@ -452,8 +453,8 @@ export async function POST(req) {
             errors.push({
               row: csvRow,
               clientCode: clientData.companyCode || clientCode,
-              subClientCode: matchedSubClientLabel || subClientCode || "—",
-              invoices: invoiceNumbers.join(", ") || "—",
+              subClientCode: matchedSubClientLabel || subClientCode || "",
+              invoices: invoiceNumbers.join(", ") || "",
               reference: reference || receiptNumber,
               reason: `Receipt number '${receiptNumber}' already exists in system.`,
             });
@@ -488,8 +489,8 @@ export async function POST(req) {
             errors.push({
               row: csvRow,
               clientCode: clientData.companyCode || clientCode,
-              subClientCode: matchedSubClientLabel || subClientCode || "—",
-              invoices: invoiceNumbers.join(", ") || "—",
+              subClientCode: matchedSubClientLabel || subClientCode || "",
+              invoices: invoiceNumbers.join(", ") || "",
               reference,
               reason: `Payment reference '${reference}' already exists for this client.`,
             });
@@ -592,10 +593,10 @@ export async function POST(req) {
 
         errors.push({
           row: csvRow,
-          clientCode: clientCode || "—",
-          subClientCode: subClientCode || "—",
-          invoices: invoiceNumbers.join(", ") || "—",
-          reference: reference || receiptNumber || "—",
+          clientCode: clientCode || "",
+          subClientCode: subClientCode || "",
+          invoices: invoiceNumbers.join(", ") || "",
+          reference: reference || receiptNumber || "",
           reason: err?.message || "Unexpected row processing error",
         });
       }
