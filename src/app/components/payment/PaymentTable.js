@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Mail, Layers } from "lucide-react";
 
 import {
   Dialog,
@@ -11,8 +12,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import BulkPaymentNotificationModal from "./BulkPaymentNotificationModal";
+import AllocatePaymentModal from "./AllocatePaymentModal";
 
 export default function PaymentTable({ payments = [], hasFilter = false }) {
+  const router = useRouter();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [selectedAllocations, setSelectedAllocations] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -20,6 +23,10 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
   // Single payment notify state
   const [notifyModalOpen, setNotifyModalOpen] = useState(false);
   const [targetPaymentId, setTargetPaymentId] = useState(null);
+
+  // Allocation modal state
+  const [allocateModalOpen, setAllocateModalOpen] = useState(false);
+  const [allocatingPayment, setAllocatingPayment] = useState(null);
 
   function handleViewInvoices(payment) {
     setSelectedPayment(payment);
@@ -30,6 +37,11 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
   function handleNotifyPayment(paymentId) {
     setTargetPaymentId(paymentId);
     setNotifyModalOpen(true);
+  }
+
+  function handleOpenAllocateModal(payment) {
+    setAllocatingPayment(payment);
+    setAllocateModalOpen(true);
   }
 
   // =====================================
@@ -62,44 +74,44 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="overflow-x-auto [scrollbar-width:thin]">
-          <table className="w-full min-w-[850px]">
+          <table className="w-full min-w-[760px]">
             {/* Header */}
 
             <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/60">
               <tr>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Client
                 </th>
 
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Date
                 </th>
 
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Receipt
                 </th>
 
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Payment
                 </th>
 
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Credit
                 </th>
 
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Invoices
                 </th>
 
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                {/* <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Method
                 </th>
 
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Reference
-                </th>
+                </th> */}
 
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Actions
                 </th>
               </tr>
@@ -118,17 +130,20 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                   >
                     {/* Client */}
 
-                    <td className="px-5 py-4">
+                    <td className="w-[220px] px-3 py-4">
                       {payment.client?.id ? (
                         <Link
                           href={`/clients/${payment.client.id}`}
-                          className="group"
+                          className="group block max-w-[200px]"
                         >
-                          <p className="whitespace-nowrap text-sm font-medium truncate text-zinc-800 transition group-hover:text-blue-600 dark:text-zinc-200 dark:group-hover:text-blue-400">
+                          <p
+                            className="truncate whitespace-nowrap text-sm font-medium text-zinc-800 transition group-hover:text-blue-600 dark:text-zinc-200 dark:group-hover:text-blue-400"
+                            title={payment.client.companyName || ""}
+                          >
                             {payment.client.companyName || "—"}
                           </p>
 
-                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1">
                             {payment.client.companyCode && (
                               <span className="text-xs text-zinc-400">
                                 {payment.client.companyCode}
@@ -151,13 +166,13 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     {/* Payment Date */}
 
-                    <td className="whitespace-nowrap px-5 py-4 text-sm text-zinc-700 dark:text-zinc-300">
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-700 dark:text-zinc-300">
                       {formatDate(payment.paymentDate)}
                     </td>
 
                     {/* Receipt */}
 
-                    <td className="whitespace-nowrap px-5 py-4">
+                    <td className="whitespace-nowrap px-3 py-4">
                       <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                         {payment.receiptNumber || "—"}
                       </span>
@@ -165,13 +180,13 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     {/* Payment Amount */}
 
-                    <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    <td className="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                       {formatCurrency(payment.amount)}
                     </td>
 
                     {/* Unallocated */}
 
-                    <td className="whitespace-nowrap px-5 py-4 text-right">
+                    <td className="whitespace-nowrap px-3 py-4 text-right">
                       <span
                         className={`text-sm font-medium ${
                           Number(payment.unallocatedAmount || 0) > 0
@@ -185,7 +200,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     {/* Related Invoices */}
 
-                    <td className="px-5 py-4">
+                    <td className="px-3 py-4">
                       <InvoiceAllocations
                         allocations={allocations}
                         onViewAll={() => handleViewInvoices(payment)}
@@ -194,34 +209,47 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     {/* Method */}
 
-                    <td className="whitespace-nowrap px-5 py-4">
+                    {/* <td className="whitespace-nowrap px-5 py-4">
                       <span className="text-sm capitalize text-zinc-700 dark:text-zinc-300">
                         {formatMethod(payment.method)}
                       </span>
-                    </td>
+                    </td> */}
 
                     {/* Reference */}
 
-                    <td className="px-5 py-4">
+                    {/* <td className="px-5 py-4">
                       <p
                         className="max-w-[180px] truncate text-sm text-zinc-600 dark:text-zinc-400"
                         title={payment.reference || ""}
                       >
                         {payment.reference || "—"}
                       </p>
-                    </td>
+                    </td> */}
 
                     {/* Action */}
-                    <td className="whitespace-nowrap px-5 py-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleNotifyPayment(payment.id)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 shadow-2xs transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-750"
-                        title="Send payment receipt email to client"
-                      >
-                        <Mail className="h-3.5 w-3.5 text-emerald-600" />
-                        <span>Send Email</span>
-                      </button>
+                    <td className="whitespace-nowrap px-3 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {Number(payment.unallocatedAmount || 0) > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAllocateModal(payment)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 shadow-2xs transition hover:border-blue-300 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900"
+                            title="Allocate unallocated funds to client invoices"
+                          >
+                            <Layers className="h-3.5 w-3.5" />
+                            <span>Allocate</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleNotifyPayment(payment.id)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs font-medium text-zinc-600 shadow-2xs transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-750"
+                          title="Send payment receipt email to client"
+                        >
+                          <Mail className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>Send Email</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -245,7 +273,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
             {/* Payment summary */}
 
             {selectedPayment && (
-              <div className="mb-4 grid grid-cols-3 gap-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/60">
+              <div className="mb-4 grid grid-cols-3 gap-1 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/60">
                 <div>
                   <p className="text-xs text-zinc-400">Payment</p>
 
@@ -295,7 +323,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                 {selectedAllocations.map((a) => (
                   <div
                     key={a.id}
-                    className="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50/50 p-2.5 text-xs dark:border-zinc-800 dark:bg-zinc-800/40"
+                    className="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50/50 p-1.5 text-xs dark:border-zinc-800 dark:bg-zinc-800/40"
                   >
                     <div>
                       <span className="font-semibold text-zinc-800 dark:text-zinc-200">
@@ -309,9 +337,44 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                 ))}
               </div>
             )}
+
+            {selectedPayment &&
+              Number(selectedPayment.unallocatedAmount || 0) > 0 && (
+                <div className="mt-4 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInvoiceDialogOpen(false);
+                      handleOpenAllocateModal(selectedPayment);
+                    }}
+                    className="flex w-full items-center justify-center gap-1 rounded-lg bg-blue-600 px-2 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-98"
+                  >
+                    <Layers className="h-3.5 w-3.5" />
+                    <span>
+                      Allocate Remaining{" "}
+                      {formatCurrency(selectedPayment.unallocatedAmount)}
+                    </span>
+                  </button>
+                </div>
+              )}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ===================================== */}
+      {/* ALLOCATE PAYMENT MODAL */}
+      {/* ===================================== */}
+      <AllocatePaymentModal
+        isOpen={allocateModalOpen}
+        onClose={() => {
+          setAllocateModalOpen(false);
+          setAllocatingPayment(null);
+        }}
+        payment={allocatingPayment}
+        onSuccess={() => {
+          router.refresh();
+        }}
+      />
 
       {/* ===================================== */}
       {/* SINGLE PAYMENT NOTIFICATION MODAL */}
@@ -337,8 +400,8 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 function InvoiceAllocations({ allocations = [], onViewAll }) {
   if (allocations.length === 0) {
     return (
-      <span className="whitespace-nowrap text-sm text-orange-600 dark:text-orange-400">
-        Unallocated
+      <span className="whitespace-nowrap text-sm text-zinc-400">
+        N/A
       </span>
     );
   }
@@ -347,7 +410,7 @@ function InvoiceAllocations({ allocations = [], onViewAll }) {
   const remaining = allocations.length - 1;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1">
       <Link
         href={`/invoices/${first.invoice?.id}`}
         className="inline-flex whitespace-nowrap rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300"

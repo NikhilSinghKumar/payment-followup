@@ -954,3 +954,228 @@ export async function updatePayment(paymentId, invoiceId, prevState, formData) {
     return { error: "Failed to update payment" };
   }
 }
+
+/**
+ * ======================================================
+ * ALLOCATE EXISTING PAYMENT TO INVOICES
+ * ======================================================
+ *
+ * Allocates unallocated funds from an existing payment
+ * across selected outstanding client invoices.
+ * Supports auto-fill FIFO and custom manual allocation amounts.
+ * ======================================================
+ */
+export async function allocatePaymentToInvoices(paymentId, allocations) {
+  try {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser?.companyId) {
+      return { error: "Unauthorized access." };
+    }
+
+    const parsedPaymentId = Number(paymentId);
+    if (!parsedPaymentId) {
+      return { error: "Invalid payment ID." };
+    }
+
+    if (!Array.isArray(allocations) || allocations.length === 0) {
+      return { error: "No invoice allocations provided." };
+    }
+
+    // Sanitize and filter allocations: keep entries with amount > 0
+    const sanitizedAllocations = allocations
+      .map((item) => ({
+        invoiceId: Number(item.invoiceId),
+        amount: Math.round(Number(item.amount || 0) * 100) / 100,
+      }))
+      .filter((item) => item.invoiceId && item.amount > 0);
+
+    if (sanitizedAllocations.length === 0) {
+      return {
+        error:
+          "Please specify an allocation amount greater than zero for at least one invoice.",
+      };
+    }
+
+    // 1. Fetch payment record
+    const paymentRows = await db
+      .select({
+        id: payments.id,
+        companyId: payments.companyId,
+        clientId: payments.clientId,
+        subClientId: payments.subClientId,
+        amount: payments.amount,
+        paymentDate: payments.paymentDate,
+        method: payments.method,
+        reference: payments.reference,
+        receiptNumber: payments.receiptNumber,
+        isVoided: payments.isVoided,
+      })
+      .from(payments)
+      .where(
+        and(
+          eq(payments.id, parsedPaymentId),
+          eq(payments.companyId, currentUser.companyId),
+          isNull(payments.deletedAt),
+        ),
+      )
+      .limit(1);
+
+    const payment = paymentRows[0];
+    if (!payment) {
+      return { error: "Payment not found or has been deleted." };
+    }
+
+    if (payment.isVoided) {
+      return { error: "Cannot allocate funds from a voided payment." };
+    }
+
+    // 2. Compute current unallocated balance
+    const existingAllocResult = await db
+      .select({
+        total: sql`COALESCE(SUM(${paymentAllocations.allocatedAmount}), 0)`,
+      })
+      .from(paymentAllocations)
+      .where(
+        and(
+          eq(paymentAllocations.paymentId, parsedPaymentId),
+          isNull(paymentAllocations.deletedAt),
+        ),
+      );
+
+    const alreadyAllocated = Number(existingAllocResult[0]?.total || 0);
+    const paymentTotal = Number(payment.amount || 0);
+    const unallocatedBalance = Math.max(
+      Math.round((paymentTotal - alreadyAllocated) * 100) / 100,
+      0,
+    );
+
+    const totalNewAllocation =
+      Math.round(
+        sanitizedAllocations.reduce((sum, item) => sum + item.amount, 0) * 100,
+      ) / 100;
+
+    if (totalNewAllocation > unallocatedBalance + 0.01) {
+      return {
+        error: `Total allocated amount (₹${totalNewAllocation.toLocaleString(
+          "en-IN",
+          { minimumFractionDigits: 2 },
+        )}) exceeds the available unallocated balance (₹${unallocatedBalance.toLocaleString(
+          "en-IN",
+          { minimumFractionDigits: 2 },
+        )}).`,
+      };
+    }
+
+    // 3. Verify target invoices belong to this client and check outstanding balances
+    const targetInvoiceIds = sanitizedAllocations.map((item) => item.invoiceId);
+    const invoiceRows = await db
+      .select({
+        id: invoices.id,
+        clientId: invoices.clientId,
+        invoiceNumber: invoices.invoiceNumber,
+        netPayableAmount: invoices.netPayableAmount,
+        paidAmount: invoices.paidAmount,
+        outstandingAmount: invoices.outstandingAmount,
+      })
+      .from(invoices)
+      .where(
+        and(
+          inArray(invoices.id, targetInvoiceIds),
+          eq(invoices.companyId, currentUser.companyId),
+          eq(invoices.clientId, payment.clientId),
+          isNull(invoices.deletedAt),
+        ),
+      );
+
+    const invoiceMap = new Map(invoiceRows.map((inv) => [inv.id, inv]));
+
+    for (const item of sanitizedAllocations) {
+      const inv = invoiceMap.get(item.invoiceId);
+      if (!inv) {
+        return {
+          error: `Invoice ID ${item.invoiceId} does not belong to this client or does not exist.`,
+        };
+      }
+      const currentOutstanding = Math.max(
+        Number(inv.outstandingAmount || 0),
+        0,
+      );
+      if (item.amount > currentOutstanding + 0.01) {
+        return {
+          error: `Allocated amount ₹${item.amount.toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+          })} exceeds the outstanding amount of invoice ${
+            inv.invoiceNumber
+          } (₹${currentOutstanding.toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+          })}).`,
+        };
+      }
+    }
+
+    // 4. Insert new payment allocations
+    await db.transaction(async (tx) => {
+      await tx.insert(paymentAllocations).values(
+        sanitizedAllocations.map((item) => ({
+          paymentId: parsedPaymentId,
+          invoiceId: item.invoiceId,
+          allocatedAmount: item.amount.toFixed(2),
+          createdBy: currentUser.user?.id || null,
+        })),
+      );
+    });
+
+    // 5. Update invoice financials (paidAmount, outstandingAmount, status)
+    for (const item of sanitizedAllocations) {
+      await updateInvoiceFinancials(item.invoiceId);
+    }
+
+    // 6. Trigger multi-invoice settlement event if available
+    try {
+      await processClientPaymentSettlementEvent({
+        clientId: payment.clientId,
+        companyId: currentUser.companyId,
+        paymentId: parsedPaymentId,
+        paymentDetails: {
+          amount: payment.amount,
+          paymentDate: payment.paymentDate,
+          method: payment.method,
+          referenceNumber: payment.reference || payment.receiptNumber,
+        },
+        settledInvoices: sanitizedAllocations.map((a) => ({
+          invoiceId: a.invoiceId,
+          settledAmount: a.amount,
+        })),
+      });
+    } catch (notifErr) {
+      console.error(
+        "[allocatePaymentToInvoices] Notification event error:",
+        notifErr,
+      );
+    }
+
+    // 7. Revalidate Next.js cache
+    revalidatePath("/payments");
+    revalidatePath(`/clients/${payment.clientId}`);
+    for (const item of sanitizedAllocations) {
+      revalidatePath(`/invoices/${item.invoiceId}`);
+    }
+
+    return {
+      success: true,
+      totalAllocated: totalNewAllocation,
+      remainingUnallocated: Math.max(
+        Math.round((unallocatedBalance - totalNewAllocation) * 100) / 100,
+        0,
+      ),
+    };
+  } catch (err) {
+    console.error("[allocatePaymentToInvoices] Unexpected error:", err);
+    return {
+      error:
+        err?.message ||
+        "An unexpected error occurred while allocating payment.",
+    };
+  }
+}

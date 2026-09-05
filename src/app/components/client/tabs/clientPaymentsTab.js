@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Layers } from "lucide-react";
 
 import {
   Dialog,
@@ -9,15 +11,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import AllocatePaymentModal from "@/app/components/payment/AllocatePaymentModal";
 
 export default function ClientPaymentsTab({ clientId, payments = [] }) {
+  const router = useRouter();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
-
   const [selectedAllocations, setSelectedAllocations] = useState([]);
+  const [selectedPayment, setSelectedPayment] = useState(null);
 
-  function handleViewInvoices(allocations) {
+  // Allocate modal state
+  const [allocateModalOpen, setAllocateModalOpen] = useState(false);
+  const [allocatingPayment, setAllocatingPayment] = useState(null);
+
+  function handleViewInvoices(payment, allocations) {
+    setSelectedPayment(payment);
     setSelectedAllocations(allocations || []);
     setInvoiceDialogOpen(true);
+  }
+
+  function handleOpenAllocateModal(payment) {
+    // Ensure clientId is present on payment object
+    const target = {
+      ...payment,
+      clientId: payment.clientId || clientId,
+    };
+    setAllocatingPayment(target);
+    setAllocateModalOpen(true);
   }
 
   if (payments.length === 0) {
@@ -72,6 +91,10 @@ export default function ClientPaymentsTab({ clientId, payments = [] }) {
 
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Reference
+                </th>
+
+                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Action
                 </th>
               </tr>
             </thead>
@@ -135,7 +158,9 @@ export default function ClientPaymentsTab({ clientId, payments = [] }) {
                     <td className="px-5 py-4">
                       <InvoiceAllocations
                         allocations={allocations}
-                        onViewAll={() => handleViewInvoices(allocations)}
+                        onViewAll={() =>
+                          handleViewInvoices(payment, allocations)
+                        }
                       />
                     </td>
 
@@ -154,6 +179,23 @@ export default function ClientPaymentsTab({ clientId, payments = [] }) {
                       >
                         {payment.reference || "—"}
                       </p>
+                    </td>
+
+                    {/* Action */}
+                    <td className="whitespace-nowrap px-5 py-4 text-right">
+                      {Number(payment.unallocatedAmount || 0) > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAllocateModal(payment)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-2xs transition hover:border-blue-300 hover:bg-blue-100"
+                          title="Allocate unallocated funds to client invoices"
+                        >
+                          <Layers className="h-3.5 w-3.5" />
+                          <span>Allocate</span>
+                        </button>
+                      ) : (
+                        <span className="text-xs text-zinc-400">Settled</span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -174,39 +216,116 @@ export default function ClientPaymentsTab({ clientId, payments = [] }) {
           </DialogHeader>
 
           <div className="mt-2">
+            {selectedPayment && (
+              <div className="mb-4 grid grid-cols-3 gap-3 rounded-xl bg-zinc-50 p-3">
+                <div>
+                  <p className="text-xs text-zinc-400">Payment</p>
+                  <p className="mt-1 text-sm font-semibold text-zinc-800">
+                    {formatCurrency(selectedPayment.amount)}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-zinc-400">Allocated</p>
+                  <p className="mt-1 text-sm font-semibold text-blue-600">
+                    {formatCurrency(selectedPayment.allocatedAmount)}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-zinc-400">Unallocated</p>
+                  <p
+                    className={`mt-1 text-sm font-semibold ${
+                      Number(selectedPayment.unallocatedAmount || 0) > 0
+                        ? "text-orange-600"
+                        : "text-zinc-700"
+                    }`}
+                  >
+                    {formatCurrency(selectedPayment.unallocatedAmount)}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <p className="mb-3 text-sm text-zinc-500">
               This payment was allocated to {selectedAllocations.length}{" "}
               {selectedAllocations.length === 1 ? "invoice" : "invoices"}.
             </p>
 
-            <div className="overflow-hidden rounded-xl border border-zinc-200">
-              <div className="divide-y divide-zinc-100">
-                {selectedAllocations.map((allocation) => (
-                  <Link
-                    key={allocation.id}
-                    href={`/invoices/${allocation.invoice?.id}`}
-                    className="
-                        flex items-center justify-between
-                        gap-4 px-4 py-3
-                        transition hover:bg-zinc-50
-                      "
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-zinc-800">
-                        {allocation.invoice?.invoiceNumber || "Invoice"}
-                      </p>
-                    </div>
-
-                    <span className="text-sm font-semibold text-blue-600">
-                      {formatCurrency(allocation.allocatedAmount)}
-                    </span>
-                  </Link>
-                ))}
+            {selectedAllocations.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-zinc-200 px-5 py-8 text-center">
+                <p className="text-sm font-medium text-zinc-600">
+                  No invoice allocation
+                </p>
+                <p className="mt-1 text-xs text-zinc-400">
+                  This payment is recorded as an unallocated advance/credit.
+                </p>
               </div>
-            </div>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-zinc-200">
+                <div className="divide-y divide-zinc-100 max-h-[250px] overflow-y-auto">
+                  {selectedAllocations.map((allocation) => (
+                    <Link
+                      key={allocation.id}
+                      href={`/invoices/${allocation.invoice?.id}`}
+                      className="
+                          flex items-center justify-between
+                          gap-4 px-4 py-3
+                          transition hover:bg-zinc-50
+                        "
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-zinc-800">
+                          {allocation.invoice?.invoiceNumber || "Invoice"}
+                        </p>
+                      </div>
+
+                      <span className="text-sm font-semibold text-blue-600">
+                        {formatCurrency(allocation.allocatedAmount)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedPayment &&
+              Number(selectedPayment.unallocatedAmount || 0) > 0 && (
+                <div className="mt-4 border-t border-zinc-100 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInvoiceDialogOpen(false);
+                      handleOpenAllocateModal(selectedPayment);
+                    }}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-98"
+                  >
+                    <Layers className="h-3.5 w-3.5" />
+                    <span>
+                      Allocate Remaining{" "}
+                      {formatCurrency(selectedPayment.unallocatedAmount)}
+                    </span>
+                  </button>
+                </div>
+              )}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ===================================== */}
+      {/* ALLOCATE PAYMENT MODAL */}
+      {/* ===================================== */}
+      <AllocatePaymentModal
+        isOpen={allocateModalOpen}
+        onClose={() => {
+          setAllocateModalOpen(false);
+          setAllocatingPayment(null);
+        }}
+        payment={allocatingPayment}
+        onSuccess={() => {
+          router.refresh();
+        }}
+      />
     </>
   );
 }
