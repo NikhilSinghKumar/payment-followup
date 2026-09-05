@@ -38,28 +38,40 @@ function ok(message = null) {
 // CREATE USER
 // ==========================================
 
-export async function createUser(formData) {
+export async function createUser(prevState, formData) {
   try {
+    // Support both useActionState (prevState, formData) and direct calls (formData)
+    const actualFormData =
+      formData && typeof formData.get === "function"
+        ? formData
+        : prevState && typeof prevState.get === "function"
+          ? prevState
+          : null;
+
+    if (!actualFormData) {
+      return fail("Invalid form submission.");
+    }
+
     // -----------------------------------------
     // Form Values
     // -----------------------------------------
 
-    const firstName = String(formData.get("firstName") || "").trim();
-    const lastName = String(formData.get("lastName") || "").trim();
-    const email = String(formData.get("email") || "")
+    const firstName = String(actualFormData.get("firstName") || "").trim();
+    const lastName = String(actualFormData.get("lastName") || "").trim();
+    const email = String(actualFormData.get("email") || "")
       .trim()
       .toLowerCase();
-    const mobile = String(formData.get("mobile") || "").trim();
+    const mobile = String(actualFormData.get("mobile") || "").trim();
 
-    const companyId = Number(formData.get("companyId"));
-    const roleId = Number(formData.get("roleId"));
-    const rawDeptId = formData.get("departmentId");
+    const companyId = Number(actualFormData.get("companyId"));
+    const roleId = Number(actualFormData.get("roleId"));
+    const rawDeptId = actualFormData.get("departmentId");
     const departmentId = rawDeptId ? Number(rawDeptId) : null;
 
-    const designation = String(formData.get("designation") || "").trim();
-    const password = String(formData.get("password") || "");
-    const confirmPassword = String(formData.get("confirmPassword") || "");
-    const isActive = formData.get("isActive") === "on";
+    const designation = String(actualFormData.get("designation") || "").trim();
+    const password = String(actualFormData.get("password") || "");
+    const confirmPassword = String(actualFormData.get("confirmPassword") || "");
+    const isActive = actualFormData.get("isActive") === "on";
 
     // -----------------------------------------
     // Validation
@@ -318,24 +330,36 @@ export async function getUserFullDetail(id) {
 
 export async function updateUser(userId, prevState, formData) {
   try {
+    // Support both useActionState (.bind(null, userId)) and direct calls
+    const actualFormData =
+      formData && typeof formData.get === "function"
+        ? formData
+        : prevState && typeof prevState.get === "function"
+          ? prevState
+          : null;
+
+    if (!actualFormData) {
+      return fail("Invalid form submission.");
+    }
+
     // -----------------------------------------
     // Form Values
     // -----------------------------------------
 
-    const firstName = String(formData.get("firstName") || "").trim();
-    const lastName = String(formData.get("lastName") || "").trim();
-    const email = String(formData.get("email") || "")
+    const firstName = String(actualFormData.get("firstName") || "").trim();
+    const lastName = String(actualFormData.get("lastName") || "").trim();
+    const email = String(actualFormData.get("email") || "")
       .trim()
       .toLowerCase();
-    const mobile = String(formData.get("mobile") || "").trim();
+    const mobile = String(actualFormData.get("mobile") || "").trim();
 
-    const companyId = Number(formData.get("companyId"));
-    const roleId = Number(formData.get("roleId"));
-    const rawDeptId = formData.get("departmentId");
+    const companyId = Number(actualFormData.get("companyId"));
+    const roleId = Number(actualFormData.get("roleId"));
+    const rawDeptId = actualFormData.get("departmentId");
     const departmentId = rawDeptId ? Number(rawDeptId) : null;
 
-    const designation = String(formData.get("designation") || "").trim();
-    const isActive = formData.get("isActive") === "on";
+    const designation = String(actualFormData.get("designation") || "").trim();
+    const isActive = actualFormData.get("isActive") === "on";
 
     // -----------------------------------------
     // Validation

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -33,6 +33,21 @@ export default function UserForm({
   const isEdit = mode === "edit";
 
   const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
+
+  const [selectedCompanyId, setSelectedCompanyId] = useState(
+    initialData.companyId
+      ? String(initialData.companyId)
+      : companies.length === 1
+        ? String(companies[0].id)
+        : "",
+  );
+
+  const availableRoles = selectedCompanyId
+    ? roles.filter(
+        (r) =>
+          !r.companyId || String(r.companyId) === String(selectedCompanyId),
+      )
+    : roles;
 
   useEffect(() => {
     if (state?.success) {
@@ -167,7 +182,8 @@ export default function UserForm({
               <select
                 name="companyId"
                 required
-                defaultValue={initialData.companyId ?? ""}
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
                 className="h-8.5 w-full rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
               >
                 <option value="">Select Company</option>
@@ -207,10 +223,15 @@ export default function UserForm({
                 defaultValue={initialData.roleId ?? ""}
                 className="h-8.5 w-full rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
               >
-                <option value="">Select Role</option>
-                {roles.map((r) => (
+                <option value="">
+                  {selectedCompanyId ? "Select Role" : "Select Company first"}
+                </option>
+                {availableRoles.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.roleName}
+                    {r.roleName}{" "}
+                    {!selectedCompanyId && r.companyName
+                      ? `(${r.companyName})`
+                      : ""}
                   </option>
                 ))}
               </select>
