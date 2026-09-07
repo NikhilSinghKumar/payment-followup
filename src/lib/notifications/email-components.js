@@ -184,6 +184,37 @@ export function renderInvoiceSummary({
   isOverdue = false,
   dueDaysText = "",
 }) {
+  const formatMoney = (val) => {
+    if (val === undefined || val === null || val === "") return "₹0.00";
+    if (typeof val === "number") {
+      return `₹${val.toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    }
+    const str = String(val).trim();
+    // Strip any leading currency symbol(s) or words like ₹, Rs, Rs., INR
+    const cleaned = str.replace(/^(\s|₹|Rs\.?|INR)+/gi, "").trim();
+    const num = Number(cleaned.replace(/,/g, ""));
+    if (!isNaN(num) && cleaned !== "") {
+      return `₹${num.toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    }
+    return `₹${cleaned}`;
+  };
+
+  const formattedInvoiceAmount = formatMoney(invoiceAmount);
+  const formattedPaidAmount = formatMoney(paidAmount);
+  const formattedBalanceDue = formatMoney(
+    outstandingAmount !== undefined &&
+      outstandingAmount !== null &&
+      outstandingAmount !== ""
+      ? outstandingAmount
+      : invoiceAmount,
+  );
+
   const awbText =
     Array.isArray(awbs) && awbs.length > 0
       ? awbs
@@ -191,6 +222,12 @@ export function renderInvoiceSummary({
           .filter(Boolean)
           .join(", ")
       : "";
+
+  const hasPaid =
+    showPaymentDetails &&
+    paidAmount !== undefined &&
+    paidAmount !== null &&
+    Number(String(paidAmount).replace(/[^0-9.-]+/g, "")) > 0;
 
   return `
 <table
@@ -254,36 +291,21 @@ ${
 
 <tr>
 <td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#64748B;"><strong>Invoice Amount</strong></td>
-<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;font-weight:600;color:#0F172A;">₹${invoiceAmount}</td>
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;font-weight:600;color:#0F172A;white-space:nowrap;">${formattedInvoiceAmount}</td>
 </tr>
 
 ${
-  showPaymentDetails &&
-  paidAmount !== undefined &&
-  paidAmount !== null &&
-  Number(paidAmount) > 0
-    ? `
-<tr>
+  hasPaid
+    ? `<tr>
 <td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#64748B;"><strong>Paid Amount</strong></td>
-<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#16A34A;font-weight:600;">₹${paidAmount}</td>
-</tr>
-`
+<td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;color:#16A34A;font-weight:600;white-space:nowrap;">${formattedPaidAmount}</td>
+</tr>`
     : ""
 }
 
 <tr>
 <td style="padding:12px;background:#F8FAFC;font-weight:700;color:#0F172A;font-size:14px;"><strong>Balance Due</strong></td>
-<td
-style="
-padding:12px;
-background:#F8FAFC;
-font-weight:bold;
-font-size:16px;
-color:#2563EB;
-"
->
-₹${outstandingAmount || invoiceAmount}
-</td>
+<td style="padding:12px;background:#F8FAFC;font-weight:bold;font-size:16px;color:#2563EB;white-space:nowrap;">${formattedBalanceDue}</td>
 </tr>
 
 </table>
@@ -613,6 +635,10 @@ export function renderClientOutstandingInvoices(invoices = []) {
 </div>
 
 <!-- Mobile Scroll Tip -->
+<div style="font-size: 11px; color: #64748b; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block;">
+  👉 <em>Swipe horizontally to view full table</em>
+</div>
+
 <div class="responsive-table-scroll" style="width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #E2E8F0; border-radius: 10px;">
 <table
   width="100%"

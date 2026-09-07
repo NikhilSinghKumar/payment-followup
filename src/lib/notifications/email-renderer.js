@@ -9,7 +9,6 @@ import {
   renderAlertBox,
   renderButton,
   renderSignature,
-  renderBankDetails,
   renderCustomNote,
 } from "./email-components";
 
@@ -166,24 +165,36 @@ export function renderEmail({ type, body, variables, actionUrl }) {
         : ""
     }
 
-    ${
-      !isClientPaymentReminder &&
-      !isClientPaymentSettlement &&
-      type !== NOTIFICATION_TYPES.PAYMENT_RECEIVED &&
-      variables.overdueDays > 0
-        ? renderAlertBox(
-            `This invoice is overdue by ${formatDateDifference(
-              variables.dueDate,
-            )}.`,
-          )
-        : ""
-    }
+    ${(() => {
+      if (
+        type === NOTIFICATION_TYPES.BILL_SUBMITTED ||
+        type === NOTIFICATION_TYPES.SERVICE_SUSPENSION_ALERT ||
+        type === NOTIFICATION_TYPES.SERVICE_SUSPENSION_NOTICE ||
+        type === NOTIFICATION_TYPES.PAYMENT_RECEIVED ||
+        type === NOTIFICATION_TYPES.PAYMENT_CLEARED ||
+        type === NOTIFICATION_TYPES.DUE_REMINDER ||
+        type === NOTIFICATION_TYPES.INVOICE_DUE ||
+        type === "DUE_TODAY" ||
+        type === "INTERNAL_DUE_TODAY" ||
+        isClientPaymentReminder ||
+        isClientPaymentSettlement
+      ) {
+        return "";
+      }
 
-    ${
-      type !== NOTIFICATION_TYPES.PAYMENT_RECEIVED && !isClientPaymentSettlement
-        ? renderBankDetails(variables.company || {})
-        : ""
-    }
+      const overdueDays = Number(variables.overdueDays) || 0;
+      if (overdueDays <= 0 || !variables.dueDate) {
+        return "";
+      }
+
+      const diff = formatDateDifference(variables.dueDate);
+      if (!diff || diff === "0 days") {
+        return "";
+      }
+
+      return renderAlertBox(`This invoice is overdue by ${diff}.`);
+    })()}
+
 
     ${renderSignature({
       senderCompany: variables.senderCompany,
@@ -334,8 +345,6 @@ export function renderManualSingleInvoiceReminderEmail({
         : ""
     }
 
-    ${renderBankDetails(company)}
-
     <p style="font-size: 13px; color: #64748B; margin: 16px 0 0 0;">
       If you have already processed this transaction, kindly reply with the payment confirmation / UTR details for swift reconciliation.
     </p>
@@ -477,8 +486,6 @@ export function renderManualClientStatementReminderEmail({
 
     ${renderClientOutstandingInvoices(mappedInvoices)}
 
-    ${renderBankDetails(company)}
-
     <p style="font-size: 13px; color: #64748B; margin: 16px 0 0 0;">
       Kindly share payment receipts / UTR details with our accounts team for swift ledger posting.
     </p>
@@ -553,7 +560,7 @@ export function renderManualBulkInvoicesReminderEmail({
     reminderType === "SUSPENSION_WARNING"
       ? `Please find below the consolidated statement of your outstanding invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #DC2626;">₹${formattedTotalDue}</strong>. Kindly arrange immediate settlement to prevent any pause in service.`
       : overdueCount > 0
-        ? `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong>. Kindly arrange payment at your earliest convenience to avoid temporary suspension of PAFEX services. Please ignore this email, if payment has already been done.`
+        ? `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong> (${overdueCount} invoices past due). Kindly arrange payment at your earliest convenience.`
         : `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong>.`;
 
   const mappedInvoices = groupInvoices.map((inv) => {
@@ -596,7 +603,7 @@ export function renderManualBulkInvoicesReminderEmail({
     ${
       overdueCount > 0
         ? renderAlertBox(
-            `⚠️ <strong>${overdueCount} of these invoice(s) are overdue</strong>. Please prioritize settlement.`,
+            `⚠️ <strong>${overdueCount} of these invoice(s) are past due</strong>. Please prioritize settlement.`,
           )
         : ""
     }
@@ -605,7 +612,6 @@ export function renderManualBulkInvoicesReminderEmail({
 
     ${renderClientOutstandingInvoices(mappedInvoices)}
 
-    ${renderBankDetails(company)}
 
     <p style="font-size: 13px; color: #64748B; margin: 16px 0 0 0;">
       Kindly share transaction details / UTR number once payment is initiated.

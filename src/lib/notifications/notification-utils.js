@@ -3,10 +3,20 @@ import { NOTIFICATION_META } from "./notification-types";
 export function replaceTemplateVariables(template, variables = {}) {
   if (!template) return "";
 
-  return template.replace(/\{\{(.*?)\}\}/g, (_, key) => {
+  let result = template.replace(/\{\{(.*?)\}\}/g, (_, key) => {
     const value = variables[key.trim()];
-    return value ?? "";
+    return value !== undefined && value !== null ? value : "";
   });
+
+  // Clean up any dangling placeholders, repeated currency symbols, or dangling delimiters
+  result = result
+    .replace(/₹\s*₹+/g, "₹")
+    .replace(/\s*-\s*Invoice\s*$/i, "")
+    .replace(/\s*-\s*Invoice\s*-\s*/i, " - ")
+    .replace(/\s+-\s*$/, "")
+    .trim();
+
+  return result;
 }
 
 /**

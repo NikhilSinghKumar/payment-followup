@@ -3,19 +3,18 @@ import {
   getEscalationTierRules,
 } from "@/app/actions/notificationSettings";
 import { getSuspensionDefaulters } from "@/app/actions/suspension";
-import { getDepartments } from "@/app/actions/department";
+import { getNotificationTemplates } from "@/app/actions/notificationTemplates";
 import NotificationSettingsForm from "@/app/components/settings/NotificationSettingsForm";
 import NotificationLogsTable from "@/app/components/settings/NotificationLogsTable";
 import EscalationHierarchyConfig from "@/app/components/settings/EscalationHierarchyConfig";
-// import DepartmentManager from "@/app/components/settings/DepartmentManager";
 import SuspensionControlCenter from "@/app/components/settings/SuspensionControlCenter";
+import EmailTemplatesManager from "@/app/components/settings/EmailTemplatesManager";
 import Link from "next/link";
 import {
   Bell,
   Sliders,
   History,
   Building,
-  Building2,
   Mail,
   ShieldAlert,
   Flame,
@@ -39,8 +38,13 @@ export default async function SettingsPage({ searchParams }) {
     rolesList,
     departmentsList,
   } = await getEscalationTierRules();
-  const allDepartments = await getDepartments();
   const { defaulters } = await getSuspensionDefaulters();
+
+  let emailTemplates = [];
+  if (activeTab === "templates") {
+    const templateRes = await getNotificationTemplates();
+    emailTemplates = templateRes.templates || [];
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-12">
@@ -49,17 +53,25 @@ export default async function SettingsPage({ searchParams }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-              Notification & Escalation Settings
+              Notification, Escalation & Automation Settings
             </h1>
-            <p className="mt-1 text-xs text-zinc-500">
-              Manage automatic reminder schedules, service suspension policies,
-              multi-tier department escalations and inspect delivery audit logs.
-            </p>
           </div>
         </div>
 
         {/* Tab Navigation */}
+
         <div className="mt-6 flex flex-wrap gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+          <Link
+            href="/settings?tab=templates"
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition ${
+              activeTab === "templates"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+            }`}
+          >
+            <Mail size={14} />
+            <span>Email Templates</span>
+          </Link>
           <Link
             href="/settings?tab=notifications"
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition ${
@@ -111,18 +123,6 @@ export default async function SettingsPage({ searchParams }) {
             <span>Escalation Hierarchy</span>
           </Link>
 
-          {/* <Link
-            href="/settings?tab=departments"
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition ${
-              activeTab === "departments"
-                ? "bg-blue-600 text-white shadow-xs"
-                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-            }`}
-          >
-            <Building2 size={14} />
-            <span>Departments</span>
-          </Link> */}
-
           <Link
             href="/settings?tab=logs"
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition ${
@@ -145,6 +145,13 @@ export default async function SettingsPage({ searchParams }) {
         />
       )}
 
+      {activeTab === "templates" && (
+        <EmailTemplatesManager
+          initialTemplates={emailTemplates}
+          company={company || {}}
+        />
+      )}
+
       {activeTab === "suspensions" && (
         <SuspensionControlCenter
           initialDefaulters={defaulters || []}
@@ -160,10 +167,6 @@ export default async function SettingsPage({ searchParams }) {
           departmentsList={departmentsList || []}
         />
       )}
-
-      {/* {activeTab === "departments" && (
-        <DepartmentManager departments={allDepartments || []} />
-      )} */}
 
       {activeTab === "logs" && <NotificationLogsTable />}
     </div>
