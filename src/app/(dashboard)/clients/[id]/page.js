@@ -271,11 +271,13 @@ export default async function ClientDetailPage({ params, searchParams }) {
           {/* Net Payable */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Net Payable
+              Net Receivable
             </p>
 
             <h2 className="mt-2 text-xl font-semibold text-blue-600">
-              ₹{totalNetPayable.toLocaleString("en-IN")}
+              ₹{totalNetPayable.toLocaleString("en-IN", {
+                maximumFractionDigits: 0,
+              })}
             </h2>
           </div>
 
@@ -286,18 +288,22 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2 className="mt-2 text-xl font-semibold text-emerald-500">
-              ₹{paymentsReceived.toLocaleString("en-IN")}
+              ₹{paymentsReceived.toLocaleString("en-IN", {
+                maximumFractionDigits: 0,
+              })}
             </h2>
           </div>
 
           {/* Unallocated Payment */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Credit
+              Credit Balance
             </p>
 
             <h2 className="mt-2 text-xl font-semibold text-violet-600">
-              ₹{unallocatedAmount.toLocaleString("en-IN")}
+              ₹{unallocatedAmount.toLocaleString("en-IN", {
+                maximumFractionDigits: 0,
+              })}
             </h2>
           </div>
 
@@ -308,7 +314,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2 className="mt-2 text-xl font-semibold text-orange-600">
-              ₹{totalOutstanding.toLocaleString()}
+              ₹{totalOutstanding.toLocaleString(undefined, {
+                maximumFractionDigits: 0,
+              })}
             </h2>
           </div>
 
