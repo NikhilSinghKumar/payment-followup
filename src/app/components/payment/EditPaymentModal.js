@@ -198,7 +198,7 @@ export default function EditPaymentModal({
 
           <div>
             <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-400">
-              New Credit / Balance
+              On Account
             </p>
             <p
               className={`mt-0.5 text-sm font-semibold ${
@@ -209,7 +209,7 @@ export default function EditPaymentModal({
             >
               {formatCurrency(unallocatedAmount)}
             </p>
-            <p className="text-[10px] text-zinc-400">Unallocated funds</p>
+            <p className="text-[10px] text-zinc-400">Funds on account</p>
           </div>
 
           <div>

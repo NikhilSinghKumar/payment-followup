@@ -1021,7 +1021,7 @@ export async function allocatePaymentToInvoices(paymentId, allocations) {
         error: `Total allocated amount (₹${totalNewAllocation.toLocaleString(
           "en-IN",
           { minimumFractionDigits: 2 },
-        )}) exceeds the available unallocated balance (₹${unallocatedBalance.toLocaleString(
+        )}) exceeds the available on-account balance (₹${unallocatedBalance.toLocaleString(
           "en-IN",
           { minimumFractionDigits: 2 },
         )}).`,

@@ -236,7 +236,7 @@ export default function AllocatePaymentModal({
         type: "error",
         message: `Total allocated amount (₹${totalDraftAllocated.toLocaleString(
           "en-IN",
-        )}) exceeds the available unallocated balance (₹${availableUnallocated.toLocaleString(
+        )}) exceeds the available on-account balance (₹${availableUnallocated.toLocaleString(
           "en-IN",
         )}).`,
       });
@@ -291,7 +291,7 @@ export default function AllocatePaymentModal({
                     Allocate Payment to Invoices
                   </DialogTitle>
                   <DialogDescription className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Distribute unallocated payment funds across outstanding
+                    Distribute on-account payment funds across outstanding
                     invoices manually or using auto-fill FIFO.
                   </DialogDescription>
                 </div>
@@ -416,7 +416,7 @@ export default function AllocatePaymentModal({
                 ? "Exceeds Available!"
                 : remainingAvailable === 0
                   ? "All Available Allocated"
-                  : "Remaining Unallocated"}
+                  : "Remaining On Account"}
             </p>
             <p
               className={`mt-0.5 text-sm font-bold ${

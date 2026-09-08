@@ -640,8 +640,8 @@ export default function BulkPaymentNotificationModal({
                                       </span>
                                     ))
                                   ) : (
-                                    <span className="text-[10px] text-orange-500">
-                                      Unallocated Credit
+                                    <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                                      On Account
                                     </span>
                                   )}
                                 </td>

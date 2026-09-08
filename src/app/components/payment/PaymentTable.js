@@ -89,39 +89,39 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
             <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/60">
               <tr>
-                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Client
                 </th>
 
-                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Date
                 </th>
 
-                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Receipt
                 </th>
 
-                <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Payment
                 </th>
 
-                <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Credit
+                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  On Account
                 </th>
 
-                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Invoices
                 </th>
 
-                {/* <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Method
                 </th>
 
-                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Reference
-                </th> */}
+                </th>
 
-                <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Actions
                 </th>
               </tr>
@@ -139,13 +139,14 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                     className="transition hover:bg-zinc-50/70 dark:hover:bg-zinc-800/50"
                   >
                     {/* Client */}
-                    <td className="px-2 py-4">
+
+                    <td className="px-5 py-4">
                       {payment.client?.id ? (
                         <Link
                           href={`/clients/${payment.client.id}`}
                           className="group"
                         >
-                          <p className="whitespace-nowrap truncate w-[180px] text-sm font-medium truncate text-zinc-800 transition group-hover:text-blue-600 dark:text-zinc-200 dark:group-hover:text-blue-400">
+                          <p className="whitespace-nowrap text-sm font-medium truncate text-zinc-800 transition group-hover:text-blue-600 dark:text-zinc-200 dark:group-hover:text-blue-400">
                             {payment.client.companyName || "—"}
                           </p>
 
@@ -169,57 +170,77 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                         <span className="text-sm text-zinc-400">—</span>
                       )}
                     </td>
+
                     {/* Payment Date */}
-                    <td className="whitespace-nowrap px-2 py-4 text-sm text-zinc-700 dark:text-zinc-300">
+
+                    <td className="whitespace-nowrap px-5 py-4 text-sm text-zinc-700 dark:text-zinc-300">
                       {formatDate(payment.paymentDate)}
                     </td>
+
                     {/* Receipt */}
-                    <td className="whitespace-nowrap px-2 py-4">
+
+                    <td className="whitespace-nowrap px-5 py-4">
                       <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                         {payment.receiptNumber || "—"}
                       </span>
                     </td>
+
                     {/* Payment Amount */}
-                    <td className="whitespace-nowrap px-2 py-4 text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+
+                    <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                       {formatCurrency(payment.amount)}
                     </td>
-                    {/* Unallocated */}
-                    <td className="whitespace-nowrap px-2 py-4 text-right">
+
+                    {/* On Account (Unallocated) */}
+
+                    <td className="whitespace-nowrap px-5 py-4 text-right">
                       <span
                         className={`text-sm font-medium ${
                           Number(payment.unallocatedAmount || 0) > 0
                             ? "text-orange-600 dark:text-orange-400"
                             : "text-zinc-500 dark:text-zinc-400"
                         }`}
+                        title={
+                          Number(payment.unallocatedAmount || 0) > 0
+                            ? `₹${Number(payment.unallocatedAmount).toLocaleString("en-IN")} on account`
+                            : "Fully allocated"
+                        }
                       >
                         {formatCurrency(payment.unallocatedAmount)}
                       </span>
                     </td>
+
                     {/* Related Invoices */}
-                    <td className="px-2 py-4">
+
+                    <td className="px-5 py-4">
                       <InvoiceAllocations
                         allocations={allocations}
                         onViewAll={() => handleViewInvoices(payment)}
                       />
                     </td>
+
                     {/* Method */}
-                    {/* <td className="whitespace-nowrap px-2 py-4">
+
+                    <td className="whitespace-nowrap px-5 py-4">
                       <span className="text-sm capitalize text-zinc-700 dark:text-zinc-300">
                         {formatMethod(payment.method)}
                       </span>
-                    </td> */}
+                    </td>
+
                     {/* Reference */}
-                    {/* <td className="px-2 py-4">
+
+                    <td className="px-5 py-4">
                       <p
                         className="max-w-[180px] truncate text-sm text-zinc-600 dark:text-zinc-400"
                         title={payment.reference || ""}
                       >
                         {payment.reference || "—"}
                       </p>
-                    </td> */}
+                    </td>
+
                     {/* Action */}
-                    <td className="whitespace-nowrap px-2 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="whitespace-nowrap px-5 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleOpenEditModal(payment)}
@@ -234,7 +255,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                             type="button"
                             onClick={() => handleOpenAllocateModal(payment)}
                             className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-2xs transition hover:border-blue-300 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900"
-                            title="Allocate unallocated funds to client invoices"
+                            title="Allocate on-account funds to client invoices"
                           >
                             <Layers className="h-3.5 w-3.5" />
                             <span>Allocate</span>
@@ -291,7 +312,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                 </div>
 
                 <div>
-                  <p className="text-xs text-zinc-400">Unallocated</p>
+                  <p className="text-xs text-zinc-400">On Account</p>
 
                   <p
                     className={`mt-1 text-sm font-semibold ${
@@ -309,13 +330,14 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
             {/* Allocations */}
 
             {selectedAllocations.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-zinc-200 px-2 py-8 text-center dark:border-zinc-700">
+              <div className="rounded-xl border border-dashed border-zinc-200 px-5 py-8 text-center dark:border-zinc-700">
                 <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
                   No invoice allocation
                 </p>
 
                 <p className="mt-1 text-xs text-zinc-400">
-                  This payment is recorded as an unallocated advance/credit.
+                  This payment is recorded on account (pending invoice
+                  allocation).
                 </p>
               </div>
             ) : (
@@ -351,7 +373,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                   >
                     <Layers className="h-3.5 w-3.5" />
                     <span>
-                      Allocate Remaining{" "}
+                      Allocate On Account{" "}
                       {formatCurrency(selectedPayment.unallocatedAmount)}
                     </span>
                   </button>

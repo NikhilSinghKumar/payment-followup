@@ -461,10 +461,9 @@ export default function PaymentForm({ clients = [] }) {
                     </span>
                   </div>
                   {unallocatedAmount > 0 && (
-                    <div className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-2 py-0.5 text-[11px] font-medium text-orange-700 dark:bg-orange-950/60 dark:text-orange-300">
+                    <div className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
                       <span>
-                        Unallocated: ₹
-                        {unallocatedAmount.toLocaleString("en-IN")}
+                        On Account: ₹{unallocatedAmount.toLocaleString("en-IN")}
                       </span>
                     </div>
                   )}
@@ -592,7 +591,7 @@ export default function PaymentForm({ clients = [] }) {
               </p>
               <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">
                 All invoices for this client are settled. You can still record
-                unallocated on-account payment.
+                payment on account.
               </p>
             </div>
           ) : displayedInvoices.length === 0 ? (

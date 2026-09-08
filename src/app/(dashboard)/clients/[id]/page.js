@@ -11,6 +11,7 @@ import { getClientById } from "@/app/actions/client";
 import { enrichInvoices } from "@/lib/invoice-summary";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import ClientTabs from "@/app/components/client/clientTabs";
+import ClientOverviewTab from "@/app/components/client/tabs/clientOverviewTab";
 import ClientSubClientsTab from "@/app/components/client/tabs/clientSubClientsTab";
 import ClientInvoicesTab from "@/app/components/client/tabs/clientInvoicesTab";
 import ClientLocationsTab from "@/app/components/client/tabs/clientLocationsTab";
@@ -34,7 +35,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
   const clientId = Number(id);
   const contacts = await getClientContactsByClientId(clientId);
 
-  const activeTab = resolvedSearchParams?.tab || "sub-clients";
+  const activeTab = resolvedSearchParams?.tab || "overview";
 
   let clientFollowups = [];
   let clientPayments = [];
@@ -177,7 +178,14 @@ export default async function ClientDetailPage({ params, searchParams }) {
     0,
   );
 
-  const unallocatedAmount = Math.max(paymentsReceived - totalAllocated, 0);
+  // Unallocated payment funds currently held on account
+  const onAccountAmount = Math.max(paymentsReceived - totalAllocated, 0);
+
+  // Net Outstanding = Net Payable - Payments Received
+  const netOutstanding = Math.max(totalNetPayable - paymentsReceived, 0);
+
+  // True Credit Balance = Only when client payments received exceed total net payable
+  const creditBalance = Math.max(paymentsReceived - totalNetPayable, 0);
 
   return (
     <div className="bg-zinc-50">
@@ -245,90 +253,125 @@ export default async function ClientDetailPage({ params, searchParams }) {
         {/* SUMMARY CARDS */}
         {/* ===================================== */}
 
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-7">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
           {/* Total Invoices */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Total Invoices
             </p>
 
-            <h2 className="mt-2 text-xl font-semibold text-zinc-800">
+            <h2 className="mt-2 text-xl font-semibold text-zinc-800 dark:text-zinc-100">
               {totalInvoices}
             </h2>
+            <p className="mt-1 text-[10px] text-zinc-400">Total count</p>
           </div>
 
           {/* Invoice Amount */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Invoice Amount
             </p>
 
-            <h2 className="mt-2 text-xl font-semibold text-zinc-800">
-              ₹{totalAmount.toLocaleString()}
+            <h2 className="mt-2 text-xl font-semibold text-zinc-800 dark:text-zinc-100">
+              ₹{totalAmount.toLocaleString("en-IN")}
             </h2>
+            <p className="mt-1 text-[10px] text-zinc-400">Gross billed</p>
           </div>
 
           {/* Net Payable */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Net Receivable
+              Net Payable
             </p>
 
-            <h2 className="mt-2 text-xl font-semibold text-blue-600">
-              ₹{totalNetPayable.toLocaleString("en-IN", {
-                maximumFractionDigits: 0,
-              })}
+            <h2 className="mt-2 text-xl font-semibold text-blue-600 dark:text-blue-400">
+              ₹{totalNetPayable.toLocaleString("en-IN")}
             </h2>
+            <p className="mt-1 text-[10px] text-zinc-400">
+              After TDS & discounts
+            </p>
           </div>
 
           {/* Payments Received */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Payments Received
+              Received
             </p>
 
-            <h2 className="mt-2 text-xl font-semibold text-emerald-500">
-              ₹{paymentsReceived.toLocaleString("en-IN", {
-                maximumFractionDigits: 0,
-              })}
+            <h2 className="mt-2 text-xl font-semibold text-emerald-600 dark:text-emerald-400">
+              ₹{paymentsReceived.toLocaleString("en-IN")}
             </h2>
+            <p className="mt-1 text-[10px] text-zinc-400">Total collected</p>
           </div>
 
-          {/* Unallocated Payment */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          {/* On Account (Unallocated Payment) */}
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              On Account
+            </p>
+
+            <h2
+              className={`mt-2 text-xl font-semibold ${
+                onAccountAmount > 0
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-zinc-600 dark:text-zinc-400"
+              }`}
+            >
+              ₹{onAccountAmount.toLocaleString("en-IN")}
+            </h2>
+            <p className="mt-1 text-[10px] text-zinc-400">Unallocated funds</p>
+          </div>
+
+          {/* Net Outstanding (Net Payable - Payments Received) */}
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Outstanding
+            </p>
+
+            <h2
+              className={`mt-2 text-xl font-semibold ${
+                netOutstanding > 0
+                  ? "text-orange-600 dark:text-orange-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            >
+              ₹{netOutstanding.toLocaleString("en-IN")}
+            </h2>
+            <p className="mt-1 text-[10px] text-zinc-400">
+              Net Payable - Received
+            </p>
+          </div>
+
+          {/* Credit Balance (Only if Payments Received > Net Payable) */}
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Credit Balance
             </p>
 
-            <h2 className="mt-2 text-xl font-semibold text-violet-600">
-              ₹{unallocatedAmount.toLocaleString("en-IN", {
-                maximumFractionDigits: 0,
-              })}
+            <h2
+              className={`mt-2 text-xl font-semibold ${
+                creditBalance > 0
+                  ? "text-violet-600 dark:text-violet-400"
+                  : "text-zinc-500 dark:text-zinc-400"
+              }`}
+            >
+              ₹{creditBalance.toLocaleString("en-IN")}
             </h2>
-          </div>
-
-          {/* Outstanding */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Invoice Outstanding
+            <p className="mt-1 text-[10px] text-zinc-400">
+              {creditBalance > 0 ? "Advance surplus" : "Overpayment only"}
             </p>
-
-            <h2 className="mt-2 text-xl font-semibold text-orange-600">
-              ₹{totalOutstanding.toLocaleString(undefined, {
-                maximumFractionDigits: 0,
-              })}
-            </h2>
           </div>
 
           {/* Overdue */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Overdue Invoices
+              Overdue
             </p>
 
             <h2 className="mt-2 text-xl font-semibold text-red-500">
               {overdueInvoices}
             </h2>
+            <p className="mt-1 text-[10px] text-zinc-400">Past due invoices</p>
           </div>
         </div>
 
@@ -337,6 +380,10 @@ export default async function ClientDetailPage({ params, searchParams }) {
         {/* ===================================== */}
         {/* TAB CONTENT */}
         {/* ===================================== */}
+
+        {activeTab === "overview" && (
+          <ClientOverviewTab client={client} invoices={normalizedInvoiceData} />
+        )}
 
         {activeTab === "sub-clients" && (
           <ClientSubClientsTab
