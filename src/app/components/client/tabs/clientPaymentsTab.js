@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Layers } from "lucide-react";
+import { Layers, Pencil } from "lucide-react";
 
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import AllocatePaymentModal from "@/app/components/payment/AllocatePaymentModal";
+import EditPaymentModal from "@/app/components/payment/EditPaymentModal";
 
 export default function ClientPaymentsTab({ clientId, payments = [] }) {
   const router = useRouter();
@@ -22,6 +23,19 @@ export default function ClientPaymentsTab({ clientId, payments = [] }) {
   // Allocate modal state
   const [allocateModalOpen, setAllocateModalOpen] = useState(false);
   const [allocatingPayment, setAllocatingPayment] = useState(null);
+
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState(null);
+
+  function handleOpenEditModal(payment) {
+    const target = {
+      ...payment,
+      clientId: payment.clientId || clientId,
+    };
+    setEditingPayment(target);
+    setEditModalOpen(true);
+  }
 
   function handleViewInvoices(payment, allocations) {
     setSelectedPayment(payment);
@@ -183,19 +197,30 @@ export default function ClientPaymentsTab({ clientId, payments = [] }) {
 
                     {/* Action */}
                     <td className="whitespace-nowrap px-5 py-4 text-right">
-                      {Number(payment.unallocatedAmount || 0) > 0 ? (
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
-                          onClick={() => handleOpenAllocateModal(payment)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-2xs transition hover:border-blue-300 hover:bg-blue-100"
-                          title="Allocate unallocated funds to client invoices"
+                          onClick={() => handleOpenEditModal(payment)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 shadow-2xs transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                          title="Edit payment details"
                         >
-                          <Layers className="h-3.5 w-3.5" />
-                          <span>Allocate</span>
+                          <Pencil className="h-3.5 w-3.5 text-amber-600" />
+                          <span>Edit</span>
                         </button>
-                      ) : (
-                        <span className="text-xs text-zinc-400">Settled</span>
-                      )}
+                        {Number(payment.unallocatedAmount || 0) > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAllocateModal(payment)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-2xs transition hover:border-blue-300 hover:bg-blue-100"
+                            title="Allocate unallocated funds to client invoices"
+                          >
+                            <Layers className="h-3.5 w-3.5" />
+                            <span>Allocate</span>
+                          </button>
+                        ) : (
+                          <span className="text-xs text-zinc-400">Settled</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -322,6 +347,21 @@ export default function ClientPaymentsTab({ clientId, payments = [] }) {
           setAllocatingPayment(null);
         }}
         payment={allocatingPayment}
+        onSuccess={() => {
+          router.refresh();
+        }}
+      />
+
+      {/* ===================================== */}
+      {/* EDIT PAYMENT MODAL */}
+      {/* ===================================== */}
+      <EditPaymentModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingPayment(null);
+        }}
+        payment={editingPayment}
         onSuccess={() => {
           router.refresh();
         }}

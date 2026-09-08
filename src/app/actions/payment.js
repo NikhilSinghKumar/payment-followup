@@ -893,49 +893,10 @@ export async function updatePayment(paymentId, invoiceId, prevState, formData) {
       .returning();
 
     // =====================================
-    // RECALCULATE INVOICE STATUS
+    // UPDATE INVOICE FINANCIALS
     // =====================================
 
-    const invoiceResult = await db
-      .select({
-        invoiceAmount: invoices.invoiceAmount,
-        dueDate: invoices.dueDate,
-      })
-      .from(invoices)
-      .where(eq(invoices.id, invoiceId))
-      .limit(1);
-
-    const invoiceAmount = Number(invoiceResult[0]?.invoiceAmount || 0);
-
-    const allocationResult = await db
-      .select({
-        total: sql`
-          COALESCE(
-            SUM(${paymentAllocations.allocatedAmount}),
-            0
-          )
-        `,
-      })
-      .from(paymentAllocations)
-      .where(eq(paymentAllocations.invoiceId, invoiceId));
-
-    const totalPaid = Number(allocationResult[0]?.total || 0);
-    const invoiceStatus = calculateInvoiceStatus({
-      netPayable: invoiceAmount,
-      paid: totalPaid,
-      dueDate: invoiceResult[0]?.dueDate,
-    });
-    // =====================================
-    // UPDATE INVOICE
-    // =====================================
-
-    await db
-      .update(invoices)
-      .set({
-        status: invoiceStatus.status,
-        updatedAt: new Date(),
-      })
-      .where(eq(invoices.id, invoiceId));
+    await updateInvoiceFinancials(invoiceId);
 
     await processPaymentEvents(invoiceId, paymentId);
 
@@ -1176,6 +1137,229 @@ export async function allocatePaymentToInvoices(paymentId, allocations) {
       error:
         err?.message ||
         "An unexpected error occurred while allocating payment.",
+    };
+  }
+}
+
+/**
+ * Fetch sub-clients for a specific client
+ */
+export async function getClientSubClients(clientId) {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser?.companyId || !clientId) return [];
+
+    return await db
+      .select({
+        id: clientSubClients.id,
+        companyName: clientSubClients.companyName,
+        companyCode: clientSubClients.companyCode,
+      })
+      .from(clientSubClients)
+      .where(
+        and(
+          eq(clientSubClients.clientId, Number(clientId)),
+          isNull(clientSubClients.deletedAt),
+          eq(clientSubClients.isActive, true),
+        ),
+      )
+      .orderBy(clientSubClients.companyName);
+  } catch (err) {
+    console.error("[getClientSubClients] Error:", err);
+    return [];
+  }
+}
+
+/**
+ * Update payment record details (amount, date, receipt, method, reference, notes, subclient)
+ */
+export async function editPayment(paymentId, data) {
+  try {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser?.companyId) {
+      return { error: "Unauthorized access." };
+    }
+
+    const parsedPaymentId = Number(paymentId);
+    if (!parsedPaymentId) {
+      return { error: "Invalid payment ID." };
+    }
+
+    // 1. Fetch existing payment record
+    const paymentRows = await db
+      .select({
+        id: payments.id,
+        companyId: payments.companyId,
+        clientId: payments.clientId,
+        subClientId: payments.subClientId,
+        amount: payments.amount,
+        paymentDate: payments.paymentDate,
+        method: payments.method,
+        reference: payments.reference,
+        receiptNumber: payments.receiptNumber,
+        isVoided: payments.isVoided,
+      })
+      .from(payments)
+      .where(
+        and(
+          eq(payments.id, parsedPaymentId),
+          eq(payments.companyId, currentUser.companyId),
+          isNull(payments.deletedAt),
+        ),
+      )
+      .limit(1);
+
+    const payment = paymentRows[0];
+    if (!payment) {
+      return { error: "Payment not found or has been deleted." };
+    }
+
+    if (payment.isVoided) {
+      return { error: "Cannot edit a voided payment." };
+    }
+
+    // 2. Parse & validate input fields
+    const amount = Number(data.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { error: "Payment amount must be greater than zero." };
+    }
+
+    const paymentDate = data.paymentDate ? new Date(data.paymentDate) : null;
+    if (!paymentDate || Number.isNaN(paymentDate.getTime())) {
+      return { error: "Valid payment date is required." };
+    }
+
+    const receiptNumber = data.receiptNumber
+      ? String(data.receiptNumber).trim()
+      : null;
+    const method = data.method
+      ? String(data.method).trim().toLowerCase()
+      : null;
+    const reference = data.reference ? String(data.reference).trim() : null;
+    const notes =
+      data.notes !== undefined && data.notes !== null
+        ? String(data.notes).trim()
+        : null;
+    const subClientId = data.subClientId ? Number(data.subClientId) : null;
+
+    // Validate method if provided
+    const validMethods = ["cash", "bank", "upi", "cheque", "adjustment"];
+    if (method && !validMethods.includes(method)) {
+      return {
+        error: `Invalid payment method '${method}'. Allowed: ${validMethods.join(", ")}`,
+      };
+    }
+
+    // 3. Check existing allocations
+    const allocationRows = await db
+      .select({
+        id: paymentAllocations.id,
+        invoiceId: paymentAllocations.invoiceId,
+        allocatedAmount: paymentAllocations.allocatedAmount,
+      })
+      .from(paymentAllocations)
+      .where(
+        and(
+          eq(paymentAllocations.paymentId, parsedPaymentId),
+          isNull(paymentAllocations.deletedAt),
+        ),
+      );
+
+    const totalAllocated =
+      Math.round(
+        allocationRows.reduce(
+          (sum, item) => sum + Number(item.allocatedAmount || 0),
+          0,
+        ) * 100,
+      ) / 100;
+
+    // The payment amount cannot be less than the amount already committed to invoices
+    if (amount < totalAllocated - 0.01) {
+      return {
+        error: `Payment amount (₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}) cannot be less than the already allocated amount of ₹${totalAllocated.toLocaleString("en-IN", { minimumFractionDigits: 2 })} across invoices. Please adjust invoice allocations first.`,
+      };
+    }
+
+    // 4. Duplicate receipt number check (exclude current payment)
+    if (receiptNumber) {
+      const existingReceipt = await db
+        .select({ id: payments.id })
+        .from(payments)
+        .where(
+          and(
+            eq(payments.companyId, currentUser.companyId),
+            eq(payments.receiptNumber, receiptNumber),
+            sql`${payments.id} != ${parsedPaymentId}`,
+            isNull(payments.deletedAt),
+          ),
+        )
+        .limit(1);
+
+      if (existingReceipt.length > 0) {
+        return {
+          error: `Receipt number '${receiptNumber}' is already in use by another payment.`,
+        };
+      }
+    }
+
+    // 5. Verify subclient if supplied
+    let targetSubClientId = null;
+    if (subClientId) {
+      const subClientRows = await db
+        .select({ id: clientSubClients.id })
+        .from(clientSubClients)
+        .where(
+          and(
+            eq(clientSubClients.id, subClientId),
+            eq(clientSubClients.clientId, payment.clientId),
+            isNull(clientSubClients.deletedAt),
+          ),
+        )
+        .limit(1);
+
+      if (subClientRows.length === 0) {
+        return {
+          error: "The selected subclient does not belong to this client.",
+        };
+      }
+      targetSubClientId = subClientRows[0].id;
+    }
+
+    // 6. Update payment in DB
+    await db
+      .update(payments)
+      .set({
+        amount: amount.toFixed(2),
+        paymentDate,
+        receiptNumber,
+        method: method || null,
+        reference,
+        notes,
+        subClientId: targetSubClientId,
+        updatedAt: new Date(),
+        updatedBy: currentUser.user?.id || null,
+      })
+      .where(eq(payments.id, parsedPaymentId));
+
+    // 7. Revalidate relevant paths
+    revalidatePath("/payments");
+    revalidatePath(`/clients/${payment.clientId}`);
+    for (const alloc of allocationRows) {
+      if (alloc.invoiceId) {
+        revalidatePath(`/invoices/${alloc.invoiceId}`);
+      }
+    }
+
+    return {
+      success: true,
+      paymentId: parsedPaymentId,
+    };
+  } catch (err) {
+    console.error("[editPayment] Unexpected error:", err);
+    return {
+      error:
+        err?.message || "An unexpected error occurred while updating payment.",
     };
   }
 }
