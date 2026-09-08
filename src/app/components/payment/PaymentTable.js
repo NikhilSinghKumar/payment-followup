@@ -89,39 +89,31 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
             <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/60">
               <tr>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Client
                 </th>
 
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Date
                 </th>
 
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Receipt
                 </th>
 
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Payment
                 </th>
 
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   On Account
                 </th>
 
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Invoices
                 </th>
 
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Method
-                </th>
-
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Reference
-                </th>
-
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Actions
                 </th>
               </tr>
@@ -140,13 +132,13 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                   >
                     {/* Client */}
 
-                    <td className="px-5 py-4">
+                    <td className="px-2 py-4">
                       {payment.client?.id ? (
                         <Link
                           href={`/clients/${payment.client.id}`}
                           className="group"
                         >
-                          <p className="whitespace-nowrap text-sm font-medium truncate text-zinc-800 transition group-hover:text-blue-600 dark:text-zinc-200 dark:group-hover:text-blue-400">
+                          <p className="whitespace-nowrap truncate w-[160px] text-sm font-medium truncate text-zinc-800 transition group-hover:text-blue-600 dark:text-zinc-200 dark:group-hover:text-blue-400">
                             {payment.client.companyName || "—"}
                           </p>
 
@@ -173,13 +165,13 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     {/* Payment Date */}
 
-                    <td className="whitespace-nowrap px-5 py-4 text-sm text-zinc-700 dark:text-zinc-300">
+                    <td className="whitespace-nowrap px-2 py-4 text-sm text-zinc-700 dark:text-zinc-300">
                       {formatDate(payment.paymentDate)}
                     </td>
 
                     {/* Receipt */}
 
-                    <td className="whitespace-nowrap px-5 py-4">
+                    <td className="whitespace-nowrap px-2 py-4">
                       <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                         {payment.receiptNumber || "—"}
                       </span>
@@ -187,13 +179,13 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     {/* Payment Amount */}
 
-                    <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    <td className="whitespace-nowrap px-2 py-4 text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                       {formatCurrency(payment.amount)}
                     </td>
 
                     {/* On Account (Unallocated) */}
 
-                    <td className="whitespace-nowrap px-5 py-4 text-right">
+                    <td className="whitespace-nowrap px-2 py-4 text-right">
                       <span
                         className={`text-sm font-medium ${
                           Number(payment.unallocatedAmount || 0) > 0
@@ -212,34 +204,15 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     {/* Related Invoices */}
 
-                    <td className="px-5 py-4">
+                    <td className="px-2 py-4">
                       <InvoiceAllocations
                         allocations={allocations}
                         onViewAll={() => handleViewInvoices(payment)}
                       />
                     </td>
 
-                    {/* Method */}
-
-                    <td className="whitespace-nowrap px-5 py-4">
-                      <span className="text-sm capitalize text-zinc-700 dark:text-zinc-300">
-                        {formatMethod(payment.method)}
-                      </span>
-                    </td>
-
-                    {/* Reference */}
-
-                    <td className="px-5 py-4">
-                      <p
-                        className="max-w-[180px] truncate text-sm text-zinc-600 dark:text-zinc-400"
-                        title={payment.reference || ""}
-                      >
-                        {payment.reference || "—"}
-                      </p>
-                    </td>
-
                     {/* Action */}
-                    <td className="whitespace-nowrap px-5 py-4 text-right">
+                    <td className="whitespace-nowrap px-2 py-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
@@ -330,7 +303,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
             {/* Allocations */}
 
             {selectedAllocations.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-zinc-200 px-5 py-8 text-center dark:border-zinc-700">
+              <div className="rounded-xl border border-dashed border-zinc-200 px-2 py-8 text-center dark:border-zinc-700">
                 <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
                   No invoice allocation
                 </p>
@@ -438,7 +411,7 @@ function InvoiceAllocations({ allocations = [], onViewAll }) {
   if (allocations.length === 0) {
     return (
       <span className="whitespace-nowrap text-sm text-orange-600 dark:text-orange-400">
-        Unallocated
+        N/A
       </span>
     );
   }

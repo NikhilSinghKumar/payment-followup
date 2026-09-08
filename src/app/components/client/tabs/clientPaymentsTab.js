@@ -90,10 +90,6 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
             <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/60">
               <tr>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Client
-                </th>
-
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Date
                 </th>
 
@@ -113,14 +109,6 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                   Invoices
                 </th>
 
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Method
-                </th>
-
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Reference
-                </th>
-
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Actions
                 </th>
@@ -138,39 +126,6 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                     key={payment.id}
                     className="transition hover:bg-zinc-50/70 dark:hover:bg-zinc-800/50"
                   >
-                    {/* Client */}
-
-                    <td className="px-5 py-4">
-                      {payment.client?.id ? (
-                        <Link
-                          href={`/clients/${payment.client.id}`}
-                          className="group"
-                        >
-                          <p className="whitespace-nowrap text-sm font-medium truncate text-zinc-800 transition group-hover:text-blue-600 dark:text-zinc-200 dark:group-hover:text-blue-400">
-                            {payment.client.companyName || "—"}
-                          </p>
-
-                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                            {payment.client.companyCode && (
-                              <span className="text-xs text-zinc-400">
-                                {payment.client.companyCode}
-                              </span>
-                            )}
-                            {payment.subClient?.companyName && (
-                              <span
-                                className="inline-block max-w-[160px] truncate rounded bg-purple-50 px-1.5 py-0.2 text-[10px] font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300"
-                                title={`Paid by subclient: ${payment.subClient.companyName}`}
-                              >
-                                {payment.subClient.companyName}
-                              </span>
-                            )}
-                          </div>
-                        </Link>
-                      ) : (
-                        <span className="text-sm text-zinc-400">—</span>
-                      )}
-                    </td>
-
                     {/* Payment Date */}
 
                     <td className="whitespace-nowrap px-5 py-4 text-sm text-zinc-700 dark:text-zinc-300">
@@ -217,25 +172,6 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                         allocations={allocations}
                         onViewAll={() => handleViewInvoices(payment)}
                       />
-                    </td>
-
-                    {/* Method */}
-
-                    <td className="whitespace-nowrap px-5 py-4">
-                      <span className="text-sm capitalize text-zinc-700 dark:text-zinc-300">
-                        {formatMethod(payment.method)}
-                      </span>
-                    </td>
-
-                    {/* Reference */}
-
-                    <td className="px-5 py-4">
-                      <p
-                        className="max-w-[180px] truncate text-sm text-zinc-600 dark:text-zinc-400"
-                        title={payment.reference || ""}
-                      >
-                        {payment.reference || "—"}
-                      </p>
                     </td>
 
                     {/* Action */}

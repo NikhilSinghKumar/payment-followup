@@ -213,7 +213,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
 
                     {client.gstNumber && (
                       <>
-                        <span className="text-pink-500 text-xl">•</span>
+                        <span className="text-pink-500 text-md">•</span>
                         <span>{client.gstNumber}</span>
                       </>
                     )}
@@ -260,10 +260,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
               Total Invoices
             </p>
 
-            <h2 className="mt-2 text-xl font-semibold text-zinc-800 dark:text-zinc-100">
+            <h2 className="mt-2 text-md font-semibold text-zinc-800 dark:text-zinc-100">
               {totalInvoices}
             </h2>
-            <p className="mt-1 text-[10px] text-zinc-400">Total count</p>
           </div>
 
           {/* Invoice Amount */}
@@ -272,10 +271,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
               Invoice Amount
             </p>
 
-            <h2 className="mt-2 text-xl font-semibold text-zinc-800 dark:text-zinc-100">
+            <h2 className="mt-2 text-md font-semibold text-zinc-800 dark:text-zinc-100">
               ₹{totalAmount.toLocaleString("en-IN")}
             </h2>
-            <p className="mt-1 text-[10px] text-zinc-400">Gross billed</p>
           </div>
 
           {/* Net Payable */}
@@ -284,12 +282,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
               Net Payable
             </p>
 
-            <h2 className="mt-2 text-xl font-semibold text-blue-600 dark:text-blue-400">
+            <h2 className="mt-2 text-md font-semibold text-blue-600 dark:text-blue-400">
               ₹{totalNetPayable.toLocaleString("en-IN")}
             </h2>
-            <p className="mt-1 text-[10px] text-zinc-400">
-              After TDS & discounts
-            </p>
           </div>
 
           {/* Payments Received */}
@@ -298,10 +293,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
               Received
             </p>
 
-            <h2 className="mt-2 text-xl font-semibold text-emerald-600 dark:text-emerald-400">
+            <h2 className="mt-2 text-md font-semibold text-emerald-600 dark:text-emerald-400">
               ₹{paymentsReceived.toLocaleString("en-IN")}
             </h2>
-            <p className="mt-1 text-[10px] text-zinc-400">Total collected</p>
           </div>
 
           {/* On Account (Unallocated Payment) */}
@@ -311,7 +305,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2
-              className={`mt-2 text-xl font-semibold ${
+              className={`mt-2 text-md font-semibold ${
                 onAccountAmount > 0
                   ? "text-amber-600 dark:text-amber-400"
                   : "text-zinc-600 dark:text-zinc-400"
@@ -319,7 +313,6 @@ export default async function ClientDetailPage({ params, searchParams }) {
             >
               ₹{onAccountAmount.toLocaleString("en-IN")}
             </h2>
-            <p className="mt-1 text-[10px] text-zinc-400">Unallocated funds</p>
           </div>
 
           {/* Net Outstanding (Net Payable - Payments Received) */}
@@ -329,7 +322,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2
-              className={`mt-2 text-xl font-semibold ${
+              className={`mt-2 text-md font-semibold ${
                 netOutstanding > 0
                   ? "text-orange-600 dark:text-orange-400"
                   : "text-emerald-600 dark:text-emerald-400"
@@ -337,9 +330,6 @@ export default async function ClientDetailPage({ params, searchParams }) {
             >
               ₹{netOutstanding.toLocaleString("en-IN")}
             </h2>
-            <p className="mt-1 text-[10px] text-zinc-400">
-              Net Payable - Received
-            </p>
           </div>
 
           {/* Credit Balance (Only if Payments Received > Net Payable) */}
@@ -349,7 +339,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2
-              className={`mt-2 text-xl font-semibold ${
+              className={`mt-2 text-md font-semibold ${
                 creditBalance > 0
                   ? "text-violet-600 dark:text-violet-400"
                   : "text-zinc-500 dark:text-zinc-400"
@@ -357,9 +347,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
             >
               ₹{creditBalance.toLocaleString("en-IN")}
             </h2>
-            <p className="mt-1 text-[10px] text-zinc-400">
+            {/* <p className="mt-1 text-[10px] text-zinc-400">
               {creditBalance > 0 ? "Advance surplus" : "Overpayment only"}
-            </p>
+            </p> */}
           </div>
 
           {/* Overdue */}
@@ -368,10 +358,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
               Overdue
             </p>
 
-            <h2 className="mt-2 text-xl font-semibold text-red-500">
+            <h2 className="mt-2 text-md font-semibold text-red-500">
               {overdueInvoices}
             </h2>
-            <p className="mt-1 text-[10px] text-zinc-400">Past due invoices</p>
           </div>
         </div>
 
