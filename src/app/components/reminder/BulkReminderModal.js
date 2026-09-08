@@ -21,8 +21,8 @@ import {
 import {
   getBulkInvoicesReminderPreview,
   sendBulkGroupedReminders,
+  getBulkStatementPreviewHtml,
 } from "@/app/actions/reminder";
-import { renderManualBulkInvoicesReminderEmail } from "@/lib/notifications/email-renderer";
 import LiveEmailModalPreview from "./LiveEmailModalPreview";
 
 export default function BulkReminderModal({
@@ -40,6 +40,10 @@ export default function BulkReminderModal({
   const [previewClientIndex, setPreviewClientIndex] = useState(0);
   const [expandedClient, setExpandedClient] = useState(null);
   const [customEmailInputs, setCustomEmailInputs] = useState({});
+
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewSubject, setPreviewSubject] = useState("");
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState(null);
@@ -153,6 +157,29 @@ export default function BulkReminderModal({
     });
   }
 
+  const previewGroup = clientGroups[previewClientIndex] || clientGroups[0];
+
+  useEffect(() => {
+    if (isOpen && activeTab === "preview" && previewGroup) {
+      let cancelled = false;
+      setLoadingPreview(true);
+      getBulkStatementPreviewHtml({
+        group: previewGroup,
+        reminderType,
+        customNote,
+      }).then((res) => {
+        if (!cancelled && res?.success) {
+          setPreviewHtml(res.html || "");
+          setPreviewSubject(res.subject || "");
+        }
+        if (!cancelled) setLoadingPreview(false);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [isOpen, activeTab, previewGroup, reminderType, customNote]);
+
   if (!isOpen) return null;
 
   const enabledClients = clientGroups.filter((g) => g.enabled !== false);
@@ -161,8 +188,6 @@ export default function BulkReminderModal({
     0,
   );
   const totalDueToSend = enabledClients.reduce((sum, g) => sum + g.totalDue, 0);
-
-  const previewGroup = clientGroups[previewClientIndex] || clientGroups[0];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 backdrop-blur-xs animate-in fade-in duration-150">
@@ -605,30 +630,29 @@ export default function BulkReminderModal({
                     </select>
                   </div>
 
-                  <LiveEmailModalPreview
-                    html={renderManualBulkInvoicesReminderEmail({
-                      client: { companyName: previewGroup.companyName },
-                      groupInvoices: previewGroup.invoices || [],
-                      company: previewData?.company || {},
-                      reminderType,
-                      customNote,
-                      totalDue: previewGroup.totalDue || 0,
-                      overdueCount: previewGroup.overdueCount || 0,
-                    })}
-                    subject={
-                      reminderType === "SUSPENSION_WARNING"
-                        ? `URGENT: Outstanding Dues & Service Suspension Warning | ${previewGroup.companyName}`
-                        : reminderType === "OVERDUE_NOTICE"
-                          ? `Overdue Statement of Account: ${previewGroup.overdueCount} Overdue Invoices | ${previewGroup.companyName}`
-                          : `Statement of Outstanding Invoices (${previewGroup.invoices.length} Invoices) | ${previewGroup.companyName}`
-                    }
-                    recipientEmails={previewGroup.selectedEmails || []}
-                    senderCompany={
-                      previewData?.company?.companyName || "PAFEX Logistics"
-                    }
-                    senderEmail={previewData?.company?.email || ""}
-                    reminderType={reminderType}
-                  />
+                  {loadingPreview && !previewHtml ? (
+                    <div className="flex h-64 items-center justify-center text-xs text-zinc-400">
+                      Generating live statement preview...
+                    </div>
+                  ) : (
+                    <LiveEmailModalPreview
+                      html={previewHtml}
+                      subject={
+                        previewSubject ||
+                        (reminderType === "SUSPENSION_WARNING"
+                          ? `URGENT: Outstanding Dues & Service Suspension Warning | ${previewGroup.companyName}`
+                          : reminderType === "OVERDUE_NOTICE"
+                            ? `Overdue Statement of Account: ${previewGroup.overdueCount} Overdue Invoices | ${previewGroup.companyName}`
+                            : `Statement of Outstanding Invoices (${previewGroup.invoices.length} Invoices) | ${previewGroup.companyName}`)
+                      }
+                      recipientEmails={previewGroup.selectedEmails || []}
+                      senderCompany={
+                        previewData?.company?.companyName || "PAFEX Logistics"
+                      }
+                      senderEmail={previewData?.company?.email || ""}
+                      reminderType={reminderType}
+                    />
+                  )}
                 </div>
               )}
             </>

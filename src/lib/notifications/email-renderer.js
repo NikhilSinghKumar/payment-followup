@@ -1,19 +1,35 @@
-import { renderEmailLayout } from "./email-layout";
+import React from "react";
+import { EmailLayout } from "./email-layout";
 import {
-  renderGreeting,
-  renderParagraph,
-  renderStatusBanner,
-  renderInvoiceSummary,
-  renderClientOutstandingInvoices,
-  renderClientPaymentSettlementTable,
-  renderAlertBox,
-  renderButton,
-  renderSignature,
-  renderCustomNote,
+  Greeting,
+  Paragraph,
+  StatusBanner,
+  InvoiceSummary,
+  ClientOutstandingInvoices,
+  ClientPaymentSettlementTable,
+  AlertBox,
+  EmailButton,
+  Signature,
+  CustomNote,
 } from "./email-components";
 
 import { NOTIFICATION_TYPES } from "./notification-types";
 import { formatDateDifference } from "@/lib/notifications/date-utils";
+
+function renderToStaticMarkup(element) {
+  try {
+    // Dynamic require avoids Turbopack/Next.js client/RSC static import restrictions
+    const req =
+      typeof __non_webpack_require__ !== "undefined"
+        ? __non_webpack_require__
+        : eval("require");
+    const server = req("react-dom/server");
+    return server.renderToStaticMarkup(element);
+  } catch (err) {
+    console.error("Failed to render email markup:", err);
+    return "";
+  }
+}
 
 const CONFIG = {
   [NOTIFICATION_TYPES.BILL_SUBMITTED]: {
@@ -81,16 +97,22 @@ const CONFIG = {
   },
 };
 
-export function renderEmail({ type, body, variables, actionUrl }) {
+/**
+ * ======================================================
+ * Notification Email Template (React JSX Component)
+ * ======================================================
+ */
+export function NotificationEmailTemplate({
+  type,
+  body,
+  variables = {},
+  actionUrl,
+}) {
   const config = CONFIG[type];
 
   if (!config) {
     throw new Error(`Unsupported email notification type: ${type}`);
   }
-
-  // ======================================================
-  // Client-level payment reminder or payment received settlement
-  // ======================================================
 
   const isClientPaymentReminder =
     type === NOTIFICATION_TYPES.DUE_REMINDER ||
@@ -101,134 +123,132 @@ export function renderEmail({ type, body, variables, actionUrl }) {
     Array.isArray(variables.settledInvoices) &&
     variables.settledInvoices.length > 0;
 
-  // ======================================================
-  // Invoice Summary / Breakdown
-  // ======================================================
-
-  let invoiceSummary = "";
-  if (isClientPaymentSettlement) {
-    invoiceSummary = renderClientPaymentSettlementTable({
-      settledInvoices: variables.settledInvoices,
-      paymentInfo: {
-        amount: variables.paymentAmount,
-        paymentDate: variables.paymentDate,
-        method: variables.paymentMethod,
-        reference: variables.referenceNumber,
-      },
-      totalAccountOutstanding: variables.totalAccountOutstanding,
-    });
-  } else if (isClientPaymentReminder) {
-    invoiceSummary = renderClientOutstandingInvoices(variables.invoices);
-  } else {
-    invoiceSummary = renderInvoiceSummary({
-      invoiceNumber: variables.invoiceNumber,
-      invoiceDate: variables.invoiceDate,
-      dueDate: variables.dueDate,
-      invoiceAmount: variables.invoiceAmount,
-      paidAmount: variables.paidAmount,
-      outstandingAmount: variables.outstandingAmount,
-      showPaymentDetails: config.showPaymentDetails,
-    });
+  // Overdue calculation
+  let overdueAlert = null;
+  if (
+    type !== NOTIFICATION_TYPES.BILL_SUBMITTED &&
+    type !== NOTIFICATION_TYPES.SERVICE_SUSPENSION_ALERT &&
+    type !== NOTIFICATION_TYPES.SERVICE_SUSPENSION_NOTICE &&
+    type !== NOTIFICATION_TYPES.PAYMENT_RECEIVED &&
+    type !== NOTIFICATION_TYPES.PAYMENT_CLEARED &&
+    type !== NOTIFICATION_TYPES.DUE_REMINDER &&
+    type !== NOTIFICATION_TYPES.INVOICE_DUE &&
+    type !== "DUE_TODAY" &&
+    type !== "INTERNAL_DUE_TODAY" &&
+    !isClientPaymentReminder &&
+    !isClientPaymentSettlement
+  ) {
+    const overdueDays = Number(variables.overdueDays) || 0;
+    if (overdueDays > 0 && variables.dueDate) {
+      const diff = formatDateDifference(variables.dueDate);
+      if (diff && diff !== "0 days") {
+        overdueAlert = `This invoice is overdue by ${diff}.`;
+      }
+    }
   }
 
-  // ======================================================
-  // Content
-  // ======================================================
+  return (
+    <EmailLayout
+      title={config.title}
+      bannerColor={config.color}
+      companyName={variables.senderCompany}
+      senderCompany={variables.senderCompany}
+      senderEmail={variables.senderEmail}
+      senderPhone={variables.senderPhone}
+      logoUrl={variables.senderLogo}
+    >
+      <Greeting clientName={variables.clientName} />
 
-  const content = `
-    ${renderGreeting(variables.clientName)}
+      <StatusBanner
+        title={config.banner}
+        color={config.color}
+        background={config.background}
+      />
 
-    ${renderStatusBanner({
-      title: config.banner,
-      color: config.color,
-      background: config.background,
-    })}
+      <Paragraph text={body} />
 
-    ${renderParagraph(body)}
+      {variables.customNote && (
+        <CustomNote note={variables.customNote} color={config.color} />
+      )}
 
-    ${variables.customNote ? renderCustomNote(variables.customNote, config.color) : ""}
+      {/* Invoice Summary / Settlement Breakdown */}
+      {isClientPaymentSettlement ? (
+        <ClientPaymentSettlementTable
+          settledInvoices={variables.settledInvoices}
+          paymentInfo={{
+            amount: variables.paymentAmount,
+            paymentDate: variables.paymentDate,
+            method: variables.paymentMethod,
+            reference: variables.referenceNumber,
+          }}
+          totalAccountOutstanding={variables.totalAccountOutstanding}
+        />
+      ) : isClientPaymentReminder ? (
+        <ClientOutstandingInvoices invoices={variables.invoices} />
+      ) : (
+        <InvoiceSummary
+          invoiceNumber={variables.invoiceNumber}
+          invoiceDate={variables.invoiceDate}
+          dueDate={variables.dueDate}
+          invoiceAmount={variables.invoiceAmount}
+          paidAmount={variables.paidAmount}
+          outstandingAmount={variables.outstandingAmount}
+          showPaymentDetails={config.showPaymentDetails}
+        />
+      )}
 
-    ${invoiceSummary}
+      {/* Settlement Discrepancy Notice */}
+      {(type === NOTIFICATION_TYPES.PAYMENT_RECEIVED ||
+        isClientPaymentSettlement) && (
+        <div
+          style={{
+            marginTop: "18px",
+            marginBottom: "20px",
+            lineHeight: 1.6,
+            color: "#334155",
+            fontSize: "14px",
+          }}
+        >
+          <p style={{ margin: "0 0 12px 0" }}>
+            Please review the settlement details and notify the PAFEX Accounts
+            Team of any discrepancy or concern within 2 days of receiving this
+            email. If we do not receive any communication within this period,
+            the settlement will be considered final and recorded in our
+            accounts.
+          </p>
+          <p style={{ margin: 0 }}>
+            Thank you for your continued trust and business with PAFEX.
+          </p>
+        </div>
+      )}
 
-    ${
-      type === NOTIFICATION_TYPES.PAYMENT_RECEIVED || isClientPaymentSettlement
-        ? `
-          <div style="margin-top: 18px; margin-bottom: 20px; line-height: 1.6; color: #334155; font-size: 14px;">
-            <p style="margin: 0 0 12px 0;">
-              Please review the settlement details and notify the PAFEX Accounts Team of any discrepancy or concern within 2 days of receiving this email. If we do not receive any communication within this period, the settlement will be considered final and recorded in our accounts.
-            </p>
-            <p style="margin: 0;">
-              Thank you for your continued trust and business with PAFEX.
-            </p>
-          </div>
-        `
-        : ""
-    }
+      {overdueAlert && <AlertBox message={overdueAlert} />}
 
-    ${(() => {
-      if (
-        type === NOTIFICATION_TYPES.BILL_SUBMITTED ||
-        type === NOTIFICATION_TYPES.SERVICE_SUSPENSION_ALERT ||
-        type === NOTIFICATION_TYPES.SERVICE_SUSPENSION_NOTICE ||
-        type === NOTIFICATION_TYPES.PAYMENT_RECEIVED ||
-        type === NOTIFICATION_TYPES.PAYMENT_CLEARED ||
-        type === NOTIFICATION_TYPES.DUE_REMINDER ||
-        type === NOTIFICATION_TYPES.INVOICE_DUE ||
-        type === "DUE_TODAY" ||
-        type === "INTERNAL_DUE_TODAY" ||
-        isClientPaymentReminder ||
-        isClientPaymentSettlement
-      ) {
-        return "";
-      }
+      {actionUrl && <EmailButton text="View Details" url={actionUrl} />}
 
-      const overdueDays = Number(variables.overdueDays) || 0;
-      if (overdueDays <= 0 || !variables.dueDate) {
-        return "";
-      }
+      <Signature
+        senderCompany={variables.senderCompany}
+        senderEmail={variables.senderEmail}
+        senderPhone={variables.senderPhone}
+        senderLogo={variables.senderLogo}
+      />
+    </EmailLayout>
+  );
+}
 
-      const diff = formatDateDifference(variables.dueDate);
-      if (!diff || diff === "0 days") {
-        return "";
-      }
-
-      return renderAlertBox(`This invoice is overdue by ${diff}.`);
-    })()}
-
-
-    ${renderSignature({
-      senderCompany: variables.senderCompany,
-      senderEmail: variables.senderEmail,
-      senderPhone: variables.senderPhone,
-      senderLogo: variables.senderLogo,
-    })}
-  `;
-
-  // ======================================================
-  // Email Layout
-  // ======================================================
-
-  return renderEmailLayout({
-    title: config.title,
-    bannerColor: config.color,
-    companyName: variables.senderCompany,
-    content,
-    senderCompany: variables.senderCompany,
-    senderEmail: variables.senderEmail,
-    senderPhone: variables.senderPhone,
-    logoUrl: variables.senderLogo,
-  });
+export function renderEmail(props) {
+  const markup = renderToStaticMarkup(<NotificationEmailTemplate {...props} />);
+  return `<!DOCTYPE html>\n${markup}`;
 }
 
 /**
  * ======================================================
- * Manual Single Invoice Reminder Renderer
- * (Unified with automatic email layout)
+ * Single Invoice Reminder Template (React JSX Component)
  * ======================================================
  */
-export function renderManualSingleInvoiceReminderEmail({
+export function SingleInvoiceReminderTemplate({
   invoice,
-  client,
+  client = {},
   company = {},
   reminderType = "OVERDUE",
   customNote = "",
@@ -304,79 +324,81 @@ export function renderManualSingleInvoiceReminderEmail({
 
   const bodyParagraph =
     reminderType === "FINAL_NOTICE"
-      ? `This is a final notice regarding the outstanding balance of ₹${formattedDue} for invoice <strong>#${invoice.invoiceNumber}</strong>. Please clear this invoice immediately to avoid potential disruption to your dispatch and logistics services.`
+      ? `This is a final notice regarding the outstanding balance of ₹${formattedDue} for invoice #${invoice.invoiceNumber}. Please clear this invoice immediately to avoid potential disruption to your dispatch and logistics services.`
       : reminderType === "DUE_TODAY"
-        ? `This is a reminder that invoice <strong>#${invoice.invoiceNumber}</strong> for ₹${formattedDue} is due for payment today. Kindly ensure timely settlement.`
+        ? `This is a reminder that invoice #${invoice.invoiceNumber} for ₹${formattedDue} is due for payment today. Kindly ensure timely settlement.`
         : reminderType === "DUE_SOON"
-          ? `This is a friendly reminder that invoice <strong>#${invoice.invoiceNumber}</strong> with a balance due of ₹${formattedDue} is approaching its due date (${formattedDueDate}).`
-          : `This is a reminder regarding the outstanding balance of ₹${formattedDue} for invoice <strong>#${invoice.invoiceNumber}</strong> which is currently overdue. Kindly process the payment at your earliest convenience.`;
+          ? `This is a friendly reminder that invoice #${invoice.invoiceNumber} with a balance due of ₹${formattedDue} is approaching its due date (${formattedDueDate}).`
+          : `This is a reminder regarding the outstanding balance of ₹${formattedDue} for invoice #${invoice.invoiceNumber} which is currently overdue. Kindly process the payment at your earliest convenience.`;
 
-  const content = `
-    ${renderGreeting(client.companyName || client.name || "Valued Customer")}
+  return (
+    <EmailLayout
+      title={title}
+      bannerColor={color}
+      companyName={company.companyName || "PAFEX"}
+      senderCompany={company.companyName || "PAFEX"}
+      senderEmail={company.email || ""}
+      senderPhone={company.phone || ""}
+      logoUrl={company.logoUrl || ""}
+    >
+      <Greeting
+        clientName={client.companyName || client.name || "Valued Customer"}
+      />
 
-    ${renderStatusBanner({
-      title: banner,
-      color,
-      background,
-    })}
+      <StatusBanner title={banner} color={color} background={background} />
 
-    ${renderParagraph(bodyParagraph)}
+      <Paragraph text={bodyParagraph} />
 
-    ${renderCustomNote(customNote, color)}
+      {customNote && <CustomNote note={customNote} color={color} />}
 
-    ${renderInvoiceSummary({
-      invoiceNumber: invoice.invoiceNumber,
-      invoiceDate: formattedInvoiceDate,
-      dueDate: formattedDueDate,
-      invoiceAmount: formattedTotal,
-      paidAmount: formattedPaid,
-      outstandingAmount: formattedDue,
-      showPaymentDetails: true,
-      awbs: invoice.awbs || [],
-      isOverdue: invoice.isOverdue,
-      dueDaysText: invoice.dueDaysText,
-    })}
+      <InvoiceSummary
+        invoiceNumber={invoice.invoiceNumber}
+        invoiceDate={formattedInvoiceDate}
+        dueDate={formattedDueDate}
+        invoiceAmount={formattedTotal}
+        paidAmount={formattedPaid}
+        outstandingAmount={formattedDue}
+        showPaymentDetails={true}
+        awbs={invoice.awbs || []}
+        isOverdue={invoice.isOverdue}
+        dueDaysText={invoice.dueDaysText}
+      />
 
-    ${
-      invoice.isOverdue && invoice.dueDays >= 1
-        ? renderAlertBox(
-            `This invoice is past due by <strong>${invoice.dueDays} day(s)</strong>. If you have already initiated the transfer, please share the UTR reference number.`,
-          )
-        : ""
-    }
+      {invoice.isOverdue && invoice.dueDays >= 1 && (
+        <AlertBox
+          message={`This invoice is past due by <strong>${invoice.dueDays} day(s)</strong>. If you have already initiated the transfer, please share the UTR reference number.`}
+        />
+      )}
 
-    <p style="font-size: 13px; color: #64748B; margin: 16px 0 0 0;">
-      If you have already processed this transaction, kindly reply with the payment confirmation / UTR details for swift reconciliation.
-    </p>
+      <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
+        If you have already processed this transaction, kindly reply with the
+        payment confirmation / UTR details for swift reconciliation.
+      </p>
 
-    ${renderSignature({
-      senderCompany: company.companyName || "PAFEX Logistics",
-      senderEmail: company.email || "",
-      senderPhone: company.phone || "",
-      senderLogo: company.logoUrl || "",
-    })}
-  `;
+      <Signature
+        senderCompany={company.companyName || "PAFEX Logistics"}
+        senderEmail={company.email || ""}
+        senderPhone={company.phone || ""}
+        senderLogo={company.logoUrl || ""}
+      />
+    </EmailLayout>
+  );
+}
 
-  return renderEmailLayout({
-    title,
-    bannerColor: color,
-    companyName: company.companyName || "PAFEX",
-    content,
-    senderCompany: company.companyName || "PAFEX",
-    senderEmail: company.email || "",
-    senderPhone: company.phone || "",
-    logoUrl: company.logoUrl || "",
-  });
+export function renderManualSingleInvoiceReminderEmail(props) {
+  const markup = renderToStaticMarkup(
+    <SingleInvoiceReminderTemplate {...props} />,
+  );
+  return `<!DOCTYPE html>\n${markup}`;
 }
 
 /**
  * ======================================================
- * Manual Client Statement Reminder Renderer
- * (Unified with automatic email layout)
+ * Client Statement Reminder Template (React JSX Component)
  * ======================================================
  */
-export function renderManualClientStatementReminderEmail({
-  client,
+export function ClientStatementReminderTemplate({
+  client = {},
   clientSummary = {},
   invoices = [],
   company = {},
@@ -423,12 +445,11 @@ export function renderManualClientStatementReminderEmail({
 
   const bodyParagraph =
     reminderType === "SUSPENSION_WARNING"
-      ? `Please find below the consolidated statement of your outstanding ledger. There are currently <strong>${invoices.length} unpaid invoices</strong> totaling <strong style="color: #DC2626;">₹${formattedTotalOutstanding}</strong>, with <strong>${clientSummary.overdueInvoices || 0} invoice(s) critically overdue</strong>. Please settle these outstanding balances immediately to ensure uninterrupted logistics support.`
+      ? `Please find below the consolidated statement of your outstanding ledger. There are currently ${invoices.length} unpaid invoices totaling ₹${formattedTotalOutstanding}, with ${clientSummary.overdueInvoices || 0} invoice(s) critically overdue. Please settle these outstanding balances immediately to ensure uninterrupted logistics support.`
       : reminderType === "OVERDUE_NOTICE"
-        ? `Please find below your statement of overdue invoices. There are currently <strong>${clientSummary.overdueInvoices || 0} overdue invoice(s)</strong> totaling <strong style="color: #EA580C;">₹${formattedOverdueAmount}</strong> out of total outstanding ₹${formattedTotalOutstanding}. Kindly prioritize clearance of these pending bills.`
-        : `Please find below the consolidated statement of your open invoices with ${company.companyName || "our team"}. There are currently <strong>${invoices.length} outstanding invoices</strong> with a total pending balance of <strong style="color: #2563EB;">₹${formattedTotalOutstanding}</strong>.`;
+        ? `Please find below your statement of overdue invoices. There are currently ${clientSummary.overdueInvoices || 0} overdue invoice(s) totaling ₹${formattedOverdueAmount} out of total outstanding ₹${formattedTotalOutstanding}. Kindly prioritize clearance of these pending bills.`
+        : `Please find below the consolidated statement of your open invoices with ${company.companyName || "our team"}. There are currently ${invoices.length} outstanding invoices with a total pending balance of ₹${formattedTotalOutstanding}.`;
 
-  // Transform invoices into format expected by renderClientOutstandingInvoices
   const mappedInvoices = invoices.map((inv) => {
     let creditDays = Number(inv.creditDays || 0);
     if (!creditDays && inv.invoiceDate && inv.dueDate) {
@@ -463,61 +484,65 @@ export function renderManualClientStatementReminderEmail({
     };
   });
 
-  const content = `
-    ${renderGreeting(client.companyName || client.name || "Finance & Accounts Team")}
+  return (
+    <EmailLayout
+      title={title}
+      bannerColor={color}
+      companyName={company.companyName || "PAFEX"}
+      senderCompany={company.companyName || "PAFEX"}
+      senderEmail={company.email || ""}
+      senderPhone={company.phone || ""}
+      logoUrl={company.logoUrl || ""}
+    >
+      <Greeting
+        clientName={
+          client.companyName || client.name || "Finance & Accounts Team"
+        }
+      />
 
-    ${renderStatusBanner({
-      title: banner,
-      color,
-      background,
-    })}
+      <StatusBanner title={banner} color={color} background={background} />
 
-    ${renderParagraph(bodyParagraph)}
+      <Paragraph text={bodyParagraph} />
 
-    ${
-      clientSummary.overdueInvoices > 0
-        ? renderAlertBox(
-            `⚠️ <strong>Action Required:</strong> ${clientSummary.overdueInvoices} invoice(s) are overdue totaling <strong>₹${formattedOverdueAmount}</strong>.`,
-          )
-        : ""
-    }
+      {clientSummary.overdueInvoices > 0 && (
+        <AlertBox
+          message={`⚠️ <strong>Action Required:</strong> ${clientSummary.overdueInvoices} invoice(s) are overdue totaling <strong>₹${formattedOverdueAmount}</strong>.`}
+        />
+      )}
 
-    ${renderCustomNote(customNote, color)}
+      {customNote && <CustomNote note={customNote} color={color} />}
 
-    ${renderClientOutstandingInvoices(mappedInvoices)}
+      <ClientOutstandingInvoices invoices={mappedInvoices} />
 
-    <p style="font-size: 13px; color: #64748B; margin: 16px 0 0 0;">
-      Kindly share payment receipts / UTR details with our accounts team for swift ledger posting.
-    </p>
+      <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
+        Kindly share payment receipts / UTR details with our accounts team for
+        swift ledger posting.
+      </p>
 
-    ${renderSignature({
-      senderCompany: company.companyName || "PAFEX Logistics",
-      senderEmail: company.email || "",
-      senderPhone: company.phone || "",
-      senderLogo: company.logoUrl || "",
-    })}
-  `;
+      <Signature
+        senderCompany={company.companyName || "PAFEX Logistics"}
+        senderEmail={company.email || ""}
+        senderPhone={company.phone || ""}
+        senderLogo={company.logoUrl || ""}
+      />
+    </EmailLayout>
+  );
+}
 
-  return renderEmailLayout({
-    title,
-    bannerColor: color,
-    companyName: company.companyName || "PAFEX",
-    content,
-    senderCompany: company.companyName || "PAFEX",
-    senderEmail: company.email || "",
-    senderPhone: company.phone || "",
-    logoUrl: company.logoUrl || "",
-  });
+export function renderManualClientStatementReminderEmail(props) {
+  const markup = renderToStaticMarkup(
+    <ClientStatementReminderTemplate {...props} />,
+  );
+  return `<!DOCTYPE html>\n${markup}`;
 }
 
 /**
  * ======================================================
- * Manual Bulk Invoices Statement Renderer
- * (Unified with automatic email layout)
+ * Bulk Invoices Statement Reminder Template (React JSX Component)
  * ======================================================
  */
-export function renderManualBulkInvoicesReminderEmail({
-  client,
+export function BulkInvoicesReminderTemplate({
+  client = {},
   groupInvoices = [],
   company = {},
   reminderType = "STATEMENT",
@@ -558,10 +583,10 @@ export function renderManualBulkInvoicesReminderEmail({
 
   const bodyParagraph =
     reminderType === "SUSPENSION_WARNING"
-      ? `Please find below the consolidated statement of your outstanding invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #DC2626;">₹${formattedTotalDue}</strong>. Kindly arrange immediate settlement to prevent any pause in service.`
+      ? `Please find below the consolidated statement of your outstanding invoices. There are currently ${groupInvoices.length} pending invoices totaling ₹${formattedTotalDue}. Kindly arrange immediate settlement to prevent any pause in service.`
       : overdueCount > 0
-        ? `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong> (${overdueCount} invoices past due). Kindly arrange payment at your earliest convenience.`
-        : `Please find below your statement of open invoices. There are currently <strong>${groupInvoices.length} pending invoices</strong> totaling <strong style="color: #2563EB;">₹${formattedTotalDue}</strong>.`;
+        ? `Please find below your statement of open invoices. There are currently ${groupInvoices.length} pending invoices totaling ₹${formattedTotalDue} (${overdueCount} invoices past due). Kindly arrange payment at your earliest convenience.`
+        : `Please find below your statement of open invoices. There are currently ${groupInvoices.length} pending invoices totaling ₹${formattedTotalDue}.`;
 
   const mappedInvoices = groupInvoices.map((inv) => {
     let creditDays = Number(inv.creditDays || 0);
@@ -589,50 +614,62 @@ export function renderManualBulkInvoicesReminderEmail({
     };
   });
 
-  const content = `
-    ${renderGreeting(client.companyName || client.name || "Finance & Accounts Team")}
+  return (
+    <EmailLayout
+      title={title}
+      bannerColor={color}
+      companyName={company.companyName || "PAFEX"}
+      senderCompany={company.companyName || "PAFEX"}
+      senderEmail={company.email || ""}
+      senderPhone={company.phone || ""}
+      logoUrl={company.logoUrl || ""}
+    >
+      <Greeting
+        clientName={
+          client.companyName || client.name || "Finance & Accounts Team"
+        }
+      />
 
-    ${renderStatusBanner({
-      title: banner,
-      color,
-      background,
-    })}
+      <StatusBanner title={banner} color={color} background={background} />
 
-    ${renderParagraph(bodyParagraph)}
+      <Paragraph text={bodyParagraph} />
 
-    ${
-      overdueCount > 0
-        ? renderAlertBox(
-            `⚠️ <strong>${overdueCount} of these invoice(s) are past due</strong>. Please prioritize settlement.`,
-          )
-        : ""
-    }
+      {overdueCount > 0 && (
+        <AlertBox
+          message={`⚠️ <strong>${overdueCount} of these invoice(s) are past due</strong>. Please prioritize settlement.`}
+        />
+      )}
 
-    ${renderCustomNote(customNote, color)}
+      {customNote && <CustomNote note={customNote} color={color} />}
 
-    ${renderClientOutstandingInvoices(mappedInvoices)}
+      <ClientOutstandingInvoices invoices={mappedInvoices} />
 
+      <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
+        Kindly share transaction details / UTR number once payment is initiated.
+      </p>
 
-    <p style="font-size: 13px; color: #64748B; margin: 16px 0 0 0;">
-      Kindly share transaction details / UTR number once payment is initiated.
-    </p>
+      <Signature
+        senderCompany={company.companyName || "PAFEX Logistics"}
+        senderEmail={company.email || ""}
+        senderPhone={company.phone || ""}
+        senderLogo={company.logoUrl || ""}
+      />
+    </EmailLayout>
+  );
+}
 
-    ${renderSignature({
-      senderCompany: company.companyName || "PAFEX Logistics",
-      senderEmail: company.email || "",
-      senderPhone: company.phone || "",
-      senderLogo: company.logoUrl || "",
-    })}
-  `;
+export function renderManualBulkInvoicesReminderEmail(props) {
+  const markup = renderToStaticMarkup(
+    <BulkInvoicesReminderTemplate {...props} />,
+  );
+  return `<!DOCTYPE html>\n${markup}`;
+}
 
-  return renderEmailLayout({
-    title,
-    bannerColor: color,
-    companyName: company.companyName || "PAFEX",
-    content,
-    senderCompany: company.companyName || "PAFEX",
-    senderEmail: company.email || "",
-    senderPhone: company.phone || "",
-    logoUrl: company.logoUrl || "",
-  });
+export function renderEmailLayout(props) {
+  const markup = renderToStaticMarkup(<EmailLayout {...props} />);
+  return `<!DOCTYPE html>\n${markup}`;
+}
+
+export function renderSignature(props) {
+  return renderToStaticMarkup(<Signature {...props} />);
 }

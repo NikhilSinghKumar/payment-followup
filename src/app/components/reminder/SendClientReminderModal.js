@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import {
   Mail,
   Send,
@@ -21,8 +21,8 @@ import {
 import {
   getClientReminderData,
   sendClientReminder,
+  getClientStatementReminderPreviewHtml,
 } from "@/app/actions/reminder";
-import { renderManualClientStatementReminderEmail } from "@/lib/notifications/email-renderer";
 import LiveEmailModalPreview from "./LiveEmailModalPreview";
 
 export default function SendClientReminderModal({
@@ -41,8 +41,33 @@ export default function SendClientReminderModal({
   const [customNote, setCustomNote] = useState("");
   const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
 
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewSubject, setPreviewSubject] = useState("");
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState(null);
+
+  useEffect(() => {
+    if (activeTab === "preview" && clientId) {
+      let cancelled = false;
+      setLoadingPreview(true);
+      getClientStatementReminderPreviewHtml({
+        clientId,
+        reminderType,
+        customNote,
+      }).then((res) => {
+        if (!cancelled && res?.success) {
+          setPreviewHtml(res.html || "");
+          setPreviewSubject(res.subject || "");
+        }
+        if (!cancelled) setLoadingPreview(false);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [activeTab, clientId, reminderType, customNote]);
 
   async function handleOpen() {
     setIsOpen(true);
@@ -473,29 +498,30 @@ export default function SendClientReminderModal({
                   )}
 
                   {/* TAB 2: UNIFIED LIVE STATEMENT PREVIEW */}
-                  {activeTab === "preview" && client && (
-                    <LiveEmailModalPreview
-                      html={renderManualClientStatementReminderEmail({
-                        client,
-                        clientSummary,
-                        invoices,
-                        company,
-                        reminderType,
-                        customNote,
-                      })}
-                      subject={
-                        reminderType === "SUSPENSION_WARNING"
-                          ? `URGENT: Outstanding Dues & Service Suspension Warning | ${client.companyName}`
-                          : reminderType === "OVERDUE_NOTICE"
-                            ? `Overdue Statement of Account: ${clientSummary?.overdueInvoices || 0} Overdue Invoices | ${client.companyName}`
-                            : `Statement of Outstanding Invoices (${invoices.length} Invoices) | ${client.companyName}`
-                      }
-                      recipientEmails={selectedEmails}
-                      senderCompany={company?.companyName || "PAFEX Logistics"}
-                      senderEmail={company?.email || ""}
-                      reminderType={reminderType}
-                    />
-                  )}
+                  {activeTab === "preview" &&
+                    (loadingPreview && !previewHtml ? (
+                      <div className="flex h-64 items-center justify-center text-xs text-zinc-400">
+                        Generating live statement preview...
+                      </div>
+                    ) : (
+                      <LiveEmailModalPreview
+                        html={previewHtml}
+                        subject={
+                          previewSubject ||
+                          (reminderType === "SUSPENSION_WARNING"
+                            ? `URGENT: Outstanding Dues & Service Suspension Warning | ${client?.companyName || ""}`
+                            : reminderType === "OVERDUE_NOTICE"
+                              ? `Overdue Statement of Account: ${clientSummary?.overdueInvoices || 0} Overdue Invoices | ${client?.companyName || ""}`
+                              : `Statement of Outstanding Invoices (${invoices.length} Invoices) | ${client?.companyName || ""}`)
+                        }
+                        recipientEmails={selectedEmails}
+                        senderCompany={
+                          company?.companyName || "PAFEX Logistics"
+                        }
+                        senderEmail={company?.email || ""}
+                        reminderType={reminderType}
+                      />
+                    ))}
 
                   {/* TAB 3: WHATSAPP */}
                   {activeTab === "whatsapp" && client && (

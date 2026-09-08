@@ -21,8 +21,8 @@ import {
 import {
   getInvoiceReminderData,
   sendInvoiceReminder,
+  getSingleInvoiceReminderPreviewHtml,
 } from "@/app/actions/reminder";
-import { renderManualSingleInvoiceReminderEmail } from "@/lib/notifications/email-renderer";
 import LiveEmailModalPreview from "./LiveEmailModalPreview";
 
 export default function SendInvoiceReminderModal({
@@ -40,8 +40,33 @@ export default function SendInvoiceReminderModal({
   const [customNote, setCustomNote] = useState("");
   const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
 
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewSubject, setPreviewSubject] = useState("");
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState(null);
+
+  useEffect(() => {
+    if (activeTab === "preview" && invoiceId) {
+      let cancelled = false;
+      setLoadingPreview(true);
+      getSingleInvoiceReminderPreviewHtml({
+        invoiceId,
+        reminderType,
+        customNote,
+      }).then((res) => {
+        if (!cancelled && res?.success) {
+          setPreviewHtml(res.html || "");
+          setPreviewSubject(res.subject || "");
+        }
+        if (!cancelled) setLoadingPreview(false);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [activeTab, invoiceId, reminderType, customNote]);
 
   async function handleOpen() {
     setIsOpen(true);
@@ -461,30 +486,32 @@ export default function SendInvoiceReminderModal({
                   )}
 
                   {/* TAB 2: UNIFIED LIVE EMAIL PREVIEW */}
-                  {activeTab === "preview" && invoice && (
-                    <LiveEmailModalPreview
-                      html={renderManualSingleInvoiceReminderEmail({
-                        invoice,
-                        client,
-                        company,
-                        reminderType,
-                        customNote,
-                      })}
-                      subject={
-                        reminderType === "FINAL_NOTICE"
-                          ? `FINAL NOTICE: Overdue Payment for Invoice #${invoice.invoiceNumber} | Immediate Action Required`
-                          : reminderType === "DUE_TODAY"
-                            ? `Payment Due Today: Invoice #${invoice.invoiceNumber} | ${company?.companyName || "PAFEX"}`
-                            : reminderType === "DUE_SOON"
-                              ? `Upcoming Payment Reminder: Invoice #${invoice.invoiceNumber} | ${company?.companyName || "PAFEX"}`
-                              : `Overdue Payment Reminder: Invoice #${invoice.invoiceNumber} (${invoice.dueDaysText || "Overdue"})`
-                      }
-                      recipientEmails={selectedEmails}
-                      senderCompany={company?.companyName || "PAFEX Logistics"}
-                      senderEmail={company?.email || ""}
-                      reminderType={reminderType}
-                    />
-                  )}
+                  {activeTab === "preview" &&
+                    (loadingPreview && !previewHtml ? (
+                      <div className="flex h-64 items-center justify-center text-xs text-zinc-400">
+                        Generating live preview...
+                      </div>
+                    ) : (
+                      <LiveEmailModalPreview
+                        html={previewHtml}
+                        subject={
+                          previewSubject ||
+                          (reminderType === "FINAL_NOTICE"
+                            ? `FINAL NOTICE: Overdue Payment for Invoice #${invoice?.invoiceNumber || ""} | Immediate Action Required`
+                            : reminderType === "DUE_TODAY"
+                              ? `Payment Due Today: Invoice #${invoice?.invoiceNumber || ""} | ${company?.companyName || "PAFEX"}`
+                              : reminderType === "DUE_SOON"
+                                ? `Upcoming Payment Reminder: Invoice #${invoice?.invoiceNumber || ""} | ${company?.companyName || "PAFEX"}`
+                                : `Overdue Payment Reminder: Invoice #${invoice?.invoiceNumber || ""}`)
+                        }
+                        recipientEmails={selectedEmails}
+                        senderCompany={
+                          company?.companyName || "PAFEX Logistics"
+                        }
+                        senderEmail={company?.email || ""}
+                        reminderType={reminderType}
+                      />
+                    ))}
 
                   {/* TAB 3: WHATSAPP */}
                   {activeTab === "whatsapp" && invoice && (
