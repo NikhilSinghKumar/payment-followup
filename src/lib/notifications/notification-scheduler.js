@@ -1,74 +1,41 @@
 import {
   clientPaymentReminder,
-  dueToday,
   serviceSuspensionNotice,
   serviceSuspensionAlert,
 } from "./notification-services";
 
 import { getClientPaymentReminderData } from "./notification-data";
 
-import {
-  getDueTodayInvoices,
-  getServiceSuspensionClients,
-} from "./notification-queries";
+import { getServiceSuspensionClients } from "./notification-queries";
 
 import { evaluateAndRunEscalations } from "./escalation-service";
 import { db } from "@/db";
-import { companies } from "@/db/schema";
+import { companies, notificationSettings } from "@/db/schema";
 import { isNull } from "drizzle-orm";
 
 async function processClientPaymentReminders() {
   const clients = await getClientPaymentReminderData();
 
-  // console.log(
-  //   "[REMINDER TEST] getClientPaymentReminderData returned:",
-  //   clients.length,
-  // );
-
-  const testClients = clients.filter(
-    (client) => Number(client.clientId) === 488,
-  );
-
-  // console.log(
-  //   "[REMINDER TEST] AFTER FILTER:",
-  //   testClients.map((client) => ({
-  //     clientId: client.clientId,
-  //     clientName: client.clientName,
-  //     email: client.email,
-  //   })),
-  // );
-
   let processed = 0;
   let failed = 0;
 
-  // chnage testClients to clients to send
-  for (const client of testClients) {
+  for (const client of clients) {
     try {
-      console.log("[REMINDER TEST] SENDING TO:", client.clientId, client.email);
-
       await clientPaymentReminder(client);
-
       processed++;
     } catch (error) {
       console.error(
         `[Notification Scheduler] Client Payment Reminder failed for Client #${client.clientId}`,
         error,
       );
-
       failed++;
     }
   }
 
-  console.log("[REMINDER TEST] RESULT:", {
-    processed,
-    failed,
-    total: testClients.length,
-  });
-
   return {
     processed,
     failed,
-    total: testClients.length,
+    total: clients.length,
   };
 }
 
@@ -118,16 +85,6 @@ async function processDueReminders() {
 }
 
 // ======================================================
-// Due Today
-// ======================================================
-
-async function processDueToday() {
-  const invoices = await getDueTodayInvoices();
-
-  return processInvoices(invoices, dueToday, "Due Today");
-}
-
-// ======================================================
 // Overdue Reminder
 // ======================================================
 
@@ -143,15 +100,37 @@ async function processOverdueReminders() {
 
 async function processServiceSuspension() {
   const clients = await getServiceSuspensionClients();
+  if (!clients.length) {
+    return { processed: 0, failed: 0, total: 0 };
+  }
+
+  // Check notification settings for company
+  const [settings] = await db
+    .select({
+      autoSendSuspensionNotice: notificationSettings.autoSendSuspensionNotice,
+      sendInternalSuspensionAlert:
+        notificationSettings.sendInternalSuspensionAlert,
+    })
+    .from(notificationSettings)
+    .limit(1);
+
+  const autoSendNoticeToClients = Boolean(settings?.autoSendSuspensionNotice);
+  const sendInternalAlert = settings
+    ? Boolean(settings.sendInternalSuspensionAlert)
+    : true;
 
   return processInvoices(
     clients,
     async (client) => {
-      // Client Email
-      await serviceSuspensionNotice(client);
+      // 1. Send Internal Alert / Audit copy to team
+      if (sendInternalAlert) {
+        await serviceSuspensionAlert(client);
+      }
 
-      // Internal Notification
-      await serviceSuspensionAlert(client);
+      // 2. Only auto-send to client if enabled in settings
+      if (autoSendNoticeToClients) {
+        await serviceSuspensionNotice(client);
+      }
     },
     "Service Suspension",
   );
@@ -187,8 +166,6 @@ export async function runNotificationScheduler() {
 
   const summary = {
     clientPaymentReminder: await processClientPaymentReminders(),
-
-    dueToday: await processDueToday(),
 
     serviceSuspension: await processServiceSuspension(),
 
