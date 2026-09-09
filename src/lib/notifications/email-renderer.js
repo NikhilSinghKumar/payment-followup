@@ -10,15 +10,19 @@ import {
   AlertBox,
   EmailButton,
   Signature,
+  BankDetails,
   CustomNote,
+  formatDate,
 } from "./email-components";
 
 import { NOTIFICATION_TYPES } from "./notification-types";
-import { formatDateDifference } from "@/lib/notifications/date-utils";
+
+// ============================================================================
+// Static HTML Markup Renderer (Server-Side)
+// ============================================================================
 
 function renderToStaticMarkup(element) {
   try {
-    // Dynamic require avoids Turbopack/Next.js client/RSC static import restrictions
     const req =
       typeof __non_webpack_require__ !== "undefined"
         ? __non_webpack_require__
@@ -26,283 +30,92 @@ function renderToStaticMarkup(element) {
     const server = req("react-dom/server");
     return server.renderToStaticMarkup(element);
   } catch (err) {
-    console.error("Failed to render email markup:", err);
+    console.error("[Email Renderer] Failed to render email markup:", err);
     return "";
   }
 }
 
-const CONFIG = {
-  [NOTIFICATION_TYPES.BILL_SUBMITTED]: {
-    title: "Invoice Submitted",
-    color: "#2563EB",
-    background: "#DBEAFE",
-    banner: "Invoice Submitted Successfully",
-    showPaymentDetails: false,
-  },
+// ============================================================================
+// TEMPLATE 1: Single Invoice Email Template (Data Shape: Single Invoice)
+// ============================================================================
+// Handles:
+// - Bill Submitted / Invoice Issued (SUBMITTED / BILL_SUBMITTED)
+// - Upcoming Due Date Reminder (DUE_SOON / DUE_REMINDER)
+// - Invoice Due Today (DUE_TODAY / INVOICE_DUE)
+// - Overdue Payment Notice (OVERDUE / OVERDUE_REMINDER)
+// - Final Demand Notice (FINAL_NOTICE / FINAL_REMINDER)
+// - Invoice Paid / Cleared (PAID / PAYMENT_CLEARED)
+// ============================================================================
 
-  [NOTIFICATION_TYPES.DUE_REMINDER]: {
-    title: "Payment Reminder",
-    color: "#2563EB",
-    background: "#DBEAFE",
-    banner: "Payment Due Soon",
-    showPaymentDetails: true,
-  },
-
-  [NOTIFICATION_TYPES.INVOICE_DUE]: {
-    title: "Invoice Due Today",
-    color: "#EA580C",
-    background: "#FED7AA",
-    banner: "Payment Due Today",
-    showPaymentDetails: true,
-  },
-
-  [NOTIFICATION_TYPES.OVERDUE_REMINDER]: {
-    title: "Overdue Reminder",
-    color: "#2563EB",
-    background: "#DBEAFE",
-    banner: "Payment Overdue",
-    showPaymentDetails: true,
-  },
-
-  [NOTIFICATION_TYPES.PAYMENT_RECEIVED]: {
-    title: "Payment Received",
-    color: "#2563EB",
-    background: "#DBEAFE",
-    banner: "Payment Received",
-    showPaymentDetails: true,
-  },
-
-  [NOTIFICATION_TYPES.PAYMENT_CLEARED]: {
-    title: "Invoice Paid",
-    color: "#2563EB",
-    background: "#DBEAFE",
-    banner: "Invoice Fully Paid",
-    showPaymentDetails: true,
-  },
-
-  [NOTIFICATION_TYPES.SERVICE_SUSPENSION_NOTICE]: {
-    title: "Service Suspension",
-    color: "#2563EB",
-    background: "#DBEAFE",
-    banner: "Service Suspended",
-    showPaymentDetails: true,
-  },
-
-  [NOTIFICATION_TYPES.SERVICE_SUSPENSION_ALERT]: {
-    title: "Immediate Attention Required",
-    color: "#2563EB",
-    background: "#DBEAFE",
-    banner: "Immediate Action Required",
-    showPaymentDetails: true,
-  },
-};
-
-/**
- * ======================================================
- * Notification Email Template (React JSX Component)
- * ======================================================
- */
-export function NotificationEmailTemplate({
-  type,
-  body,
-  variables = {},
-  actionUrl,
-}) {
-  const config = CONFIG[type];
-
-  if (!config) {
-    throw new Error(`Unsupported email notification type: ${type}`);
-  }
-
-  const isClientPaymentReminder =
-    type === NOTIFICATION_TYPES.DUE_REMINDER ||
-    type === NOTIFICATION_TYPES.OVERDUE_REMINDER;
-
-  const isClientPaymentSettlement =
-    type === NOTIFICATION_TYPES.PAYMENT_RECEIVED &&
-    Array.isArray(variables.settledInvoices) &&
-    variables.settledInvoices.length > 0;
-
-  // Overdue calculation
-  let overdueAlert = null;
-  if (
-    type !== NOTIFICATION_TYPES.BILL_SUBMITTED &&
-    type !== NOTIFICATION_TYPES.SERVICE_SUSPENSION_ALERT &&
-    type !== NOTIFICATION_TYPES.SERVICE_SUSPENSION_NOTICE &&
-    type !== NOTIFICATION_TYPES.PAYMENT_RECEIVED &&
-    type !== NOTIFICATION_TYPES.PAYMENT_CLEARED &&
-    type !== NOTIFICATION_TYPES.DUE_REMINDER &&
-    type !== NOTIFICATION_TYPES.INVOICE_DUE &&
-    type !== "DUE_TODAY" &&
-    type !== "INTERNAL_DUE_TODAY" &&
-    !isClientPaymentReminder &&
-    !isClientPaymentSettlement
-  ) {
-    const overdueDays = Number(variables.overdueDays) || 0;
-    if (overdueDays > 0 && variables.dueDate) {
-      const diff = formatDateDifference(variables.dueDate);
-      if (diff && diff !== "0 days") {
-        overdueAlert = `This invoice is overdue by ${diff}.`;
-      }
-    }
-  }
-
-  return (
-    <EmailLayout
-      title={config.title}
-      bannerColor={config.color}
-      companyName={variables.senderCompany}
-      senderCompany={variables.senderCompany}
-      senderEmail={variables.senderEmail}
-      senderPhone={variables.senderPhone}
-      logoUrl={variables.senderLogo}
-    >
-      <Greeting clientName={variables.clientName} />
-
-      <StatusBanner
-        title={config.banner}
-        color={config.color}
-        background={config.background}
-      />
-
-      <Paragraph text={body} />
-
-      {variables.customNote && (
-        <CustomNote note={variables.customNote} color={config.color} />
-      )}
-
-      {/* Invoice Summary / Settlement Breakdown */}
-      {isClientPaymentSettlement ? (
-        <ClientPaymentSettlementTable
-          settledInvoices={variables.settledInvoices}
-          paymentInfo={{
-            amount: variables.paymentAmount,
-            paymentDate: variables.paymentDate,
-            method: variables.paymentMethod,
-            reference: variables.referenceNumber,
-          }}
-          totalAccountOutstanding={variables.totalAccountOutstanding}
-        />
-      ) : isClientPaymentReminder ? (
-        <ClientOutstandingInvoices invoices={variables.invoices} />
-      ) : (
-        <InvoiceSummary
-          invoiceNumber={variables.invoiceNumber}
-          invoiceDate={variables.invoiceDate}
-          dueDate={variables.dueDate}
-          invoiceAmount={variables.invoiceAmount}
-          paidAmount={variables.paidAmount}
-          outstandingAmount={variables.outstandingAmount}
-          showPaymentDetails={config.showPaymentDetails}
-        />
-      )}
-
-      {/* Settlement Discrepancy Notice */}
-      {(type === NOTIFICATION_TYPES.PAYMENT_RECEIVED ||
-        isClientPaymentSettlement) && (
-        <div
-          style={{
-            marginTop: "18px",
-            marginBottom: "20px",
-            lineHeight: 1.6,
-            color: "#334155",
-            fontSize: "14px",
-          }}
-        >
-          <p style={{ margin: "0 0 12px 0" }}>
-            Please review the settlement details and notify the PAFEX Accounts
-            Team of any discrepancy or concern within 2 days of receiving this
-            email. If we do not receive any communication within this period,
-            the settlement will be considered final and recorded in our
-            accounts.
-          </p>
-          <p style={{ margin: 0 }}>
-            Thank you for your continued trust and business with PAFEX.
-          </p>
-        </div>
-      )}
-
-      {overdueAlert && <AlertBox message={overdueAlert} />}
-
-      {actionUrl && <EmailButton text="View Details" url={actionUrl} />}
-
-      <Signature
-        senderCompany={variables.senderCompany}
-        senderEmail={variables.senderEmail}
-        senderPhone={variables.senderPhone}
-        senderLogo={variables.senderLogo}
-      />
-    </EmailLayout>
-  );
-}
-
-export function renderEmail(props) {
-  const markup = renderToStaticMarkup(<NotificationEmailTemplate {...props} />);
-  return `<!DOCTYPE html>\n${markup}`;
-}
-
-/**
- * ======================================================
- * Single Invoice Reminder Template (React JSX Component)
- * ======================================================
- */
-export function SingleInvoiceReminderTemplate({
-  invoice,
+export function SingleInvoiceEmailTemplate({
+  invoice = {},
   client = {},
   company = {},
   reminderType = "OVERDUE",
+  urgency = null,
+  type = null,
   customNote = "",
+  body = "",
+  actionUrl = "",
 }) {
+  const normalizedType = String(
+    urgency || reminderType || type || "OVERDUE",
+  ).toUpperCase();
+
   let title = "Payment Reminder";
   let banner = "Payment Reminder";
   let color = "#2563EB";
   let background = "#DBEAFE";
 
-  switch (reminderType) {
-    case "DUE_SOON":
-      title = `Payment Due Soon - Invoice #${invoice.invoiceNumber}`;
-      banner = "Payment Due Soon";
-      color = "#2563EB";
-      background = "#DBEAFE";
-      break;
-    case "DUE_TODAY":
-      title = `Payment Due Today - Invoice #${invoice.invoiceNumber}`;
-      banner = "Payment Due Today";
-      color = "#D97706";
-      background = "#FEF3C7";
-      break;
-    case "FINAL_NOTICE":
-      title = `FINAL NOTICE: Overdue Invoice #${invoice.invoiceNumber}`;
-      banner = "Final Notice / Credit Action Warning";
-      color = "#DC2626";
-      background = "#FEE2E2";
-      break;
-    case "OVERDUE":
-    default:
-      title = `Overdue Payment Reminder - Invoice #${invoice.invoiceNumber}`;
-      banner = invoice.dueDaysText
-        ? `Overdue Payment Notice (${invoice.dueDaysText})`
-        : "Overdue Payment Notice";
-      color = "#EA580C";
-      background = "#FFEDD5";
-      break;
+  if (normalizedType === "BILL_SUBMITTED" || normalizedType === "SUBMITTED") {
+    title = `Invoice #${invoice.invoiceNumber || ""} Issued`;
+    banner = "Invoice Submitted Successfully";
+    color = "#2563EB";
+    background = "#DBEAFE";
+  } else if (
+    normalizedType === "DUE_SOON" ||
+    normalizedType === "DUE_REMINDER"
+  ) {
+    title = `Payment Due Soon - Invoice #${invoice.invoiceNumber || ""}`;
+    banner = "Payment Due Soon";
+    color = "#2563EB";
+    background = "#DBEAFE";
+  } else if (
+    normalizedType === "DUE_TODAY" ||
+    normalizedType === "INVOICE_DUE"
+  ) {
+    title = `Payment Due Today - Invoice #${invoice.invoiceNumber || ""}`;
+    banner = "Payment Due Today";
+    color = "#D97706";
+    background = "#FEF3C7";
+  } else if (
+    normalizedType === "FINAL_NOTICE" ||
+    normalizedType === "FINAL_REMINDER"
+  ) {
+    title = `FINAL NOTICE: Overdue Invoice #${invoice.invoiceNumber || ""}`;
+    banner = "Final Notice / Credit Action Warning";
+    color = "#DC2626";
+    background = "#FEE2E2";
+  } else if (
+    normalizedType === "PAID" ||
+    normalizedType === "PAYMENT_CLEARED"
+  ) {
+    title = `Invoice #${invoice.invoiceNumber || ""} Paid`;
+    banner = "Invoice Fully Paid";
+    color = "#16A34A";
+    background = "#DCFCE7";
+  } else {
+    // OVERDUE or default
+    title = `Overdue Payment Reminder - Invoice #${invoice.invoiceNumber || ""}`;
+    banner = invoice.dueDaysText
+      ? `Overdue Payment Notice (${invoice.dueDaysText})`
+      : "Overdue Payment Notice";
+    color = "#EA580C";
+    background = "#FFEDD5";
   }
 
-  const formattedDueDate = invoice.dueDate
-    ? new Date(invoice.dueDate).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : "—";
-
-  const formattedInvoiceDate = invoice.invoiceDate
-    ? new Date(invoice.invoiceDate).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : "";
+  const formattedDueDate = formatDate(invoice.dueDate);
+  const formattedInvoiceDate = formatDate(invoice.invoiceDate);
 
   const formattedTotal = Number(invoice.invoiceAmount || 0).toLocaleString(
     "en-IN",
@@ -316,38 +129,58 @@ export function SingleInvoiceReminderTemplate({
       minimumFractionDigits: 2,
     },
   );
-  const formattedDue = Number(
-    invoice.due || invoice.outstandingAmount || 0,
-  ).toLocaleString("en-IN", {
+  const dueAmt =
+    invoice.due !== undefined
+      ? invoice.due
+      : invoice.outstandingAmount !== undefined
+        ? invoice.outstandingAmount
+        : Math.max(
+            Number(invoice.invoiceAmount || 0) -
+              Number(invoice.paidAmount || 0),
+            0,
+          );
+
+  const formattedDue = Number(dueAmt || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
   });
 
-  const bodyParagraph =
-    reminderType === "FINAL_NOTICE"
+  const clientDisplayName =
+    client.companyName || client.name || "Valued Customer";
+  const companyDisplayName = company.companyName || "PAFEX Logistics";
+
+  const defaultBody =
+    normalizedType === "FINAL_NOTICE" || normalizedType === "FINAL_REMINDER"
       ? `This is a final notice regarding the outstanding balance of ₹${formattedDue} for invoice #${invoice.invoiceNumber}. Please clear this invoice immediately to avoid potential disruption to your dispatch and logistics services.`
-      : reminderType === "DUE_TODAY"
+      : normalizedType === "DUE_TODAY" || normalizedType === "INVOICE_DUE"
         ? `This is a reminder that invoice #${invoice.invoiceNumber} for ₹${formattedDue} is due for payment today. Kindly ensure timely settlement.`
-        : reminderType === "DUE_SOON"
+        : normalizedType === "DUE_SOON" || normalizedType === "DUE_REMINDER"
           ? `This is a friendly reminder that invoice #${invoice.invoiceNumber} with a balance due of ₹${formattedDue} is approaching its due date (${formattedDueDate}).`
-          : `This is a reminder regarding the outstanding balance of ₹${formattedDue} for invoice #${invoice.invoiceNumber} which is currently overdue. Kindly process the payment at your earliest convenience.`;
+          : normalizedType === "BILL_SUBMITTED" ||
+              normalizedType === "SUBMITTED"
+            ? `Please find attached your invoice #${invoice.invoiceNumber} dated ${formattedInvoiceDate} for ₹${formattedTotal}. Kindly arrange for settlement on or before ${formattedDueDate}.`
+            : normalizedType === "PAID" || normalizedType === "PAYMENT_CLEARED"
+              ? `Thank you for your payment. Invoice #${invoice.invoiceNumber} has been fully settled and recorded in our accounts.`
+              : `This is a reminder regarding the outstanding balance of ₹${formattedDue} for invoice #${invoice.invoiceNumber} which is currently overdue. Kindly process the payment at your earliest convenience.`;
+
+  const paragraphText = body || defaultBody;
+  const isPaidOrCleared =
+    normalizedType === "PAID" || normalizedType === "PAYMENT_CLEARED";
 
   return (
     <EmailLayout
       title={title}
       bannerColor={color}
-      companyName={company.companyName || "PAFEX"}
-      senderCompany={company.companyName || "PAFEX"}
+      companyName={companyDisplayName}
+      senderCompany={companyDisplayName}
       senderEmail={company.email || ""}
       senderPhone={company.phone || ""}
-      logoUrl={company.logoUrl || ""}
+      logoUrl={company.logoUrl || company.logo || ""}
     >
-      <Greeting
-        clientName={client.companyName || client.name || "Valued Customer"}
-      />
+      <Greeting clientName={clientDisplayName} />
 
       <StatusBanner title={banner} color={color} background={background} />
 
-      <Paragraph text={bodyParagraph} />
+      <Paragraph text={paragraphText} />
 
       {customNote && <CustomNote note={customNote} color={color} />}
 
@@ -358,7 +191,7 @@ export function SingleInvoiceReminderTemplate({
         invoiceAmount={formattedTotal}
         paidAmount={formattedPaid}
         outstandingAmount={formattedDue}
-        showPaymentDetails={true}
+        showPaymentDetails={!isPaidOrCleared}
         awbs={invoice.awbs || []}
         isOverdue={invoice.isOverdue}
         dueDaysText={invoice.dueDaysText}
@@ -370,87 +203,65 @@ export function SingleInvoiceReminderTemplate({
         />
       )}
 
-      <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
-        If you have already processed this transaction, kindly reply with the
-        payment confirmation / UTR details for swift reconciliation.
-      </p>
+      {actionUrl && <EmailButton text="View Invoice Online" url={actionUrl} />}
+
+      {!isPaidOrCleared && <BankDetails company={company} />}
+
+      {!isPaidOrCleared && (
+        <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
+          If you have already processed this transaction, kindly reply with the
+          payment confirmation / UTR details for swift reconciliation.
+        </p>
+      )}
 
       <Signature
-        senderCompany={company.companyName || "PAFEX Logistics"}
+        senderCompany={companyDisplayName}
         senderEmail={company.email || ""}
         senderPhone={company.phone || ""}
-        senderLogo={company.logoUrl || ""}
+        senderLogo={company.logoUrl || company.logo || ""}
       />
     </EmailLayout>
   );
 }
 
-export function renderManualSingleInvoiceReminderEmail(props) {
-  const markup = renderToStaticMarkup(
-    <SingleInvoiceReminderTemplate {...props} />,
-  );
-  return `<!DOCTYPE html>\n${markup}`;
-}
+// ============================================================================
+// TEMPLATE 2: Client Statement Email Template (Data Shape: Multi-Invoice SOA)
+// ============================================================================
+// Handles:
+// - Regular Statement of Outstanding Invoices (STATEMENT / DUE_REMINDER)
+// - Overdue Statement Notice (OVERDUE_NOTICE / OVERDUE_REMINDER)
+// - Service Suspension Warning / Final Demand (SUSPENSION_WARNING / SERVICE_SUSPENSION_NOTICE)
+// - Multi-Invoice Payment Allocation Settlement (SETTLEMENT / PAYMENT_RECEIVED)
+// - Bulk Multi-Invoice Table Reminders
+// ============================================================================
 
-/**
- * ======================================================
- * Client Statement Reminder Template (React JSX Component)
- * ======================================================
- */
-export function ClientStatementReminderTemplate({
+export function ClientStatementEmailTemplate({
   client = {},
-  clientSummary = {},
   invoices = [],
   company = {},
   reminderType = "STATEMENT",
+  urgency = null,
+  type = null,
   customNote = "",
+  body = "",
+  clientSummary = null,
+  settledInvoices = null,
+  paymentInfo = null,
+  totalDue = null,
+  overdueCount: propOverdueCount = null,
+  actionUrl = "",
 }) {
-  let title = "Statement of Outstanding Invoices";
-  let banner = "Statement of Account";
-  let color = "#2563EB";
-  let background = "#DBEAFE";
+  const normalizedType = String(
+    urgency || reminderType || type || "STATEMENT",
+  ).toUpperCase();
 
-  switch (reminderType) {
-    case "SUSPENSION_WARNING":
-      title = `URGENT: Outstanding Dues & Service Suspension Warning - ${client.companyName}`;
-      banner = "Credit Terms Warning / Final Demand";
-      color = "#DC2626";
-      background = "#FEE2E2";
-      break;
-    case "OVERDUE_NOTICE":
-      title = `Overdue Statement of Account: ${clientSummary.overdueInvoices || 0} Overdue Invoices - ${client.companyName}`;
-      banner = "Overdue Statement Notice";
-      color = "#EA580C";
-      background = "#FFEDD5";
-      break;
-    case "STATEMENT":
-    default:
-      title = `Statement of Outstanding Invoices (${invoices.length} Invoices) - ${client.companyName}`;
-      banner = "Statement of Outstanding Invoices";
-      color = "#2563EB";
-      background = "#DBEAFE";
-      break;
-  }
+  const isSettlement =
+    normalizedType === "SETTLEMENT" ||
+    normalizedType === "PAYMENT_RECEIVED" ||
+    (Array.isArray(settledInvoices) && settledInvoices.length > 0);
 
-  const formattedTotalOutstanding = Number(
-    clientSummary.outstandingAmount || 0,
-  ).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-  });
-  const formattedOverdueAmount = Number(
-    clientSummary.overdueAmount || 0,
-  ).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-  });
-
-  const bodyParagraph =
-    reminderType === "SUSPENSION_WARNING"
-      ? `Please find below the consolidated statement of your outstanding ledger. There are currently ${invoices.length} unpaid invoices totaling ₹${formattedTotalOutstanding}, with ${clientSummary.overdueInvoices || 0} invoice(s) critically overdue. Please settle these outstanding balances immediately to ensure uninterrupted logistics support.`
-      : reminderType === "OVERDUE_NOTICE"
-        ? `Please find below your statement of overdue invoices. There are currently ${clientSummary.overdueInvoices || 0} overdue invoice(s) totaling ₹${formattedOverdueAmount} out of total outstanding ₹${formattedTotalOutstanding}. Kindly prioritize clearance of these pending bills.`
-        : `Please find below the consolidated statement of your open invoices with ${company.companyName || "our team"}. There are currently ${invoices.length} outstanding invoices with a total pending balance of ₹${formattedTotalOutstanding}.`;
-
-  const mappedInvoices = invoices.map((inv) => {
+  // Normalize invoices array (supports invoice list, bulk group invoices, or raw DB rows)
+  const mappedInvoices = (invoices || []).map((inv) => {
     let creditDays = Number(inv.creditDays || 0);
     if (!creditDays && inv.invoiceDate && inv.dueDate) {
       const invD = new Date(inv.invoiceDate);
@@ -463,206 +274,315 @@ export function ClientStatementReminderTemplate({
       );
     }
 
+    const paidAmount = Number(inv.paidAmount || 0);
+    const invoiceAmount = Number(
+      inv.invoiceAmount || inv.netPayableAmount || 0,
+    );
+    const outstandingAmount =
+      inv.due !== undefined
+        ? Number(inv.due)
+        : inv.outstandingAmount !== undefined
+          ? Number(inv.outstandingAmount)
+          : Math.max(invoiceAmount - paidAmount, 0);
+
+    const isOverdue = Boolean(
+      inv.isOverdue ||
+      (inv.agingDays && inv.agingDays > 0) ||
+      (inv.dueDays && inv.dueDays > 0) ||
+      inv.agingStatus?.toLowerCase().includes("overdue"),
+    );
+
+    const dueDays = inv.dueDays || inv.agingDays || 0;
+
     return {
       invoiceNumber: inv.invoiceNumber,
       invoiceDate: inv.invoiceDate,
       dueDate: inv.dueDate,
-      invoiceAmount: inv.invoiceAmount,
-      paidAmount: inv.paidAmount || 0,
-      outstandingAmount: inv.due || inv.outstandingAmount || 0,
-      agingStatus: inv.isOverdue
-        ? `${inv.dueDays}d Overdue`
-        : inv.isDueToday
-          ? "Due Today"
-          : "Current",
-      agingColor: inv.isOverdue
-        ? "#DC2626"
-        : inv.isDueToday
-          ? "#D97706"
-          : "#16A34A",
       creditDays,
+      invoiceAmount,
+      paidAmount,
+      outstandingAmount,
+      isOverdue,
+      dueDays,
+      agingStatus:
+        inv.agingStatus ||
+        (isOverdue
+          ? `${dueDays}d Overdue`
+          : inv.isDueToday
+            ? "Due Today"
+            : "Current"),
+      agingColor:
+        inv.agingColor ||
+        (isOverdue ? "#DC2626" : inv.isDueToday ? "#D97706" : "#16A34A"),
     };
   });
+
+  // Calculate summaries dynamically if not explicitly provided
+  const totalOutstanding =
+    totalDue !== null && totalDue !== undefined
+      ? Number(totalDue)
+      : clientSummary?.outstandingAmount !== undefined
+        ? Number(clientSummary.outstandingAmount)
+        : mappedInvoices.reduce((sum, i) => sum + i.outstandingAmount, 0);
+
+  const overdueInvoicesCount =
+    propOverdueCount !== null && propOverdueCount !== undefined
+      ? Number(propOverdueCount)
+      : clientSummary?.overdueInvoices !== undefined
+        ? Number(clientSummary.overdueInvoices)
+        : mappedInvoices.filter((i) => i.isOverdue).length;
+
+  const overdueAmount =
+    clientSummary?.overdueAmount !== undefined
+      ? Number(clientSummary.overdueAmount)
+      : mappedInvoices
+          .filter((i) => i.isOverdue)
+          .reduce((sum, i) => sum + i.outstandingAmount, 0);
+
+  let title = "Statement of Outstanding Invoices";
+  let banner = "Statement of Account";
+  let color = "#2563EB";
+  let background = "#DBEAFE";
+
+  if (isSettlement) {
+    title = `Payment Acknowledgment & Settlement - ${client.companyName || client.name || "Customer"}`;
+    banner = "Payment Received & Allocated";
+    color = "#16A34A";
+    background = "#DCFCE7";
+  } else if (
+    normalizedType === "SUSPENSION_WARNING" ||
+    normalizedType === "SERVICE_SUSPENSION_NOTICE" ||
+    normalizedType === "SERVICE_SUSPENSION_ALERT"
+  ) {
+    title = `URGENT: Outstanding Dues & Credit Terms Warning - ${client.companyName || client.name || ""}`;
+    banner = "Credit Terms Warning / Final Demand";
+    color = "#DC2626";
+    background = "#FEE2E2";
+  } else if (
+    normalizedType === "OVERDUE_NOTICE" ||
+    normalizedType === "OVERDUE_REMINDER" ||
+    overdueInvoicesCount > 0
+  ) {
+    title = `Overdue Statement of Account: ${overdueInvoicesCount} Overdue Invoices - ${client.companyName || client.name || ""}`;
+    banner =
+      overdueInvoicesCount > 0
+        ? `Overdue Statement Notice (${overdueInvoicesCount} Overdue)`
+        : "Overdue Statement Notice";
+    color = "#EA580C";
+    background = "#FFEDD5";
+  } else {
+    // STATEMENT / DUE_REMINDER
+    title = `Statement of Outstanding Invoices (${mappedInvoices.length} Invoices) - ${client.companyName || client.name || ""}`;
+    banner = "Statement of Outstanding Invoices";
+    color = "#2563EB";
+    background = "#DBEAFE";
+  }
+
+  const formattedTotalOutstanding = totalOutstanding.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+  });
+  const formattedOverdueAmount = overdueAmount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+  });
+
+  const clientDisplayName =
+    client.companyName || client.name || "Finance & Accounts Team";
+  const companyDisplayName = company.companyName || "PAFEX Logistics";
+
+  const defaultBody = isSettlement
+    ? `We have received and credited your payment towards the outstanding invoices detailed below.`
+    : normalizedType === "SUSPENSION_WARNING" ||
+        normalizedType === "SERVICE_SUSPENSION_NOTICE"
+      ? `Please find below the consolidated statement of your outstanding ledger. There are currently ${mappedInvoices.length} unpaid invoices totaling ₹${formattedTotalOutstanding}, with ${overdueInvoicesCount} invoice(s) critically overdue. Please settle these outstanding balances immediately to avoid interruption to dispatch and credit services.`
+      : overdueInvoicesCount > 0
+        ? `Please find below your statement of outstanding invoices. There are currently ${overdueInvoicesCount} overdue invoice(s) totaling ₹${formattedOverdueAmount} out of total outstanding ₹${formattedTotalOutstanding}. Kindly prioritize clearance of these pending bills.`
+        : `Please find below the consolidated statement of your open invoices with ${companyDisplayName}. There are currently ${mappedInvoices.length} outstanding invoices with a total pending balance of ₹${formattedTotalOutstanding}.`;
+
+  const paragraphText = body || defaultBody;
 
   return (
     <EmailLayout
       title={title}
       bannerColor={color}
-      companyName={company.companyName || "PAFEX"}
-      senderCompany={company.companyName || "PAFEX"}
+      companyName={companyDisplayName}
+      senderCompany={companyDisplayName}
       senderEmail={company.email || ""}
       senderPhone={company.phone || ""}
-      logoUrl={company.logoUrl || ""}
+      logoUrl={company.logoUrl || company.logo || ""}
     >
-      <Greeting
-        clientName={
-          client.companyName || client.name || "Finance & Accounts Team"
-        }
-      />
+      <Greeting clientName={clientDisplayName} />
 
       <StatusBanner title={banner} color={color} background={background} />
 
-      <Paragraph text={bodyParagraph} />
+      <Paragraph text={paragraphText} />
 
-      {clientSummary.overdueInvoices > 0 && (
+      {!isSettlement && overdueInvoicesCount > 0 && (
         <AlertBox
-          message={`⚠️ <strong>Action Required:</strong> ${clientSummary.overdueInvoices} invoice(s) are overdue totaling <strong>₹${formattedOverdueAmount}</strong>.`}
+          message={`⚠️ <strong>Action Required:</strong> ${overdueInvoicesCount} invoice(s) are overdue totaling <strong>₹${formattedOverdueAmount}</strong>.`}
         />
       )}
 
       {customNote && <CustomNote note={customNote} color={color} />}
 
-      <ClientOutstandingInvoices invoices={mappedInvoices} />
+      {isSettlement ? (
+        <ClientPaymentSettlementTable
+          settledInvoices={settledInvoices || []}
+          paymentInfo={paymentInfo || {}}
+          totalAccountOutstanding={totalOutstanding}
+        />
+      ) : (
+        <ClientOutstandingInvoices invoices={mappedInvoices} />
+      )}
+
+      {actionUrl && (
+        <EmailButton text="View Account Statement Online" url={actionUrl} />
+      )}
+
+      {!isSettlement && <BankDetails company={company} />}
 
       <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
-        Kindly share payment receipts / UTR details with our accounts team for
-        swift ledger posting.
+        {isSettlement
+          ? "Please review the settlement details and notify our Accounts Team within 2 days if there are any discrepancies."
+          : "Kindly share payment receipts / UTR details with our accounts team for swift ledger reconciliation."}
       </p>
 
       <Signature
-        senderCompany={company.companyName || "PAFEX Logistics"}
+        senderCompany={companyDisplayName}
         senderEmail={company.email || ""}
         senderPhone={company.phone || ""}
-        senderLogo={company.logoUrl || ""}
+        senderLogo={company.logoUrl || company.logo || ""}
       />
     </EmailLayout>
   );
 }
 
-export function renderManualClientStatementReminderEmail(props) {
+// ============================================================================
+// Core Render Functions
+// ============================================================================
+
+/**
+ * Render a Single Invoice Email to an HTML string
+ */
+export function renderSingleInvoiceEmail(props) {
   const markup = renderToStaticMarkup(
-    <ClientStatementReminderTemplate {...props} />,
+    <SingleInvoiceEmailTemplate {...props} />,
   );
   return `<!DOCTYPE html>\n${markup}`;
 }
 
 /**
- * ======================================================
- * Bulk Invoices Statement Reminder Template (React JSX Component)
- * ======================================================
+ * Render a Client Statement Email (Multi-Invoice) to an HTML string
  */
-export function BulkInvoicesReminderTemplate({
-  client = {},
-  groupInvoices = [],
-  company = {},
-  reminderType = "STATEMENT",
-  customNote = "",
-  totalDue = 0,
-  overdueCount = 0,
-}) {
-  let title = "Statement of Outstanding Invoices";
-  let banner = "Statement of Account";
-  let color = "#2563EB";
-  let background = "#DBEAFE";
+export function renderClientStatementEmail(props) {
+  const markup = renderToStaticMarkup(
+    <ClientStatementEmailTemplate {...props} />,
+  );
+  return `<!DOCTYPE html>\n${markup}`;
+}
 
-  switch (reminderType) {
-    case "SUSPENSION_WARNING":
-      title = `URGENT: Outstanding Dues & Service Suspension Warning - ${client.companyName}`;
-      banner = "Credit Terms Warning / Final Demand";
-      color = "#DC2626";
-      background = "#FEE2E2";
-      break;
-    case "OVERDUE_NOTICE":
-      title = `Overdue Statement of Account: ${overdueCount} Overdue Invoices - ${client.companyName}`;
-      banner = "Overdue Statement Notice";
-      color = "#EA580C";
-      background = "#FFEDD5";
-      break;
-    case "STATEMENT":
-    default:
-      title = `Statement of Outstanding Invoices (${groupInvoices.length} Invoices) - ${client.companyName}`;
-      banner = "Statement of Outstanding Invoices";
-      color = "#2563EB";
-      background = "#DBEAFE";
-      break;
+// ============================================================================
+// Intelligent Dispatcher & Backward-Compatibility Layer
+// ============================================================================
+
+/**
+ * Unified renderEmail:
+ * Inspects incoming props and intelligently dispatches to either:
+ * - ClientStatementEmail (if multiple invoices / SOA / settlement)
+ * - SingleInvoiceEmail (if 1 invoice)
+ */
+export function renderEmail(props = {}) {
+  const vars = props.variables || {};
+
+  const isMultiInvoiceStatement =
+    (Array.isArray(props.invoices) && props.invoices.length > 0) ||
+    (Array.isArray(props.groupInvoices) && props.groupInvoices.length > 0) ||
+    (Array.isArray(vars.invoices) && vars.invoices.length > 0) ||
+    (Array.isArray(vars.settledInvoices) && vars.settledInvoices.length > 0) ||
+    props.type === NOTIFICATION_TYPES.DUE_REMINDER ||
+    props.type === NOTIFICATION_TYPES.OVERDUE_REMINDER ||
+    props.type === NOTIFICATION_TYPES.SERVICE_SUSPENSION_NOTICE;
+
+  if (isMultiInvoiceStatement) {
+    const rawInvoices =
+      props.invoices || props.groupInvoices || vars.invoices || [];
+
+    return renderClientStatementEmail({
+      client: props.client || {
+        companyName: vars.clientName || props.clientName || "",
+        name: vars.clientName || props.clientName || "",
+      },
+      invoices: rawInvoices,
+      company: props.company ||
+        vars.company || {
+          companyName: vars.senderCompany || "",
+          email: vars.senderEmail || "",
+          phone: vars.senderPhone || "",
+          logoUrl: vars.senderLogo || "",
+        },
+      reminderType: props.reminderType || props.type || "STATEMENT",
+      customNote: props.customNote || vars.customNote || "",
+      body: props.body || "",
+      actionUrl: props.actionUrl || "",
+      settledInvoices: vars.settledInvoices || props.settledInvoices || null,
+      paymentInfo: vars.settledInvoices
+        ? {
+            amount: vars.paymentAmount,
+            paymentDate: vars.paymentDate,
+            method: vars.paymentMethod,
+            reference: vars.referenceNumber,
+          }
+        : null,
+      totalDue: props.totalDue || vars.totalOutstanding || null,
+      clientSummary: props.clientSummary || null,
+    });
   }
 
-  const formattedTotalDue = Number(totalDue || 0).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
+  // Single Invoice Fallback
+  return renderSingleInvoiceEmail({
+    invoice: props.invoice || {
+      invoiceNumber: vars.invoiceNumber || "",
+      invoiceDate: vars.invoiceDate || "",
+      dueDate: vars.dueDate || "",
+      invoiceAmount: vars.invoiceAmount || 0,
+      paidAmount: vars.paidAmount || 0,
+      outstandingAmount: vars.outstandingAmount || 0,
+      isOverdue: vars.isOverdue || false,
+      dueDays: vars.dueDays || vars.overdueDays || 0,
+      dueDaysText: vars.dueDaysText || "",
+      awbs: vars.awbs || [],
+    },
+    client: props.client || {
+      companyName: vars.clientName || props.clientName || "",
+      name: vars.clientName || props.clientName || "",
+    },
+    company: props.company ||
+      vars.company || {
+        companyName: vars.senderCompany || "",
+        email: vars.senderEmail || "",
+        phone: vars.senderPhone || "",
+        logoUrl: vars.senderLogo || "",
+      },
+    reminderType: props.reminderType || props.type || "OVERDUE",
+    customNote: props.customNote || vars.customNote || "",
+    body: props.body || "",
+    actionUrl: props.actionUrl || "",
   });
+}
 
-  const bodyParagraph =
-    reminderType === "SUSPENSION_WARNING"
-      ? `Please find below the consolidated statement of your outstanding invoices. There are currently ${groupInvoices.length} pending invoices totaling ₹${formattedTotalDue}. Kindly arrange immediate settlement to prevent any pause in service.`
-      : overdueCount > 0
-        ? `Please find below your statement of open invoices. There are currently ${groupInvoices.length} pending invoices totaling ₹${formattedTotalDue} (${overdueCount} invoices past due). Kindly arrange payment at your earliest convenience.`
-        : `Please find below your statement of open invoices. There are currently ${groupInvoices.length} pending invoices totaling ₹${formattedTotalDue}.`;
+// Backward-compatible named exports
+export function renderManualSingleInvoiceReminderEmail(props) {
+  return renderSingleInvoiceEmail(props);
+}
 
-  const mappedInvoices = groupInvoices.map((inv) => {
-    let creditDays = Number(inv.creditDays || 0);
-    if (!creditDays && inv.invoiceDate && inv.dueDate) {
-      const invD = new Date(inv.invoiceDate);
-      const dueD = new Date(inv.dueDate);
-      invD.setHours(0, 0, 0, 0);
-      dueD.setHours(0, 0, 0, 0);
-      creditDays = Math.max(
-        0,
-        Math.round((dueD.getTime() - invD.getTime()) / (1000 * 60 * 60 * 24)),
-      );
-    }
-
-    return {
-      invoiceNumber: inv.invoiceNumber,
-      invoiceDate: inv.invoiceDate,
-      dueDate: inv.dueDate,
-      invoiceAmount: inv.invoiceAmount,
-      paidAmount: inv.paidAmount || 0,
-      outstandingAmount: inv.due || inv.outstandingAmount || 0,
-      agingStatus: inv.isOverdue ? `${inv.dueDays || 0}d Overdue` : "Current",
-      agingColor: inv.isOverdue ? "#DC2626" : "#16A34A",
-      creditDays,
-    };
-  });
-
-  return (
-    <EmailLayout
-      title={title}
-      bannerColor={color}
-      companyName={company.companyName || "PAFEX"}
-      senderCompany={company.companyName || "PAFEX"}
-      senderEmail={company.email || ""}
-      senderPhone={company.phone || ""}
-      logoUrl={company.logoUrl || ""}
-    >
-      <Greeting
-        clientName={
-          client.companyName || client.name || "Finance & Accounts Team"
-        }
-      />
-
-      <StatusBanner title={banner} color={color} background={background} />
-
-      <Paragraph text={bodyParagraph} />
-
-      {overdueCount > 0 && (
-        <AlertBox
-          message={`⚠️ <strong>${overdueCount} of these invoice(s) are past due</strong>. Please prioritize settlement.`}
-        />
-      )}
-
-      {customNote && <CustomNote note={customNote} color={color} />}
-
-      <ClientOutstandingInvoices invoices={mappedInvoices} />
-
-      <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
-        Kindly share transaction details / UTR number once payment is initiated.
-      </p>
-
-      <Signature
-        senderCompany={company.companyName || "PAFEX Logistics"}
-        senderEmail={company.email || ""}
-        senderPhone={company.phone || ""}
-        senderLogo={company.logoUrl || ""}
-      />
-    </EmailLayout>
-  );
+export function renderManualClientStatementReminderEmail(props) {
+  return renderClientStatementEmail(props);
 }
 
 export function renderManualBulkInvoicesReminderEmail(props) {
-  const markup = renderToStaticMarkup(
-    <BulkInvoicesReminderTemplate {...props} />,
-  );
-  return `<!DOCTYPE html>\n${markup}`;
+  return renderClientStatementEmail({
+    ...props,
+    invoices: props.groupInvoices || props.invoices || [],
+  });
 }
 
 export function renderEmailLayout(props) {
@@ -673,3 +593,9 @@ export function renderEmailLayout(props) {
 export function renderSignature(props) {
   return renderToStaticMarkup(<Signature {...props} />);
 }
+
+// Component aliases for backward compatibility
+export const NotificationEmailTemplate = SingleInvoiceEmailTemplate;
+export const SingleInvoiceReminderTemplate = SingleInvoiceEmailTemplate;
+export const ClientStatementReminderTemplate = ClientStatementEmailTemplate;
+export const BulkInvoicesReminderTemplate = ClientStatementEmailTemplate;

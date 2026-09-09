@@ -121,41 +121,6 @@ async function getNotificationCandidates() {
 }
 
 // ======================================================
-// Due Reminder
-// (7 days before due date)
-// ======================================================
-
-export async function getDueReminderInvoices() {
-  const invoices = await getNotificationCandidates();
-
-  return invoices.filter((invoice) => invoice.isDueSoon && !invoice.isPaid);
-}
-
-// ======================================================
-// Due Today
-// ======================================================
-
-export async function getDueTodayInvoices() {
-  const invoices = await getNotificationCandidates();
-
-  return invoices.filter((invoice) => invoice.isDueToday && !invoice.isPaid);
-}
-
-// ======================================================
-// Overdue Reminder
-// Day 1 -> Day 9
-// ======================================================
-
-export async function getOverdueReminderInvoices() {
-  const invoices = await getNotificationCandidates();
-
-  return invoices.filter(
-    (invoice) =>
-      invoice.isOverdue && !invoice.shouldBlockClient && !invoice.isPaid,
-  );
-}
-
-// ======================================================
 // Service Suspension
 // Day 10 onwards
 // ======================================================

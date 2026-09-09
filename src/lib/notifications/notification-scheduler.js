@@ -75,26 +75,6 @@ async function processInvoices(invoices, handler, label) {
 }
 
 // ======================================================
-// Due Reminder
-// ======================================================
-
-async function processDueReminders() {
-  const invoices = await getDueReminderInvoices();
-
-  return processInvoices(invoices, dueReminder, "Due Reminder");
-}
-
-// ======================================================
-// Overdue Reminder
-// ======================================================
-
-async function processOverdueReminders() {
-  const invoices = await getOverdueReminderInvoices();
-
-  return processInvoices(invoices, overdueReminder, "Overdue Reminder");
-}
-
-// ======================================================
 // Service Suspension
 // ======================================================
 
