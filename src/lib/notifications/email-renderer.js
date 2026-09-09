@@ -10,7 +10,6 @@ import {
   AlertBox,
   EmailButton,
   Signature,
-  BankDetails,
   CustomNote,
   formatDate,
 } from "./email-components";
@@ -205,8 +204,6 @@ export function SingleInvoiceEmailTemplate({
 
       {actionUrl && <EmailButton text="View Invoice Online" url={actionUrl} />}
 
-      {!isPaidOrCleared && <BankDetails company={company} />}
-
       {!isPaidOrCleared && (
         <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
           If you have already processed this transaction, kindly reply with the
@@ -256,9 +253,7 @@ export function ClientStatementEmailTemplate({
   ).toUpperCase();
 
   const isSettlement =
-    normalizedType === "SETTLEMENT" ||
-    normalizedType === "PAYMENT_RECEIVED" ||
-    (Array.isArray(settledInvoices) && settledInvoices.length > 0);
+    normalizedType === "SETTLEMENT" || normalizedType === "PAYMENT_RECEIVED";
 
   // Normalize invoices array (supports invoice list, bulk group invoices, or raw DB rows)
   const mappedInvoices = (invoices || []).map((inv) => {
@@ -438,8 +433,6 @@ export function ClientStatementEmailTemplate({
         <EmailButton text="View Account Statement Online" url={actionUrl} />
       )}
 
-      {!isSettlement && <BankDetails company={company} />}
-
       <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
         {isSettlement
           ? "Please review the settlement details and notify our Accounts Team within 2 days if there are any discrepancies."
@@ -492,15 +485,37 @@ export function renderClientStatementEmail(props) {
  */
 export function renderEmail(props = {}) {
   const vars = props.variables || {};
+  const typeStr = String(props.type || props.reminderType || "").toUpperCase();
 
+  // Explicit Single Invoice events: always render as single invoice
+  const isExplicitSingleInvoice =
+    typeStr === "BILL_SUBMITTED" ||
+    typeStr === "SUBMITTED" ||
+    typeStr === "DUE_TODAY" ||
+    typeStr === "INTERNAL_DUE_TODAY" ||
+    typeStr === "PAYMENT_CLEARED" ||
+    (!props.invoices?.length &&
+      !props.groupInvoices?.length &&
+      !vars.invoices?.length &&
+      vars.invoiceNumber);
+
+  // Explicit Settlement receipt
+  const isExplicitSettlement =
+    typeStr === "PAYMENT_RECEIVED" || typeStr === "SETTLEMENT";
+
+  // Multi-invoice statement events
   const isMultiInvoiceStatement =
-    (Array.isArray(props.invoices) && props.invoices.length > 0) ||
-    (Array.isArray(props.groupInvoices) && props.groupInvoices.length > 0) ||
-    (Array.isArray(vars.invoices) && vars.invoices.length > 0) ||
-    (Array.isArray(vars.settledInvoices) && vars.settledInvoices.length > 0) ||
-    props.type === NOTIFICATION_TYPES.DUE_REMINDER ||
-    props.type === NOTIFICATION_TYPES.OVERDUE_REMINDER ||
-    props.type === NOTIFICATION_TYPES.SERVICE_SUSPENSION_NOTICE;
+    !isExplicitSingleInvoice &&
+    (isExplicitSettlement ||
+      (Array.isArray(props.invoices) && props.invoices.length > 0) ||
+      (Array.isArray(props.groupInvoices) && props.groupInvoices.length > 0) ||
+      (Array.isArray(vars.invoices) && vars.invoices.length > 0) ||
+      typeStr === "STATEMENT" ||
+      typeStr === "OVERDUE_NOTICE" ||
+      typeStr === "SUSPENSION_WARNING" ||
+      typeStr === "SERVICE_SUSPENSION_NOTICE" ||
+      typeStr === "SERVICE_SUSPENSION_ALERT" ||
+      typeStr === "OVERDUE_REMINDER");
 
   if (isMultiInvoiceStatement) {
     const rawInvoices =

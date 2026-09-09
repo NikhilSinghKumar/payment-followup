@@ -277,24 +277,85 @@ export async function renderTemplatePreview({ type, subject, body }) {
       type === "SERVICE_SUSPENSION_ALERT" ||
       type === "SERVICE_SUSPENSION_NOTICE";
     const isCleared = type === "PAYMENT_CLEARED";
+    const isPaymentReceived = type === "PAYMENT_RECEIVED";
 
-    const typeSpecificData = {
-      ...MOCK_DATA,
-      overdueDays:
-        isSubmitted || isDueSoon || isDueToday || isCleared
-          ? "0"
-          : isSuspension
-            ? "30"
-            : "14",
-      dueDate: isSubmitted
-        ? "20-Sep-2026"
-        : isDueSoon
-          ? "15-Sep-2026"
-          : isDueToday
-            ? "07-Sep-2026"
-            : "24-Aug-2026", // past date for overdue / suspension
-      outstandingAmount: isCleared ? "0.00" : MOCK_DATA.outstandingAmount,
-    };
+    let typeSpecificData = {};
+
+    if (isPaymentReceived) {
+      typeSpecificData = {
+        clientName: MOCK_DATA.clientName,
+        companyName: MOCK_DATA.companyName,
+        amount: "45,250.00",
+        paymentAmount: "45,250.00",
+        count: "2",
+        paymentDate: "06-Sep-2026",
+        paymentMethod: "Bank Transfer / RTGS (UTR: HDFC892184918)",
+        referenceNumber: "UTR-HDFC892184918",
+        totalAccountOutstanding: 79750,
+        settledInvoices: MOCK_DATA.settledInvoices,
+      };
+    } else if (isOverdue || isSuspension) {
+      typeSpecificData = {
+        clientName: MOCK_DATA.clientName,
+        companyName: MOCK_DATA.companyName,
+        amount: isSuspension ? "67,250.00" : "45,250.00",
+        outstandingAmount: isSuspension ? "67,250.00" : "45,250.00",
+        overdueDays: isSuspension ? "25" : "14",
+        count: "2",
+        invoices: [
+          {
+            invoiceNumber: "INV-2026-0840",
+            invoiceDate: "01-Aug-2026",
+            dueDate: "15-Aug-2026",
+            invoiceAmount: 45250,
+            paidAmount: 0,
+            outstandingAmount: 45250,
+            agingStatus: isSuspension ? "25d Overdue" : "14d Overdue",
+            agingColor: "#DC2626",
+            creditDays: 14,
+            isOverdue: true,
+            dueDays: isSuspension ? 25 : 14,
+          },
+          {
+            invoiceNumber: "INV-2026-0841",
+            invoiceDate: "10-Aug-2026",
+            dueDate: "25-Aug-2026",
+            invoiceAmount: 22000,
+            paidAmount: 0,
+            outstandingAmount: 22000,
+            agingStatus: isSuspension ? "15d Overdue" : "Due Soon",
+            agingColor: isSuspension ? "#DC2626" : "#D97706",
+            creditDays: 15,
+            isOverdue: isSuspension,
+            dueDays: isSuspension ? 15 : 0,
+          },
+        ],
+      };
+    } else {
+      // Single Invoice notifications (BILL_SUBMITTED, DUE_REMINDER, DUE_TODAY, PAYMENT_CLEARED)
+      typeSpecificData = {
+        clientName: MOCK_DATA.clientName,
+        companyName: MOCK_DATA.companyName,
+        invoiceNumber: "INV-2026-0842",
+        invoiceDate: "01-Sep-2026",
+        dueDate: isSubmitted
+          ? "20-Sep-2026"
+          : isDueSoon
+            ? "15-Sep-2026"
+            : isDueToday
+              ? "09-Sep-2026"
+              : "25-Aug-2026",
+        invoiceAmount: "45,250.00",
+        paidAmount: isCleared ? "45,250.00" : "0.00",
+        outstandingAmount: isCleared ? "0.00" : "45,250.00",
+        amount: isCleared ? "45,250.00" : "0.00",
+        isDueToday: isDueToday,
+        isOverdue: false,
+        dueDays: 0,
+        overdueDays: "0",
+        awbs: [{ awbNumber: "7821948210" }, { awbNumber: "7821948221" }],
+      };
+    }
 
     const variables = {
       ...typeSpecificData,
