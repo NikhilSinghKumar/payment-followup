@@ -279,11 +279,13 @@ export default async function ClientDetailPage({ params, searchParams }) {
           {/* Net Payable */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Net Payable
+              Net Receivable
             </p>
 
             <h2 className="mt-2 text-md font-semibold text-blue-600 dark:text-blue-400">
-              ₹{totalNetPayable.toLocaleString("en-IN")}
+              ₹{totalNetPayable.toLocaleString("en-IN", {
+                maximumFractionDigits: 0,
+              })}
             </h2>
           </div>
 
@@ -294,7 +296,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2 className="mt-2 text-md font-semibold text-emerald-600 dark:text-emerald-400">
-              ₹{paymentsReceived.toLocaleString("en-IN")}
+              ₹{paymentsReceived.toLocaleString("en-IN", {
+                maximumFractionDigits: 0,
+              })}
             </h2>
           </div>
 
@@ -311,7 +315,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
                   : "text-zinc-600 dark:text-zinc-400"
               }`}
             >
-              ₹{onAccountAmount.toLocaleString("en-IN")}
+              ₹{onAccountAmount.toLocaleString("en-IN", {
+                maximumFractionDigits: 0,
+              })}
             </h2>
           </div>
 
@@ -328,7 +334,9 @@ export default async function ClientDetailPage({ params, searchParams }) {
                   : "text-emerald-600 dark:text-emerald-400"
               }`}
             >
-              ₹{netOutstanding.toLocaleString("en-IN")}
+              ₹{netOutstanding.toLocaleString("en-IN", {
+                maximumFractionDigits: 0,
+              })}
             </h2>
           </div>
 
