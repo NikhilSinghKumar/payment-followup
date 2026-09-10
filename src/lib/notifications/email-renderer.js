@@ -1,4 +1,5 @@
 import React from "react";
+import { renderToStaticMarkup as reactRenderToStaticMarkup } from "react-dom/server.edge";
 import { EmailLayout } from "./email-layout";
 import {
   Greeting,
@@ -21,6 +22,17 @@ import { NOTIFICATION_TYPES } from "./notification-types";
 // ============================================================================
 
 function renderToStaticMarkup(element) {
+  try {
+    if (typeof reactRenderToStaticMarkup === "function") {
+      return reactRenderToStaticMarkup(element);
+    }
+  } catch (err) {
+    console.warn(
+      "[Email Renderer] Static render failed, falling back:",
+      err?.message,
+    );
+  }
+
   try {
     const req =
       typeof __non_webpack_require__ !== "undefined"

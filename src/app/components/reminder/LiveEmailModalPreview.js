@@ -16,6 +16,7 @@ import {
 
 export default function LiveEmailModalPreview({
   html = "",
+  errorMessage = null,
   subject = "",
   recipientEmails = [],
   senderCompany = "PAFEX Logistics",
@@ -184,12 +185,25 @@ export default function LiveEmailModalPreview({
           }`}
         >
           <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-700">
-            <iframe
-              title="Email Template Live Preview"
-              srcDoc={html}
-              sandbox="allow-same-origin"
-              className="h-[380px] sm:h-[480px] w-full border-0 bg-[#F3F6FB]"
-            />
+            {html ? (
+              <iframe
+                title="Email Template Live Preview"
+                srcDoc={html}
+                sandbox="allow-same-origin"
+                className="h-[380px] sm:h-[480px] w-full border-0 bg-[#F3F6FB]"
+              />
+            ) : (
+              <div className="flex h-[380px] sm:h-[480px] w-full flex-col items-center justify-center p-6 text-center text-zinc-500">
+                <AlertTriangle className="h-8 w-8 text-amber-500 mb-2" />
+                <p className="font-semibold text-zinc-800 dark:text-zinc-200">
+                  Email preview is currently unavailable
+                </p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-sm">
+                  {errorMessage ||
+                    "The email HTML content was not generated. Please check server logs or click Retry."}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

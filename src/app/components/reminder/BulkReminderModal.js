@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useCallback } from "react";
 import {
   Mail,
   Send,
@@ -44,6 +44,7 @@ export default function BulkReminderModal({
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewSubject, setPreviewSubject] = useState("");
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [previewError, setPreviewError] = useState(null);
 
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState(null);
@@ -159,26 +160,43 @@ export default function BulkReminderModal({
 
   const previewGroup = clientGroups[previewClientIndex] || clientGroups[0];
 
-  useEffect(() => {
-    if (isOpen && activeTab === "preview" && previewGroup) {
-      let cancelled = false;
-      setLoadingPreview(true);
-      getBulkStatementPreviewHtml({
-        group: previewGroup,
-        reminderType,
-        customNote,
-      }).then((res) => {
-        if (!cancelled && res?.success) {
+  const loadPreview = useCallback(() => {
+    if (!previewGroup) return;
+    setLoadingPreview(true);
+    setPreviewError(null);
+    getBulkStatementPreviewHtml({
+      group: previewGroup,
+      reminderType,
+      customNote,
+    })
+      .then((res) => {
+        if (res?.success) {
           setPreviewHtml(res.html || "");
           setPreviewSubject(res.subject || "");
+          setPreviewError(null);
+        } else {
+          const errMsg =
+            res?.error || "Failed to render bulk statement preview";
+          console.error("[BulkReminderModal] Preview error:", errMsg);
+          setPreviewError(errMsg);
         }
-        if (!cancelled) setLoadingPreview(false);
+      })
+      .catch((err) => {
+        console.error("[BulkReminderModal] Preview exception:", err);
+        setPreviewError(
+          err?.message || "An unexpected error occurred while loading preview",
+        );
+      })
+      .finally(() => {
+        setLoadingPreview(false);
       });
-      return () => {
-        cancelled = true;
-      };
+  }, [previewGroup, reminderType, customNote]);
+
+  useEffect(() => {
+    if (isOpen && activeTab === "preview" && previewGroup) {
+      loadPreview();
     }
-  }, [isOpen, activeTab, previewGroup, reminderType, customNote]);
+  }, [isOpen, activeTab, previewGroup, loadPreview]);
 
   if (!isOpen) return null;
 
@@ -631,12 +649,31 @@ export default function BulkReminderModal({
                   </div>
 
                   {loadingPreview && !previewHtml ? (
-                    <div className="flex h-64 items-center justify-center text-xs text-zinc-400">
-                      Generating live statement preview...
+                    <div className="flex h-64 flex-col items-center justify-center gap-2 text-xs text-zinc-400">
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                      <span>Generating live statement preview...</span>
+                    </div>
+                  ) : previewError && !previewHtml ? (
+                    <div className="rounded-xl border border-red-200 bg-red-50/70 p-6 text-center dark:border-red-900/50 dark:bg-red-950/30">
+                      <AlertCircle className="mx-auto mb-2 h-8 w-8 text-red-500" />
+                      <h4 className="text-sm font-semibold text-red-900 dark:text-red-200">
+                        Unable to load bulk preview
+                      </h4>
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400 max-w-md mx-auto">
+                        {previewError}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={loadPreview}
+                        className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-red-700"
+                      >
+                        Retry Preview
+                      </button>
                     </div>
                   ) : (
                     <LiveEmailModalPreview
                       html={previewHtml}
+                      errorMessage={previewError}
                       subject={
                         previewSubject ||
                         (reminderType === "SUSPENSION_WARNING"
