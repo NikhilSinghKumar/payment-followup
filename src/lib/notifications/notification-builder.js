@@ -135,8 +135,8 @@ function buildPaymentReceived(data) {
   );
 
   const description = isMultiInvoice
-    ? `We have received your payment of ₹${formattedAmount}, which has been successfully settled against ${data.settledInvoices.length} invoice(s). Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`
-    : `We have received your payment of ₹${formattedAmount} against invoice ${data.invoiceNumber || ""}. Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`;
+    ? `We are thankful for receiving your payment of ₹${formattedAmount}, which has been successfully settled against ${data.settledInvoices.length} invoice(s). Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`
+    : `We are thankful for receiving your payment of ₹${formattedAmount} against invoice ${data.invoiceNumber || ""}. Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`;
 
   const invoiceSummary = isMultiInvoice
     ? data.settledInvoices.length === 1

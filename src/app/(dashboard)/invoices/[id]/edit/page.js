@@ -4,7 +4,8 @@ import InvoiceForm from "@/app/components/invoice/InvoiceForm";
 
 import { getInvoiceById, updateInvoice } from "@/app/actions/invoice";
 
-import { getClientById } from "@/app/actions/client";
+import { getClientById, getClients } from "@/app/actions/client";
+import { getSubClients } from "@/app/actions/sub-client";
 
 export default async function EditInvoicePage({ params }) {
   const { id } = await params;
@@ -15,7 +16,11 @@ export default async function EditInvoicePage({ params }) {
     notFound();
   }
 
-  const client = await getClientById(invoice.clientId);
+  const [client, clients, subClients] = await Promise.all([
+    getClientById(invoice.clientId),
+    getClients(),
+    getSubClients(),
+  ]);
 
   if (!client) {
     notFound();
@@ -40,6 +45,8 @@ export default async function EditInvoicePage({ params }) {
           </div>
           <InvoiceForm
             client={client}
+            clients={clients}
+            subClients={subClients}
             invoice={invoice}
             action={updateInvoice.bind(null, id)}
             submitLabel="Update Invoice"

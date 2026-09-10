@@ -740,21 +740,6 @@ export function ClientOutstandingInvoices({
         Outstanding Invoices & Ledger Breakdown
       </div>
 
-      {/* Mobile Scroll Tip */}
-      <div
-        style={{
-          fontSize: "11px",
-          color: "#64748B",
-          backgroundColor: "#F1F5F9",
-          padding: "4px 8px",
-          borderRadius: "4px",
-          marginBottom: "6px",
-          display: "inline-block",
-        }}
-      >
-        👉 <em>Swipe horizontally to view full table</em>
-      </div>
-
       <div
         className="responsive-table-scroll"
         style={{
@@ -1407,21 +1392,6 @@ export function SingleInvoiceDataTable({
         Invoice Details & Settlement Table
       </div>
 
-      {/* Mobile Scroll Tip */}
-      <div
-        style={{
-          fontSize: "11px",
-          color: "#64748B",
-          backgroundColor: "#F1F5F9",
-          padding: "4px 8px",
-          borderRadius: "4px",
-          marginBottom: "6px",
-          display: "inline-block",
-        }}
-      >
-        👉 <em>Swipe horizontally to view full table</em>
-      </div>
-
       <div
         className="responsive-table-scroll"
         style={{
@@ -1964,21 +1934,6 @@ export function ClientPaymentSettlementTable({
             >
               Invoice Details & Settlement Table
             </div>
-          </div>
-
-          {/* Mobile Scroll Tip */}
-          <div
-            style={{
-              fontSize: "11px",
-              color: "#64748B",
-              backgroundColor: "#F1F5F9",
-              padding: "4px 8px",
-              borderRadius: "4px",
-              marginBottom: "8px",
-              display: "inline-block",
-            }}
-          >
-            👉 <em>Swipe horizontally to view full settlement breakdown</em>
           </div>
 
           <div

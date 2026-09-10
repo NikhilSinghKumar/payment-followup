@@ -100,32 +100,32 @@ export function SingleInvoiceEmailTemplate({
   ) {
     title = `Payment Due Today - Invoice #${invoice.invoiceNumber || ""}`;
     banner = "Payment Due Today";
-    color = "#D97706";
-    background = "#FEF3C7";
+    color = "#2563EB";
+    background = "#DBEAFE";
   } else if (
     normalizedType === "FINAL_NOTICE" ||
     normalizedType === "FINAL_REMINDER"
   ) {
     title = `FINAL NOTICE: Overdue Invoice #${invoice.invoiceNumber || ""}`;
     banner = "Final Notice / Credit Action Warning";
-    color = "#DC2626";
-    background = "#FEE2E2";
+    color = "#2563EB";
+    background = "#DBEAFE";
   } else if (
     normalizedType === "PAID" ||
     normalizedType === "PAYMENT_CLEARED"
   ) {
     title = `Invoice #${invoice.invoiceNumber || ""} Paid`;
     banner = "Invoice Fully Paid";
-    color = "#16A34A";
-    background = "#DCFCE7";
+    color = "#2563EB";
+    background = "#DBEAFE";
   } else {
     // OVERDUE or default
     title = `Overdue Payment Reminder - Invoice #${invoice.invoiceNumber || ""}`;
     banner = invoice.dueDaysText
       ? `Overdue Payment Notice (${invoice.dueDaysText})`
       : "Overdue Payment Notice";
-    color = "#EA580C";
-    background = "#FFEDD5";
+    color = "#2563EB";
+    background = "#DBEAFE";
   }
 
   const formattedDueDate = formatDate(invoice.dueDate);
@@ -377,9 +377,9 @@ export function ClientStatementEmailTemplate({
 
   if (isSettlement) {
     title = `Payment Acknowledgment & Settlement - ${client.companyName || client.name || "Customer"}`;
-    banner = "Payment Received & Allocated";
-    color = "#16A34A";
-    background = "#DCFCE7";
+    banner = "Payment Received";
+    color = "#2563EB";
+    background = "#DBEAFE";
   } else if (
     normalizedType === "SUSPENSION_WARNING" ||
     normalizedType === "SERVICE_SUSPENSION_NOTICE" ||
@@ -387,8 +387,8 @@ export function ClientStatementEmailTemplate({
   ) {
     title = `URGENT: Outstanding Dues & Credit Terms Warning - ${client.companyName || client.name || ""}`;
     banner = "Credit Terms Warning / Final Demand";
-    color = "#DC2626";
-    background = "#FEE2E2";
+    color = "#2563EB";
+    background = "#DBEAFE";
   } else if (
     normalizedType === "OVERDUE_NOTICE" ||
     normalizedType === "OVERDUE_REMINDER" ||
@@ -399,8 +399,8 @@ export function ClientStatementEmailTemplate({
       overdueInvoicesCount > 0
         ? `Overdue Statement Notice (${overdueInvoicesCount} Overdue)`
         : "Overdue Statement Notice";
-    color = "#EA580C";
-    background = "#FFEDD5";
+    color = "#2563EB";
+    background = "#DBEAFE";
   } else {
     // STATEMENT / DUE_REMINDER
     title = `Statement of Outstanding Invoices (${mappedInvoices.length} Invoices) - ${client.companyName || client.name || ""}`;
