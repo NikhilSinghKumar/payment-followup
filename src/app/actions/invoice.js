@@ -445,6 +445,7 @@ export async function getInvoiceById(id) {
   const data = await db
     .select({
       clientId: invoices.clientId,
+      subClientId: invoices.subClientId,
       id: invoices.id,
       invoiceNumber: invoices.invoiceNumber,
       invoiceDate: invoices.invoiceDate,
@@ -545,10 +546,51 @@ export async function updateInvoice(id, formData) {
   const financialYear = getFinancialYear(invoiceDate);
 
   // =====================================
+  // SUB CLIENT RESOLUTION
+  // =====================================
+
+  const subClientIdValue = formData.get("subClientId");
+  const subClientId =
+    subClientIdValue !== null &&
+    subClientIdValue !== undefined &&
+    subClientIdValue !== ""
+      ? Number(subClientIdValue)
+      : existingInvoice.subClientId;
+
+  let selectedSubClient = null;
+
+  if (subClientId) {
+    const subClient = await db
+      .select()
+      .from(clientSubClients)
+      .where(
+        and(
+          eq(clientSubClients.id, subClientId),
+          eq(clientSubClients.clientId, clientId),
+          isNull(clientSubClients.deletedAt),
+        ),
+      )
+      .limit(1);
+
+    if (subClient.length) {
+      selectedSubClient = subClient[0];
+    }
+  }
+
+  // =====================================
   // GST & TDS
   // =====================================
 
-  const taxSettings = await getClientTaxSettings(client.id);
+  let taxSettings;
+
+  if (selectedSubClient) {
+    taxSettings = {
+      gstNumber: selectedSubClient.gstNumber,
+      tdsApplicable: selectedSubClient.tdsApplicable,
+    };
+  } else {
+    taxSettings = await getClientTaxSettings(client.id);
+  }
 
   // =====================================
   // CALCULATE INVOICE
@@ -590,6 +632,7 @@ export async function updateInvoice(id, formData) {
     .update(invoices)
     .set({
       clientId: client.id,
+      subClientId: selectedSubClient ? selectedSubClient.id : null,
       financialYear,
       invoiceNumber,
       invoiceDate,
