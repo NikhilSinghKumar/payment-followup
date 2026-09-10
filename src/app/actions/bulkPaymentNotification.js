@@ -294,7 +294,21 @@ export async function sendBulkPaymentConfirmationEmails({
           isNull(payments.deletedAt),
         ),
         with: {
+          invoice: {
+            columns: {
+              id: true,
+              invoiceNumber: true,
+              invoiceDate: true,
+              dueDate: true,
+              invoiceAmount: true,
+              netPayableAmount: true,
+              paidAmount: true,
+              outstandingAmount: true,
+              status: true,
+            },
+          },
           allocations: {
+            where: isNull(paymentAllocations.deletedAt),
             with: {
               invoice: {
                 columns: {
@@ -329,14 +343,105 @@ export async function sendBulkPaymentConfirmationEmails({
       // Aggregate settled invoices across payments
       const settledInvoicesMap = new Map();
 
+      // Check if any allocations refer to invoice IDs without loaded relations
+      const missingInvoiceIds = new Set();
       for (const payment of clientPayments) {
-        for (const alloc of payment.allocations || []) {
-          const inv = alloc.invoice;
-          if (!inv) continue;
+        if (payment.allocations && payment.allocations.length > 0) {
+          for (const alloc of payment.allocations) {
+            if (!alloc.invoice && alloc.invoiceId) {
+              missingInvoiceIds.add(alloc.invoiceId);
+            }
+          }
+        } else if (payment.invoiceId && !payment.invoice) {
+          missingInvoiceIds.add(payment.invoiceId);
+        }
+      }
+
+      let fallbackInvoicesMap = new Map();
+      if (missingInvoiceIds.size > 0) {
+        try {
+          const fetchedInvoices = await db.query.invoices.findMany({
+            where: and(
+              inArray(invoices.id, Array.from(missingInvoiceIds)),
+              isNull(invoices.deletedAt),
+            ),
+            columns: {
+              id: true,
+              invoiceNumber: true,
+              invoiceDate: true,
+              dueDate: true,
+              invoiceAmount: true,
+              netPayableAmount: true,
+              paidAmount: true,
+              outstandingAmount: true,
+              status: true,
+            },
+          });
+          for (const inv of fetchedInvoices) {
+            fallbackInvoicesMap.set(inv.id, inv);
+          }
+        } catch (fetchErr) {
+          console.warn("Could not fetch fallback invoice records:", fetchErr);
+        }
+      }
+
+      for (const payment of clientPayments) {
+        const paymentAllocationsList = payment.allocations || [];
+        if (paymentAllocationsList.length > 0) {
+          for (const alloc of paymentAllocationsList) {
+            const inv =
+              alloc.invoice || fallbackInvoicesMap.get(alloc.invoiceId);
+            if (!inv) continue;
+            const invId = inv.id;
+            const allocated = Number(alloc.allocatedAmount || 0);
+            const totalAmount = Number(
+              inv.netPayableAmount || inv.invoiceAmount || 0,
+            );
+
+            if (settledInvoicesMap.has(invId)) {
+              const existing = settledInvoicesMap.get(invId);
+              existing.settledAmount += allocated;
+              existing.remainingBalance = Math.max(
+                0,
+                existing.remainingBalance - allocated,
+              );
+            } else {
+              const remainingBalance = Number(
+                inv.outstandingAmount !== null &&
+                  inv.outstandingAmount !== undefined
+                  ? inv.outstandingAmount
+                  : Math.max(0, totalAmount - Number(inv.paidAmount || 0)),
+              );
+
+              settledInvoicesMap.set(invId, {
+                invoiceId: inv.id,
+                invoiceNumber: inv.invoiceNumber || `INV-${inv.id}`,
+                invoiceDate: inv.invoiceDate,
+                dueDate: inv.dueDate,
+                invoiceAmount:
+                  totalAmount > 0 ? totalAmount : allocated + remainingBalance,
+                settledAmount: allocated,
+                remainingBalance,
+                status: inv.status,
+              });
+            }
+          }
+        } else if (
+          payment.invoice ||
+          fallbackInvoicesMap.get(payment.invoiceId)
+        ) {
+          const inv =
+            payment.invoice || fallbackInvoicesMap.get(payment.invoiceId);
           const invId = inv.id;
-          const allocated = Number(alloc.allocatedAmount || 0);
+          const allocated = Number(payment.amount || 0);
           const totalAmount = Number(
             inv.netPayableAmount || inv.invoiceAmount || 0,
+          );
+          const remainingBalance = Number(
+            inv.outstandingAmount !== null &&
+              inv.outstandingAmount !== undefined
+              ? inv.outstandingAmount
+              : Math.max(0, totalAmount - Number(inv.paidAmount || 0)),
           );
 
           if (settledInvoicesMap.has(invId)) {
@@ -347,21 +452,16 @@ export async function sendBulkPaymentConfirmationEmails({
               existing.remainingBalance - allocated,
             );
           } else {
-            const remainingBalance = Number(
-              inv.outstandingAmount !== null &&
-                inv.outstandingAmount !== undefined
-                ? inv.outstandingAmount
-                : Math.max(0, totalAmount - Number(inv.paidAmount || 0)),
-            );
-
             settledInvoicesMap.set(invId, {
               invoiceId: inv.id,
               invoiceNumber: inv.invoiceNumber || `INV-${inv.id}`,
               invoiceDate: inv.invoiceDate,
               dueDate: inv.dueDate,
-              invoiceAmount: totalAmount,
+              invoiceAmount:
+                totalAmount > 0 ? totalAmount : allocated + remainingBalance,
               settledAmount: allocated,
               remainingBalance,
+              status: inv.status,
             });
           }
         }
@@ -457,6 +557,16 @@ export async function sendBulkPaymentConfirmationEmails({
       const emailHtml = renderEmail({
         type: NOTIFICATION_TYPES.PAYMENT_RECEIVED,
         body: defaultBody,
+        settledInvoices,
+        paymentInfo: {
+          amount: totalBatchAmount,
+          paymentDate: latestPaymentDate,
+          method: paymentMethod,
+          reference: referenceNumber,
+          totalAccountOutstanding,
+          remainingOutstanding: totalAccountOutstanding,
+          totalOutstanding: totalAccountOutstanding + totalBatchAmount,
+        },
         variables: {
           clientName: clientName || "Valued Customer",
           paymentAmount: totalBatchAmount,
@@ -465,18 +575,18 @@ export async function sendBulkPaymentConfirmationEmails({
           referenceNumber,
           settledInvoices,
           totalAccountOutstanding,
+          remainingOutstanding: totalAccountOutstanding,
+          totalOutstanding: totalAccountOutstanding + totalBatchAmount,
           customNote: finalCustomNote,
           company: company || {},
           senderCompany,
           senderEmail,
           senderPhone: company?.phone || "",
           senderLogo: company?.logo || company?.logoUrl || "",
-          invoiceNumber:
-            settledInvoices.length === 1
-              ? settledInvoices[0].invoiceNumber
-              : settledInvoices.length > 1
-                ? `${settledInvoices[0].invoiceNumber} (+${settledInvoices.length - 1} more)`
-                : "",
+          invoiceNumber: settledInvoices
+            .map((i) => i.invoiceNumber)
+            .filter(Boolean)
+            .join(", "),
         },
       });
 

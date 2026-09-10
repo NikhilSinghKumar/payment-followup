@@ -106,15 +106,37 @@ function buildOverdueReminder(data) {
 function buildPaymentReceived(data) {
   const isMultiInvoice =
     Array.isArray(data.settledInvoices) && data.settledInvoices.length > 0;
-  const formattedAmount = Number(data.paymentAmount || 0).toLocaleString(
+  const paymentAmount = Number(data.paymentAmount || 0);
+  const formattedAmount = paymentAmount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+  });
+
+  const remainingOutstanding =
+    data.remainingOutstanding !== undefined
+      ? Number(data.remainingOutstanding)
+      : data.totalAccountOutstanding !== undefined
+        ? Number(data.totalAccountOutstanding)
+        : 0;
+
+  const totalOutstanding =
+    data.totalOutstanding !== undefined
+      ? Number(data.totalOutstanding)
+      : remainingOutstanding + paymentAmount;
+
+  const formattedTotalOutstanding = totalOutstanding.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+  });
+
+  const formattedRemainingOutstanding = remainingOutstanding.toLocaleString(
     "en-IN",
     {
       minimumFractionDigits: 2,
     },
   );
+
   const description = isMultiInvoice
-    ? `We have received your payment of ₹${formattedAmount}, which has been successfully settled against ${data.settledInvoices.length} invoice(s).`
-    : `We have received your payment of ₹${formattedAmount} against invoice ${data.invoiceNumber || ""}.`;
+    ? `We have received your payment of ₹${formattedAmount}, which has been successfully settled against ${data.settledInvoices.length} invoice(s). Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`
+    : `We have received your payment of ₹${formattedAmount} against invoice ${data.invoiceNumber || ""}. Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`;
 
   const invoiceSummary = isMultiInvoice
     ? data.settledInvoices.length === 1
@@ -126,15 +148,32 @@ function buildPaymentReceived(data) {
     ? {
         ...buildClientVariables(data),
         invoiceNumber: invoiceSummary,
-        paymentAmount: Number(data.paymentAmount || 0),
+        amount: formattedAmount,
+        paymentAmount,
+        formattedPaymentAmount: formattedAmount,
+        totalOutstanding,
+        formattedTotalOutstanding,
+        remainingOutstanding,
+        formattedRemainingOutstanding,
+        totalAccountOutstanding: remainingOutstanding,
+        count: String(data.settledInvoices.length),
         paymentDate: data.paymentDate || new Date().toISOString(),
         paymentMethod: data.paymentMethod || data.method || "Bank Transfer",
         referenceNumber: data.referenceNumber || data.reference || "N/A",
         settledInvoices: data.settledInvoices,
-        totalAccountOutstanding: data.totalAccountOutstanding,
         company: data.company,
       }
-    : buildInvoiceVariables(data);
+    : {
+        ...buildInvoiceVariables(data),
+        amount: formattedAmount,
+        paymentAmount,
+        formattedPaymentAmount: formattedAmount,
+        totalOutstanding,
+        formattedTotalOutstanding,
+        remainingOutstanding,
+        formattedRemainingOutstanding,
+        totalAccountOutstanding: remainingOutstanding,
+      };
 
   return buildBaseNotification(
     NOTIFICATION_TYPES.PAYMENT_RECEIVED,

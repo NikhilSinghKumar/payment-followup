@@ -6,11 +6,14 @@ import {
   Paragraph,
   StatusBanner,
   InvoiceSummary,
+  AccountFinancialSummary,
+  SingleInvoiceDataTable,
   ClientOutstandingInvoices,
   ClientPaymentSettlementTable,
   AlertBox,
   EmailButton,
   Signature,
+  BankDetails,
   CustomNote,
   formatDate,
 } from "./email-components";
@@ -195,16 +198,24 @@ export function SingleInvoiceEmailTemplate({
 
       {customNote && <CustomNote note={customNote} color={color} />}
 
-      <InvoiceSummary
-        invoiceNumber={invoice.invoiceNumber}
-        invoiceDate={formattedInvoiceDate}
-        dueDate={formattedDueDate}
-        invoiceAmount={formattedTotal}
-        paidAmount={formattedPaid}
-        outstandingAmount={formattedDue}
-        showPaymentDetails={!isPaidOrCleared}
+      <AccountFinancialSummary
+        overallDue={Number(
+          invoice.invoiceAmount || invoice.netPayableAmount || 0,
+        )}
+        paymentDeduction={Number(invoice.paidAmount || 0)}
+        restDueAmount={Number(dueAmt || 0)}
+        isOverdue={Boolean(invoice.isOverdue)}
+      />
+
+      <SingleInvoiceDataTable
+        invoice={invoice}
+        overallDue={Number(
+          invoice.invoiceAmount || invoice.netPayableAmount || 0,
+        )}
+        paymentDeduction={Number(invoice.paidAmount || 0)}
+        restDueAmount={Number(dueAmt || 0)}
         awbs={invoice.awbs || []}
-        isOverdue={invoice.isOverdue}
+        isOverdue={Boolean(invoice.isOverdue)}
         dueDaysText={invoice.dueDaysText}
       />
 
@@ -215,6 +226,8 @@ export function SingleInvoiceEmailTemplate({
       )}
 
       {actionUrl && <EmailButton text="View Invoice Online" url={actionUrl} />}
+
+      {!isPaidOrCleared && <BankDetails company={company} />}
 
       {!isPaidOrCleared && (
         <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
@@ -324,13 +337,24 @@ export function ClientStatementEmailTemplate({
     };
   });
 
+  const settlementRemaining =
+    paymentInfo?.remainingOutstanding !== undefined &&
+    paymentInfo.remainingOutstanding !== null
+      ? Number(paymentInfo.remainingOutstanding)
+      : paymentInfo?.totalAccountOutstanding !== undefined &&
+          paymentInfo.totalAccountOutstanding !== null
+        ? Number(paymentInfo.totalAccountOutstanding)
+        : null;
+
   // Calculate summaries dynamically if not explicitly provided
   const totalOutstanding =
     totalDue !== null && totalDue !== undefined
       ? Number(totalDue)
       : clientSummary?.outstandingAmount !== undefined
         ? Number(clientSummary.outstandingAmount)
-        : mappedInvoices.reduce((sum, i) => sum + i.outstandingAmount, 0);
+        : isSettlement && settlementRemaining !== null
+          ? settlementRemaining
+          : mappedInvoices.reduce((sum, i) => sum + i.outstandingAmount, 0);
 
   const overdueInvoicesCount =
     propOverdueCount !== null && propOverdueCount !== undefined
@@ -396,8 +420,27 @@ export function ClientStatementEmailTemplate({
     client.companyName || client.name || "Finance & Accounts Team";
   const companyDisplayName = company.companyName || "PAFEX Logistics";
 
+  const settlementPaymentAmount = Number(
+    paymentInfo?.amount ||
+      (Array.isArray(settledInvoices)
+        ? settledInvoices.reduce(
+            (s, i) => s + Number(i.settledAmount || i.paidAmount || 0),
+            0,
+          )
+        : 0) ||
+      0,
+  );
+  const formattedSettlementPayment = settlementPaymentAmount.toLocaleString(
+    "en-IN",
+    {
+      minimumFractionDigits: 2,
+    },
+  );
+
   const defaultBody = isSettlement
-    ? `We have received and credited your payment towards the outstanding invoices detailed below.`
+    ? settlementPaymentAmount > 0
+      ? `We have received and credited your payment of ₹${formattedSettlementPayment} towards the outstanding invoices detailed below.`
+      : `We have received and credited your payment towards the outstanding invoices detailed below.`
     : normalizedType === "SUSPENSION_WARNING" ||
         normalizedType === "SERVICE_SUSPENSION_NOTICE"
       ? `Please find below the consolidated statement of your outstanding ledger. There are currently ${mappedInvoices.length} unpaid invoices totaling ₹${formattedTotalOutstanding}, with ${overdueInvoicesCount} invoice(s) critically overdue. Please settle these outstanding balances immediately to avoid interruption to dispatch and credit services.`
@@ -435,15 +478,49 @@ export function ClientStatementEmailTemplate({
         <ClientPaymentSettlementTable
           settledInvoices={settledInvoices || []}
           paymentInfo={paymentInfo || {}}
-          totalAccountOutstanding={totalOutstanding}
+          totalAccountOutstanding={
+            paymentInfo?.totalAccountOutstanding ??
+            paymentInfo?.remainingOutstanding ??
+            totalOutstanding
+          }
+          totalOutstanding={
+            paymentInfo?.totalOutstanding ??
+            (paymentInfo?.totalAccountOutstanding !== undefined &&
+            paymentInfo?.amount !== undefined
+              ? Number(paymentInfo.totalAccountOutstanding) +
+                Number(paymentInfo.amount)
+              : null)
+          }
+          remainingOutstanding={
+            paymentInfo?.remainingOutstanding ??
+            paymentInfo?.totalAccountOutstanding ??
+            totalOutstanding
+          }
         />
       ) : (
-        <ClientOutstandingInvoices invoices={mappedInvoices} />
+        <ClientOutstandingInvoices
+          invoices={mappedInvoices}
+          showSummaryCards={true}
+          overallDue={
+            clientSummary?.totalInvoicedAmount ??
+            mappedInvoices.reduce(
+              (s, i) => s + (Number(i.invoiceAmount) || 0),
+              0,
+            )
+          }
+          paymentDeduction={
+            clientSummary?.totalPaidAmount ??
+            mappedInvoices.reduce((s, i) => s + (Number(i.paidAmount) || 0), 0)
+          }
+          restDueAmount={totalOutstanding}
+        />
       )}
 
       {actionUrl && (
         <EmailButton text="View Account Statement Online" url={actionUrl} />
       )}
+
+      {!isSettlement && <BankDetails company={company} />}
 
       <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
         {isSettlement
@@ -499,6 +576,182 @@ export function renderEmail(props = {}) {
   const vars = props.variables || {};
   const typeStr = String(props.type || props.reminderType || "").toUpperCase();
 
+  // Explicit Settlement receipt
+  const isExplicitSettlement =
+    typeStr === "PAYMENT_RECEIVED" || typeStr === "SETTLEMENT";
+
+  // Dedicated Payment Settlement Handler
+  if (isExplicitSettlement) {
+    let settledInvoicesList =
+      vars.settledInvoices ||
+      props.settledInvoices ||
+      vars.invoices ||
+      props.invoices ||
+      props.groupInvoices ||
+      [];
+
+    if (
+      !Array.isArray(settledInvoicesList) ||
+      settledInvoicesList.length === 0
+    ) {
+      if (vars.invoiceNumber || props.invoice?.invoiceNumber) {
+        const invNum = vars.invoiceNumber || props.invoice?.invoiceNumber || "";
+        const invTotal = Number(
+          vars.invoiceAmount ||
+            props.invoice?.invoiceAmount ||
+            vars.paymentAmount ||
+            0,
+        );
+        const settledAmt = Number(
+          vars.paymentAmount || props.invoice?.paidAmount || invTotal || 0,
+        );
+        const remAmt = Number(
+          vars.remainingOutstanding ??
+            vars.outstandingAmount ??
+            props.invoice?.outstandingAmount ??
+            0,
+        );
+        settledInvoicesList = [
+          {
+            invoiceNumber: invNum,
+            invoiceDate: vars.invoiceDate || props.invoice?.invoiceDate || "",
+            dueDate: vars.dueDate || props.invoice?.dueDate || "",
+            invoiceAmount: invTotal > 0 ? invTotal : settledAmt + remAmt,
+            settledAmount: settledAmt,
+            remainingBalance: remAmt,
+            status: remAmt <= 0 ? "paid" : "partial",
+          },
+        ];
+      }
+    }
+
+    const normalizedSettledInvoices = (settledInvoicesList || []).map(
+      (inv, idx) => {
+        const invNum = inv.invoiceNumber || inv.number || `INV-${idx + 1}`;
+        const invTotal = Number(
+          inv.invoiceAmount || inv.totalAmount || inv.netPayableAmount || 0,
+        );
+        const settled = Number(
+          inv.settledAmount ||
+            inv.amountSettled ||
+            inv.allocatedAmount ||
+            inv.paidAmount ||
+            0,
+        );
+        const remaining =
+          inv.remainingBalance !== undefined && inv.remainingBalance !== null
+            ? Number(inv.remainingBalance)
+            : Math.max(0, (invTotal > 0 ? invTotal : settled) - settled);
+        const totalAmount = invTotal > 0 ? invTotal : settled + remaining;
+
+        return {
+          ...inv,
+          invoiceNumber: invNum,
+          invoiceDate: inv.invoiceDate || "",
+          dueDate: inv.dueDate || "",
+          invoiceAmount: totalAmount,
+          settledAmount: settled,
+          remainingBalance: remaining,
+          status: inv.status || (remaining <= 0 ? "paid" : "partial"),
+        };
+      },
+    );
+
+    const totalSettledFromInvoices = normalizedSettledInvoices.reduce(
+      (sum, i) => sum + Number(i.settledAmount || 0),
+      0,
+    );
+
+    const paymentAmount =
+      vars.paymentAmount !== undefined && vars.paymentAmount !== null
+        ? Number(vars.paymentAmount)
+        : props.paymentInfo?.amount !== undefined &&
+            props.paymentInfo?.amount !== null
+          ? Number(props.paymentInfo.amount)
+          : totalSettledFromInvoices;
+
+    const remainingOutstanding =
+      vars.remainingOutstanding !== undefined &&
+      vars.remainingOutstanding !== null
+        ? Number(vars.remainingOutstanding)
+        : vars.totalAccountOutstanding !== undefined &&
+            vars.totalAccountOutstanding !== null
+          ? Number(vars.totalAccountOutstanding)
+          : props.paymentInfo?.remainingOutstanding !== undefined &&
+              props.paymentInfo?.remainingOutstanding !== null
+            ? Number(props.paymentInfo.remainingOutstanding)
+            : props.paymentInfo?.totalAccountOutstanding !== undefined &&
+                props.paymentInfo?.totalAccountOutstanding !== null
+              ? Number(props.paymentInfo.totalAccountOutstanding)
+              : normalizedSettledInvoices.reduce(
+                  (sum, i) => sum + Number(i.remainingBalance || 0),
+                  0,
+                );
+
+    const totalInvoiceAmount = normalizedSettledInvoices.reduce(
+      (sum, i) => sum + Number(i.invoiceAmount || 0),
+      0,
+    );
+
+    const candidateTotal =
+      vars.totalOutstanding !== undefined && vars.totalOutstanding !== null
+        ? Number(vars.totalOutstanding)
+        : props.paymentInfo?.totalOutstanding !== undefined &&
+            props.paymentInfo?.totalOutstanding !== null
+          ? Number(props.paymentInfo.totalOutstanding)
+          : null;
+
+    const totalOutstanding = Math.max(
+      candidateTotal || 0,
+      totalInvoiceAmount,
+      paymentAmount + (remainingOutstanding || 0),
+    );
+
+    const paymentInfo = {
+      amount: paymentAmount,
+      paymentDate:
+        vars.paymentDate ||
+        props.paymentInfo?.paymentDate ||
+        new Date().toISOString(),
+      method:
+        vars.paymentMethod ||
+        props.paymentInfo?.method ||
+        props.paymentInfo?.paymentMethod ||
+        "Bank Transfer / RTGS / NEFT",
+      reference:
+        vars.referenceNumber ||
+        props.paymentInfo?.reference ||
+        props.paymentInfo?.referenceNumber ||
+        "N/A",
+      totalAccountOutstanding: remainingOutstanding,
+      remainingOutstanding,
+      totalOutstanding,
+    };
+
+    return renderClientStatementEmail({
+      client: props.client || {
+        companyName: vars.clientName || props.clientName || "Valued Customer",
+        name: vars.clientName || props.clientName || "Valued Customer",
+      },
+      invoices: [],
+      settledInvoices: normalizedSettledInvoices,
+      company: props.company ||
+        vars.company || {
+          companyName: vars.senderCompany || "PAFEX Logistics",
+          email: vars.senderEmail || "",
+          phone: vars.senderPhone || "",
+          logoUrl: vars.senderLogo || "",
+        },
+      reminderType: "SETTLEMENT",
+      customNote: props.customNote || vars.customNote || "",
+      body: props.body || "",
+      actionUrl: props.actionUrl || "",
+      paymentInfo,
+      totalDue: totalOutstanding,
+      clientSummary: props.clientSummary || null,
+    });
+  }
+
   // Explicit Single Invoice events: always render as single invoice
   const isExplicitSingleInvoice =
     typeStr === "BILL_SUBMITTED" ||
@@ -511,15 +764,10 @@ export function renderEmail(props = {}) {
       !vars.invoices?.length &&
       vars.invoiceNumber);
 
-  // Explicit Settlement receipt
-  const isExplicitSettlement =
-    typeStr === "PAYMENT_RECEIVED" || typeStr === "SETTLEMENT";
-
   // Multi-invoice statement events
   const isMultiInvoiceStatement =
     !isExplicitSingleInvoice &&
-    (isExplicitSettlement ||
-      (Array.isArray(props.invoices) && props.invoices.length > 0) ||
+    ((Array.isArray(props.invoices) && props.invoices.length > 0) ||
       (Array.isArray(props.groupInvoices) && props.groupInvoices.length > 0) ||
       (Array.isArray(vars.invoices) && vars.invoices.length > 0) ||
       typeStr === "STATEMENT" ||
@@ -532,6 +780,75 @@ export function renderEmail(props = {}) {
   if (isMultiInvoiceStatement) {
     const rawInvoices =
       props.invoices || props.groupInvoices || vars.invoices || [];
+
+    let settledInvoicesList =
+      vars.settledInvoices || props.settledInvoices || null;
+    if (!settledInvoicesList && isExplicitSettlement && vars.invoiceNumber) {
+      settledInvoicesList = [
+        {
+          invoiceNumber: vars.invoiceNumber,
+          invoiceDate: vars.invoiceDate || "",
+          invoiceAmount: vars.invoiceAmount || vars.paymentAmount || 0,
+          settledAmount: vars.paymentAmount || 0,
+          remainingBalance: Math.max(
+            0,
+            Number(vars.outstandingAmount || 0) -
+              Number(vars.paymentAmount || 0),
+          ),
+        },
+      ];
+    }
+
+    const paymentAmount =
+      vars.paymentAmount !== undefined
+        ? Number(vars.paymentAmount)
+        : props.paymentInfo?.amount !== undefined
+          ? Number(props.paymentInfo.amount)
+          : null;
+
+    const remainingOutstanding =
+      vars.remainingOutstanding !== undefined
+        ? Number(vars.remainingOutstanding)
+        : vars.totalAccountOutstanding !== undefined
+          ? Number(vars.totalAccountOutstanding)
+          : props.paymentInfo?.remainingOutstanding !== undefined
+            ? Number(props.paymentInfo.remainingOutstanding)
+            : props.paymentInfo?.totalAccountOutstanding !== undefined
+              ? Number(props.paymentInfo.totalAccountOutstanding)
+              : props.totalDue !== undefined && props.totalDue !== null
+                ? Number(props.totalDue)
+                : null;
+
+    const totalOutstanding =
+      vars.totalOutstanding !== undefined
+        ? Number(vars.totalOutstanding)
+        : props.paymentInfo?.totalOutstanding !== undefined
+          ? Number(props.paymentInfo.totalOutstanding)
+          : remainingOutstanding !== null && paymentAmount !== null
+            ? remainingOutstanding + paymentAmount
+            : null;
+
+    const paymentInfo =
+      isExplicitSettlement ||
+      settledInvoicesList ||
+      paymentAmount !== null ||
+      props.paymentInfo
+        ? {
+            amount: paymentAmount,
+            paymentDate: vars.paymentDate || props.paymentInfo?.paymentDate,
+            method:
+              vars.paymentMethod ||
+              props.paymentInfo?.method ||
+              props.paymentInfo?.paymentMethod,
+            reference:
+              vars.referenceNumber ||
+              props.paymentInfo?.reference ||
+              props.paymentInfo?.referenceNumber,
+            totalAccountOutstanding: remainingOutstanding,
+            remainingOutstanding,
+            totalOutstanding,
+          }
+        : null;
 
     return renderClientStatementEmail({
       client: props.client || {
@@ -546,20 +863,16 @@ export function renderEmail(props = {}) {
           phone: vars.senderPhone || "",
           logoUrl: vars.senderLogo || "",
         },
-      reminderType: props.reminderType || props.type || "STATEMENT",
+      reminderType:
+        props.reminderType ||
+        props.type ||
+        (isExplicitSettlement ? "SETTLEMENT" : "STATEMENT"),
       customNote: props.customNote || vars.customNote || "",
       body: props.body || "",
       actionUrl: props.actionUrl || "",
-      settledInvoices: vars.settledInvoices || props.settledInvoices || null,
-      paymentInfo: vars.settledInvoices
-        ? {
-            amount: vars.paymentAmount,
-            paymentDate: vars.paymentDate,
-            method: vars.paymentMethod,
-            reference: vars.referenceNumber,
-          }
-        : null,
-      totalDue: props.totalDue || vars.totalOutstanding || null,
+      settledInvoices: settledInvoicesList,
+      paymentInfo,
+      totalDue: totalOutstanding ?? remainingOutstanding ?? props.totalDue,
       clientSummary: props.clientSummary || null,
     });
   }

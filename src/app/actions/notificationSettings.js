@@ -565,6 +565,8 @@ export async function previewPaymentReceivedEmailAction(clientId = null) {
       referenceNumber: "UTR98320481239X",
       settledInvoices,
       totalAccountOutstanding: 50000,
+      remainingOutstanding: 50000,
+      totalOutstanding: 50000 + totalSettled,
       senderCompany: company?.companyName || "PAFEX Express & Logistics",
       senderEmail: company?.email || "accounts@pafex.com",
       senderPhone: company?.phone || "+91 98765 43210",

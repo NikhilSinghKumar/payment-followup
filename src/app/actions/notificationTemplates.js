@@ -38,6 +38,7 @@ const MOCK_DATA = {
     {
       invoiceNumber: "INV-2026-0840",
       invoiceDate: "15-Aug-2026",
+      dueDate: "30-Aug-2026",
       invoiceAmount: 22000,
       settledAmount: 22000,
       remainingBalance: 0,
@@ -45,6 +46,7 @@ const MOCK_DATA = {
     {
       invoiceNumber: "INV-2026-0841",
       invoiceDate: "20-Aug-2026",
+      dueDate: "05-Sep-2026",
       invoiceAmount: 23250,
       settledAmount: 23250,
       remainingBalance: 0,
@@ -286,12 +288,17 @@ export async function renderTemplatePreview({ type, subject, body }) {
         clientName: MOCK_DATA.clientName,
         companyName: MOCK_DATA.companyName,
         amount: "45,250.00",
-        paymentAmount: "45,250.00",
+        paymentAmount: 45250,
+        formattedPaymentAmount: "45,250.00",
+        totalOutstanding: 125000,
+        formattedTotalOutstanding: "1,25,000.00",
+        remainingOutstanding: 79750,
+        formattedRemainingOutstanding: "79,750.00",
+        totalAccountOutstanding: 79750,
         count: "2",
         paymentDate: "06-Sep-2026",
         paymentMethod: "Bank Transfer / RTGS (UTR: HDFC892184918)",
         referenceNumber: "UTR-HDFC892184918",
-        totalAccountOutstanding: 79750,
         settledInvoices: MOCK_DATA.settledInvoices,
       };
     } else if (isOverdue || isSuspension) {
