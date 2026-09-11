@@ -815,7 +815,7 @@ export function ClientOutstandingInvoices({
                   whiteSpace: "nowrap",
                 }}
               >
-                Overall Due (₹)
+                Invoice Amount (₹)
               </th>
               <th
                 align="right"
@@ -828,7 +828,7 @@ export function ClientOutstandingInvoices({
                   whiteSpace: "nowrap",
                 }}
               >
-                Payment Deduction (₹)
+                Payment Received (₹)
               </th>
               <th
                 align="right"
@@ -1092,15 +1092,15 @@ export function ClientOutstandingInvoices({
 /**
  * ======================================================
  * Universal 3-Card Financial Summary Strip
- * Displays: Overall Due, Payment Deduction, Rest Due Amount
+ * Displays: Invoice Amount, Payment Received, Rest Due Amount
  * ======================================================
  */
 export function AccountFinancialSummary({
   overallDue = 0,
   paymentDeduction = 0,
   restDueAmount = 0,
-  overallLabel = "Overall Due",
-  deductionLabel = "Payment Deduction",
+  overallLabel = "Invoice Amount",
+  deductionLabel = "Payment Received",
   restLabel = "Rest Due Amount",
   overallSubtext = "Gross Invoiced",
   deductionSubtext = "Paid / Credited",
@@ -1135,7 +1135,7 @@ export function AccountFinancialSummary({
     >
       <tbody>
         <tr>
-          {/* Card 1: Overall Due */}
+          {/* Card 1: Invoice Amount */}
           <td
             width="33.33%"
             valign="top"
@@ -1182,7 +1182,7 @@ export function AccountFinancialSummary({
             </div>
           </td>
 
-          {/* Card 2: Payment Deduction */}
+          {/* Card 2: Payment Received */}
           <td
             width="33.33%"
             valign="top"
@@ -1304,7 +1304,7 @@ export function AccountFinancialSummary({
 /**
  * ======================================================
  * Single Invoice Data Table Component (Table Format)
- * Displays structured horizontal table for single invoice with Overall Due, Payment Deduction, Rest Due Amount
+ * Displays structured horizontal table for single invoice with Invoice Amount, Payment Received, Rest Due Amount
  * ======================================================
  */
 export function SingleInvoiceDataTable({
@@ -1389,7 +1389,7 @@ export function SingleInvoiceDataTable({
           color: "#0F172A",
         }}
       >
-        Invoice Details & Settlement Table
+        Invoice Details
       </div>
 
       <div
@@ -1467,7 +1467,7 @@ export function SingleInvoiceDataTable({
                   whiteSpace: "nowrap",
                 }}
               >
-                Overall Due (₹)
+                Invoice Amount (₹)
               </th>
               <th
                 align="right"
@@ -1480,7 +1480,7 @@ export function SingleInvoiceDataTable({
                   whiteSpace: "nowrap",
                 }}
               >
-                Payment Deduction (₹)
+                Payment Received (₹)
               </th>
               <th
                 align="right"
@@ -1698,7 +1698,7 @@ export function SingleInvoiceDataTable({
 /**
  * ======================================================
  * 3-Card Payment & Account Balance Summary Strip
- * Displays Total Outstanding (Overall Due), Payment Deduction, and Remaining Outstanding (Rest Due)
+ * Displays Total Outstanding (Invoice Amount), Payment Received, and Remaining Outstanding (Rest Due)
  * ======================================================
  */
 export function PaymentAccountBalanceSummary({
@@ -1711,8 +1711,8 @@ export function PaymentAccountBalanceSummary({
       overallDue={totalOutstanding}
       paymentDeduction={paymentAmount}
       restDueAmount={remainingOutstanding}
-      overallLabel="Overall Due"
-      deductionLabel="Payment Deduction"
+      overallLabel="Invoice Amount"
+      deductionLabel="Payment Received"
       restLabel="Rest Due Amount"
       overallSubtext="Prior Account Balance"
       deductionSubtext="Payment Credited"
@@ -1932,7 +1932,7 @@ export function ClientPaymentSettlementTable({
                 color: "#0F172A",
               }}
             >
-              Invoice Details & Settlement Table
+              Invoice Details
             </div>
           </div>
 
@@ -1998,7 +1998,7 @@ export function ClientPaymentSettlementTable({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    Overall Due (₹)
+                    Invoice Amount (₹)
                   </th>
                   <th
                     style={{
@@ -2008,7 +2008,7 @@ export function ClientPaymentSettlementTable({
                       color: "#16A34A",
                     }}
                   >
-                    Payment Deduction (₹)
+                    Payment Received (₹)
                   </th>
                   <th
                     style={{

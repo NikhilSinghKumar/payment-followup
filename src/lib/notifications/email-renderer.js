@@ -56,7 +56,7 @@ function renderToStaticMarkup(element) {
 // - Bill Submitted / Invoice Issued (SUBMITTED / BILL_SUBMITTED)
 // - Upcoming Due Date Reminder (DUE_SOON / DUE_REMINDER)
 // - Invoice Due Today (DUE_TODAY / INVOICE_DUE)
-// - Overdue Payment Notice (OVERDUE / OVERDUE_REMINDER)
+// - Overdue Payment Reminder (OVERDUE / OVERDUE_REMINDER)
 // - Final Demand Notice (FINAL_NOTICE / FINAL_REMINDER)
 // - Invoice Paid / Cleared (PAID / PAYMENT_CLEARED)
 // ============================================================================
@@ -122,8 +122,8 @@ export function SingleInvoiceEmailTemplate({
     // OVERDUE or default
     title = `Overdue Payment Reminder - Invoice #${invoice.invoiceNumber || ""}`;
     banner = invoice.dueDaysText
-      ? `Overdue Payment Notice (${invoice.dueDaysText})`
-      : "Overdue Payment Notice";
+      ? `Overdue Payment Rminder`
+      : "Overdue Payment Reminder";
     color = "#2563EB";
     background = "#DBEAFE";
   }
@@ -221,20 +221,13 @@ export function SingleInvoiceEmailTemplate({
 
       {invoice.isOverdue && invoice.dueDays >= 1 && (
         <AlertBox
-          message={`This invoice is past due by <strong>${invoice.dueDays} day(s)</strong>. If you have already initiated the transfer, please share the UTR reference number.`}
+          message={`This invoice is past due by <strong>${invoice.dueDays} day(s)</strong>. If you have already done payment, please contact PAFEX accounts team for swift reconciliation.`}
         />
       )}
 
       {actionUrl && <EmailButton text="View Invoice Online" url={actionUrl} />}
 
       {!isPaidOrCleared && <BankDetails company={company} />}
-
-      {!isPaidOrCleared && (
-        <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
-          If you have already processed this transaction, kindly reply with the
-          payment confirmation / UTR details for swift reconciliation.
-        </p>
-      )}
 
       <Signature
         senderCompany={companyDisplayName}
@@ -251,7 +244,7 @@ export function SingleInvoiceEmailTemplate({
 // ============================================================================
 // Handles:
 // - Regular Statement of Outstanding Invoices (STATEMENT / DUE_REMINDER)
-// - Overdue Statement Notice (OVERDUE_NOTICE / OVERDUE_REMINDER)
+// - Overdue Statement (OVERDUE_NOTICE / OVERDUE_REMINDER)
 // - Service Suspension Warning / Final Demand (SUSPENSION_WARNING / SERVICE_SUSPENSION_NOTICE)
 // - Multi-Invoice Payment Allocation Settlement (SETTLEMENT / PAYMENT_RECEIVED)
 // - Bulk Multi-Invoice Table Reminders
@@ -396,9 +389,7 @@ export function ClientStatementEmailTemplate({
   ) {
     title = `Overdue Statement of Account: ${overdueInvoicesCount} Overdue Invoices - ${client.companyName || client.name || ""}`;
     banner =
-      overdueInvoicesCount > 0
-        ? `Overdue Statement Notice (${overdueInvoicesCount} Overdue)`
-        : "Overdue Statement Notice";
+      overdueInvoicesCount > 0 ? `Overdue Statement` : "Overdue Statement";
     color = "#2563EB";
     background = "#DBEAFE";
   } else {
@@ -465,12 +456,6 @@ export function ClientStatementEmailTemplate({
       <StatusBanner title={banner} color={color} background={background} />
 
       <Paragraph text={paragraphText} />
-
-      {!isSettlement && overdueInvoicesCount > 0 && (
-        <AlertBox
-          message={`⚠️ <strong>Action Required:</strong> ${overdueInvoicesCount} invoice(s) are overdue totaling <strong>₹${formattedOverdueAmount}</strong>.`}
-        />
-      )}
 
       {customNote && <CustomNote note={customNote} color={color} />}
 
