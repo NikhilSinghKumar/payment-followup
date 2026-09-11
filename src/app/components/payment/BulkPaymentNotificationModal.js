@@ -239,7 +239,7 @@ export default function BulkPaymentNotificationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 overflow-hidden bg-white text-zinc-900 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+      <DialogContent className="w-[60vw] max-w-[60vw] sm:max-w-6xl max-h-[92vh] flex flex-col p-0 overflow-hidden bg-white text-zinc-900 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
         {/* Header */}
         <div className="border-b border-zinc-100 bg-zinc-50/70 p-5 dark:border-zinc-800 dark:bg-zinc-800/40">
           <div className="flex items-center justify-between">
@@ -257,14 +257,6 @@ export default function BulkPaymentNotificationModal({
                 </DialogDescription>
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
 
           {/* Filtering Controls Bar */}
