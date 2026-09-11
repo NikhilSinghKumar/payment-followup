@@ -436,8 +436,8 @@ export function ClientStatementEmailTemplate({
         normalizedType === "SERVICE_SUSPENSION_NOTICE"
       ? `Please find below the consolidated statement of your outstanding ledger. There are currently ${mappedInvoices.length} unpaid invoices totaling ₹${formattedTotalOutstanding}, with ${overdueInvoicesCount} invoice(s) critically overdue. Please settle these outstanding balances immediately to avoid interruption to dispatch and credit services.`
       : overdueInvoicesCount > 0
-        ? `Please find below your statement of outstanding invoices. There are currently ${overdueInvoicesCount} overdue invoice(s) totaling ₹${formattedOverdueAmount} out of total outstanding ₹${formattedTotalOutstanding}. Kindly prioritize clearance of these pending bills.`
-        : `Please find below the consolidated statement of your open invoices with ${companyDisplayName}. There are currently ${mappedInvoices.length} outstanding invoices with a total pending balance of ₹${formattedTotalOutstanding}.`;
+        ? `Please find below your statement of outstanding invoices. Kindly prioritize clearance of these pending bills.`
+        : `Please find below the consolidated statement of your open invoices with ${companyDisplayName}.`;
 
   const paragraphText = body || defaultBody;
 
