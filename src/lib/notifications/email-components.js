@@ -1714,9 +1714,9 @@ export function PaymentAccountBalanceSummary({
       overallLabel="Invoice Amount"
       deductionLabel="Payment Received"
       restLabel="Rest Due Amount"
-      overallSubtext="Prior Account Balance"
-      deductionSubtext="Payment Credited"
-      restSubtext="Remaining Ledger Due"
+      overallSubtext=""
+      deductionSubtext=""
+      restSubtext=""
       isSettlement={true}
     />
   );
