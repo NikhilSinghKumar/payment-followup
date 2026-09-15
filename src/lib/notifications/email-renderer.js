@@ -298,6 +298,8 @@ export function ClientStatementEmailTemplate({
   totalNetPayable: propTotalNetPayable = null,
   netOutstanding: propNetOutstanding = null,
   paymentsReceived: propPaymentsReceived = null,
+  onAccountAmount: propOnAccountAmount = null,
+  unallocatedAmount: propUnallocatedAmount = null,
   overdueCount: propOverdueCount = null,
   actionUrl = "",
 }) {
@@ -431,6 +433,31 @@ export function ClientStatementEmailTemplate({
   // Calculate summaries dynamically if not explicitly provided
   const totalOutstanding = resolvedNetOutstanding;
 
+  const resolvedOnAccount = Math.max(
+    0,
+    Number(
+      clientSummary?.onAccountAmount !== undefined &&
+        clientSummary?.onAccountAmount !== null
+        ? clientSummary.onAccountAmount
+        : clientSummary?.unallocatedAmount !== undefined &&
+            clientSummary?.unallocatedAmount !== null
+          ? clientSummary.unallocatedAmount
+          : propOnAccountAmount !== null && propOnAccountAmount !== undefined
+            ? propOnAccountAmount
+            : propUnallocatedAmount !== null &&
+                propUnallocatedAmount !== undefined
+              ? propUnallocatedAmount
+              : Math.max(
+                  0,
+                  resolvedPaymentsReceived -
+                    mappedInvoices.reduce(
+                      (s, i) => s + (Number(i.paidAmount) || 0),
+                      0,
+                    ),
+                ),
+    ),
+  );
+
   const overdueInvoicesCount =
     propOverdueCount !== null && propOverdueCount !== undefined
       ? Number(propOverdueCount)
@@ -438,12 +465,20 @@ export function ClientStatementEmailTemplate({
         ? Number(clientSummary.overdueInvoices)
         : mappedInvoices.filter((i) => i.isOverdue).length;
 
-  const overdueAmount =
+  const rawOverdueAmount =
     clientSummary?.overdueAmount !== undefined
       ? Number(clientSummary.overdueAmount)
       : mappedInvoices
           .filter((i) => i.isOverdue)
-          .reduce((sum, i) => sum + i.outstandingAmount, 0);
+          .reduce((sum, i) => sum + Number(i.outstandingAmount || 0), 0);
+
+  // If on-account credit is present and covers/adjusts pending dues, net overdue cannot exceed net outstanding
+  const overdueAmount =
+    resolvedOnAccount > 0 &&
+    rawOverdueAmount > resolvedNetOutstanding &&
+    resolvedNetOutstanding > 0
+      ? resolvedNetOutstanding
+      : rawOverdueAmount;
 
   let title = "Statement of Outstanding Invoices";
   let banner = "Statement of Account";
@@ -462,18 +497,18 @@ export function ClientStatementEmailTemplate({
   ) {
     title = `URGENT: Outstanding Dues & Credit Terms Warning - ${client.companyName || client.name || ""}`;
     banner = "Credit Terms Warning / Final Demand";
-    color = "#2563EB";
-    background = "#DBEAFE";
+    color = "#DC2626";
+    background = "#FEE2E2";
   } else if (
     normalizedType === "OVERDUE_NOTICE" ||
     normalizedType === "OVERDUE_REMINDER" ||
+    normalizedType === "OVERDUE" ||
     overdueInvoicesCount > 0
   ) {
     title = `Overdue Statement of Account: ${overdueInvoicesCount} Overdue Invoices - ${client.companyName || client.name || ""}`;
-    banner =
-      overdueInvoicesCount > 0 ? `Overdue Statement` : "Overdue Statement";
-    color = "#2563EB";
-    background = "#DBEAFE";
+    banner = "Overdue Statement";
+    color = "#EA580C";
+    background = "#FFEDD5";
   } else {
     // STATEMENT / DUE_REMINDER
     title = `Statement of Outstanding Invoices (${mappedInvoices.length} Invoices) - ${client.companyName || client.name || ""}`;
@@ -486,6 +521,9 @@ export function ClientStatementEmailTemplate({
     minimumFractionDigits: 2,
   });
   const formattedOverdueAmount = overdueAmount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+  });
+  const formattedOnAccount = resolvedOnAccount.toLocaleString("en-IN", {
     minimumFractionDigits: 2,
   });
 
@@ -510,15 +548,21 @@ export function ClientStatementEmailTemplate({
     },
   );
 
+  const isAllOverdue =
+    overdueInvoicesCount >= mappedInvoices.length ||
+    (totalOutstanding > 0 && overdueAmount >= totalOutstanding);
+
   const defaultBody = isSettlement
     ? settlementPaymentAmount > 0
       ? `We have received and credited your payment of ₹${formattedSettlementPayment} towards the outstanding invoices detailed below.`
       : `We have received and credited your payment towards the outstanding invoices detailed below.`
     : normalizedType === "SUSPENSION_WARNING" ||
         normalizedType === "SERVICE_SUSPENSION_NOTICE"
-      ? `Please find below the consolidated statement of your outstanding ledger. There are currently ${mappedInvoices.length} unpaid invoices totaling ₹${formattedTotalOutstanding}, with ${overdueInvoicesCount} invoice(s) critically overdue. Please settle these outstanding balances immediately to avoid interruption to dispatch and credit services.`
+      ? `Please find below the consolidated statement of your outstanding ledger. There are currently ${mappedInvoices.length} unpaid invoices totaling ₹${formattedTotalOutstanding}, with ${overdueInvoicesCount} invoice(s) critically overdue${resolvedOnAccount > 0 ? ` (after adjusting ₹${formattedOnAccount} on-account credit)` : ""}. Please settle these outstanding balances immediately to avoid interruption to dispatch and credit services.`
       : overdueInvoicesCount > 0
-        ? `Please find below your statement of outstanding invoices. There are currently ${overdueInvoicesCount} overdue invoice(s) totaling ₹${formattedOverdueAmount} out of total outstanding ₹${formattedTotalOutstanding}. Kindly prioritize clearance of these pending bills.`
+        ? isAllOverdue
+          ? `Please find below your statement of outstanding invoices. There are currently ${overdueInvoicesCount} overdue invoice(s) totaling ₹${formattedTotalOutstanding}${resolvedOnAccount > 0 ? ` (after adjusting ₹${formattedOnAccount} on-account payment)` : ""}. Kindly prioritize clearance of these pending bills.`
+          : `Please find below your statement of outstanding invoices. There are currently ${overdueInvoicesCount} overdue invoice(s) totaling ₹${formattedOverdueAmount}${resolvedOnAccount > 0 ? ` (after adjusting on-account credit)` : ""} out of total outstanding ₹${formattedTotalOutstanding}. Kindly prioritize clearance of these pending bills.`
         : `Please find below the consolidated statement of your open invoices with ${companyDisplayName}. There are currently ${mappedInvoices.length} outstanding invoices with a total pending balance of ₹${formattedTotalOutstanding}.`;
 
   const paragraphText = body || defaultBody;
@@ -578,6 +622,9 @@ export function ClientStatementEmailTemplate({
           totalNetPayable={resolvedTotalNetPayable}
           paymentsReceived={resolvedPaymentsReceived}
           netOutstanding={resolvedNetOutstanding}
+          onAccountAmount={resolvedOnAccount}
+          unallocatedAmount={resolvedOnAccount}
+          clientSummary={clientSummary}
         />
       )}
 
@@ -1158,6 +1205,24 @@ export function renderEmail(props = {}) {
         vars.paymentsReceived ??
         props.paymentsReceived ??
         props.clientSummary?.paymentsReceived ??
+        null,
+      onAccountAmount:
+        vars.onAccountAmount ??
+        vars.onAccount ??
+        props.onAccountAmount ??
+        props.paymentInfo?.onAccountAmount ??
+        props.clientSummary?.onAccountAmount ??
+        null,
+      unallocatedAmount:
+        vars.unallocatedAmount ??
+        props.unallocatedAmount ??
+        props.paymentInfo?.unallocatedAmount ??
+        props.clientSummary?.unallocatedAmount ??
+        null,
+      overdueCount:
+        vars.overdueCount ??
+        props.overdueCount ??
+        props.clientSummary?.overdueInvoices ??
         null,
       clientSummary: props.clientSummary || vars.clientSummary || null,
     });

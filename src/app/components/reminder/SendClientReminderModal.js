@@ -192,9 +192,41 @@ export default function SendClientReminderModal({
   const invoices = data?.invoices || [];
   const company = data?.company;
 
-  const totalOutstandingFormatted = clientSummary
-    ? Number(clientSummary.outstandingAmount || 0).toLocaleString("en-IN")
-    : "0";
+  const resolvedTotalNetPayable = Number(
+    clientSummary?.totalNetPayable ?? clientSummary?.netPayableAmount ?? 0,
+  );
+  const resolvedPaymentsReceived = Number(
+    clientSummary?.paymentsReceived ?? clientSummary?.totalPaidAmount ?? 0,
+  );
+  const resolvedNetOutstanding = Number(
+    clientSummary?.netOutstanding ??
+      clientSummary?.restDueAmount ??
+      clientSummary?.outstandingAmount ??
+      Math.max(0, resolvedTotalNetPayable - resolvedPaymentsReceived),
+  );
+  const resolvedOnAccount = Number(
+    clientSummary?.onAccountAmount ?? clientSummary?.unallocatedAmount ?? 0,
+  );
+  const resolvedOverdueAmount = Number(
+    resolvedOnAccount > 0 &&
+      Number(clientSummary?.overdueAmount || 0) > resolvedNetOutstanding &&
+      resolvedNetOutstanding > 0
+      ? resolvedNetOutstanding
+      : clientSummary?.overdueAmount || 0,
+  );
+
+  const totalOutstandingFormatted = resolvedNetOutstanding.toLocaleString(
+    "en-IN",
+    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+  );
+  const onAccountFormatted = resolvedOnAccount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const overdueFormatted = resolvedOverdueAmount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   // Build WhatsApp text
   const whatsappText = client
@@ -202,20 +234,32 @@ export default function SendClientReminderModal({
       `Dear ${client?.companyName},\n` +
       `Please find your outstanding invoices summary:\n` +
       `• *Pending Invoices:* ${invoices.length}\n` +
-      `• *Overdue Invoices:* ${clientSummary?.overdueInvoices || 0}\n` +
-      `• *Total Outstanding:* ₹${totalOutstandingFormatted}\n\n` +
+      `• *Overdue Invoices:* ${clientSummary?.overdueInvoices || 0} (₹${overdueFormatted})\n` +
+      `• *Net Rest Due:* ₹${totalOutstandingFormatted}` +
+      (resolvedOnAccount > 0
+        ? ` (Adjusted with ₹${onAccountFormatted} on-account credit)`
+        : "") +
+      `\n\n` +
       `*Invoices Breakdown:*\n` +
       invoices
         .slice(0, 8)
         .map(
           (inv) =>
-            `- #${inv.invoiceNumber}: ₹${Number(inv.due || 0).toLocaleString("en-IN")} (Due: ${inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("en-IN") : "—"}${inv.isOverdue ? " - OVERDUE" : ""})`,
+            `- #${inv.invoiceNumber}: ₹${Number(
+              inv.restDueAmount ?? inv.due ?? inv.outstandingAmount ?? 0,
+            ).toLocaleString("en-IN", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })} (Due: ${inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("en-IN") : "—"}${inv.isOverdue ? " - OVERDUE" : ""})`,
         )
         .join("\n") +
       (invoices.length > 8
         ? `\n...and ${invoices.length - 8} more invoices`
         : "") +
-      (customNote ? `\n\n*Note:* ${customNote}` : "") +
+      (resolvedOnAccount > 0
+        ? `\n\n*Note:* On-account credit of ₹${onAccountFormatted} is credited to your ledger and adjusted against your net dues.`
+        : "") +
+      (customNote ? `\n\n*Remarks:* ${customNote}` : "") +
       (company?.bankAccountNumber
         ? `\n\n*Bank A/C:* ${company.bankAccountNumber} (${company.bankIfsc || ""})`
         : "") +
@@ -343,15 +387,17 @@ export default function SendClientReminderModal({
                             {invoices.length} Invoices Pending
                           </span>
                           <span className="rounded bg-zinc-200 px-2 py-0.5 font-bold text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200">
-                            Total Due: ₹{totalOutstandingFormatted}
+                            Net Rest Due: ₹{totalOutstandingFormatted}
                           </span>
                           {clientSummary.overdueInvoices > 0 && (
                             <span className="rounded bg-amber-100 px-2 py-0.5 font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
                               {clientSummary.overdueInvoices} Overdue (₹
-                              {Number(
-                                clientSummary.overdueAmount || 0,
-                              ).toLocaleString("en-IN")}
-                              )
+                              {overdueFormatted})
+                            </span>
+                          )}
+                          {resolvedOnAccount > 0 && (
+                            <span className="rounded bg-emerald-100 px-2 py-0.5 font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                              On-Account Credit: ₹{onAccountFormatted}
                             </span>
                           )}
                         </div>

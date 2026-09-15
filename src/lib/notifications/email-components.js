@@ -635,6 +635,9 @@ export function ClientOutstandingInvoices({
   totalNetPayable = null,
   paymentsReceived = null,
   netOutstanding = null,
+  unallocatedAmount = null,
+  onAccountAmount = null,
+  clientSummary = null,
   showSummaryCards = true,
 }) {
   const invoiceList = Array.isArray(invoices) ? invoices : [];
@@ -706,6 +709,23 @@ export function ClientOutstandingInvoices({
         ? Number(restDueAmount)
         : Math.max(0, displayOverall - displayDeduction);
 
+  // 4. Resolve unallocated on-account payment amount
+  const resolvedUnallocated = Math.max(
+    0,
+    Number(
+      unallocatedAmount !== null && unallocatedAmount !== undefined
+        ? unallocatedAmount
+        : onAccountAmount !== null && onAccountAmount !== undefined
+          ? onAccountAmount
+          : clientSummary?.onAccountAmount !== undefined &&
+              clientSummary?.onAccountAmount !== null
+            ? clientSummary.onAccountAmount
+            : totals.outstandingAmount > displayRestDue && displayRestDue > 0
+              ? totals.outstandingAmount - displayRestDue
+              : 0,
+    ),
+  );
+
   const hasAnyOverdue = invoiceList.some(
     (inv) =>
       inv.isOverdue ||
@@ -724,6 +744,8 @@ export function ClientOutstandingInvoices({
             totalNetPayable={displayOverall}
             paymentsReceived={displayDeduction}
             netOutstanding={displayRestDue}
+            onAccountAmount={resolvedUnallocated}
+            unallocatedAmount={resolvedUnallocated}
             isOverdue={hasAnyOverdue}
           />
         )}
@@ -754,6 +776,8 @@ export function ClientOutstandingInvoices({
           totalNetPayable={displayOverall}
           paymentsReceived={displayDeduction}
           netOutstanding={displayRestDue}
+          onAccountAmount={resolvedUnallocated}
+          unallocatedAmount={resolvedUnallocated}
           isOverdue={hasAnyOverdue}
         />
       )}
@@ -800,11 +824,11 @@ export function ClientOutstandingInvoices({
                   borderBottom: "1px solid #E2E8F0",
                   color: "#475569",
                   fontSize: "12px",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   whiteSpace: "nowrap",
                 }}
               >
-                Invoice No.
+                Invoice #
               </th>
               <th
                 align="left"
@@ -817,7 +841,7 @@ export function ClientOutstandingInvoices({
                   whiteSpace: "nowrap",
                 }}
               >
-                Invoice Date
+                Date
               </th>
               <th
                 align="left"
@@ -1061,66 +1085,305 @@ export function ClientOutstandingInvoices({
               );
             })}
 
-            {/* Total Row */}
-            <tr
-              style={{
-                background: "#F8FAFC",
-                borderTop: "2px solid #CBD5E1",
-                fontWeight: 700,
-              }}
-            >
-              <td
-                colSpan={3}
+            {/* Total Row: Handles unallocated/on-account amounts when present */}
+            {resolvedUnallocated > 0 ? (
+              <>
+                {/* 1. Subtotal of open invoices */}
+                <tr
+                  style={{
+                    background: "#F8FAFC",
+                    borderTop: "2px solid #CBD5E1",
+                    fontWeight: 600,
+                  }}
+                >
+                  <td
+                    colSpan={3}
+                    style={{
+                      padding: "9px 10px",
+                      color: "#475569",
+                      fontSize: "12px",
+                      textAlign: "right",
+                    }}
+                  >
+                    Invoices Balance Subtotal:
+                  </td>
+                  <td
+                    style={{
+                      padding: "9px 10px",
+                      color: "#475569",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formatCurrency(totals.invoiceAmount)}
+                  </td>
+                  <td
+                    style={{
+                      padding: "9px 10px",
+                      color: "#16A34A",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formatCurrency(totals.paidAmount)}
+                  </td>
+                  <td
+                    style={{
+                      padding: "9px 10px",
+                      color: "#475569",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formatCurrency(totals.outstandingAmount)}
+                  </td>
+                  <td
+                    colSpan={2}
+                    style={{
+                      padding: "9px 8px",
+                      color: "#64748B",
+                      fontSize: "11px",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    Gross Invoices Due
+                  </td>
+                </tr>
+
+                {/* 2. Unallocated / On-Account credit adjustment row */}
+                <tr
+                  style={{
+                    background: "#F0FDF4",
+                    borderTop: "1px dashed #86EFAC",
+                    fontWeight: 600,
+                  }}
+                >
+                  <td
+                    colSpan={3}
+                    style={{
+                      padding: "9px 10px",
+                      color: "#166534",
+                      fontSize: "12px",
+                      textAlign: "right",
+                    }}
+                  >
+                    Less: Unallocated Payment (On-Account Credit):
+                  </td>
+                  <td
+                    style={{
+                      padding: "9px 10px",
+                      color: "#166534",
+                      fontSize: "12px",
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    —
+                  </td>
+                  <td
+                    style={{
+                      padding: "9px 10px",
+                      color: "#16A34A",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    +{formatCurrency(resolvedUnallocated)}
+                  </td>
+                  <td
+                    style={{
+                      padding: "9px 10px",
+                      color: "#16A34A",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    -{formatCurrency(resolvedUnallocated)}
+                  </td>
+                  <td
+                    colSpan={2}
+                    style={{
+                      padding: "9px 8px",
+                      color: "#166534",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Credit Held on Ledger
+                  </td>
+                </tr>
+
+                {/* 3. Reconciled Net Rest Due Row */}
+                <tr
+                  style={{
+                    background: "#F8FAFC",
+                    borderTop: "2px solid #0F172A",
+                    fontWeight: 700,
+                  }}
+                >
+                  <td
+                    colSpan={3}
+                    style={{
+                      padding: "11px 10px",
+                      color: "#0F172A",
+                      fontSize: "13px",
+                      textAlign: "right",
+                    }}
+                  >
+                    Total Net Rest Due:
+                  </td>
+                  <td
+                    style={{
+                      padding: "11px 10px",
+                      color: "#334155",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formatCurrency(totals.invoiceAmount)}
+                  </td>
+                  <td
+                    style={{
+                      padding: "11px 10px",
+                      color: "#16A34A",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formatCurrency(displayDeduction)}
+                  </td>
+                  <td
+                    style={{
+                      padding: "11px 10px",
+                      color: hasAnyOverdue ? "#DC2626" : "#0F172A",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formatCurrency(displayRestDue)}
+                  </td>
+                  <td
+                    colSpan={2}
+                    style={{
+                      padding: "11px 8px",
+                      color: hasAnyOverdue ? "#DC2626" : "#0F172A",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {hasAnyOverdue ? "Net Overdue" : "Net Due"}
+                  </td>
+                </tr>
+              </>
+            ) : (
+              /* Standard total row when no unallocated balance */
+              <tr
                 style={{
-                  padding: "11px 10px",
-                  color: "#0F172A",
-                  fontSize: "13px",
-                  textAlign: "right",
-                }}
-              >
-                Total Account Dues:
-              </td>
-              <td
-                style={{
-                  padding: "11px 10px",
-                  color: "#334155",
-                  fontSize: "13px",
+                  background: "#F8FAFC",
+                  borderTop: "2px solid #CBD5E1",
                   fontWeight: 700,
-                  textAlign: "right",
-                  whiteSpace: "nowrap",
                 }}
               >
-                {formatCurrency(totals.invoiceAmount)}
-              </td>
-              <td
-                style={{
-                  padding: "11px 10px",
-                  color: "#16A34A",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  textAlign: "right",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {formatCurrency(totals.paidAmount)}
-              </td>
-              <td
-                style={{
-                  padding: "11px 10px",
-                  color: hasAnyOverdue ? "#DC2626" : "#0F172A",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  textAlign: "right",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {formatCurrency(totals.outstandingAmount)}
-              </td>
-              <td colSpan={2} style={{ background: "#F8FAFC" }} />
-            </tr>
+                <td
+                  colSpan={3}
+                  style={{
+                    padding: "11px 10px",
+                    color: "#0F172A",
+                    fontSize: "13px",
+                    textAlign: "right",
+                  }}
+                >
+                  Total Account Dues:
+                </td>
+                <td
+                  style={{
+                    padding: "11px 10px",
+                    color: "#334155",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    textAlign: "right",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {formatCurrency(totals.invoiceAmount)}
+                </td>
+                <td
+                  style={{
+                    padding: "11px 10px",
+                    color: "#16A34A",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    textAlign: "right",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {formatCurrency(displayDeduction)}
+                </td>
+                <td
+                  style={{
+                    padding: "11px 10px",
+                    color: hasAnyOverdue ? "#DC2626" : "#0F172A",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    textAlign: "right",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {formatCurrency(displayRestDue)}
+                </td>
+                <td
+                  colSpan={2}
+                  style={{
+                    padding: "11px 8px",
+                    color: hasAnyOverdue ? "#DC2626" : "#475569",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {hasAnyOverdue ? "Overdue" : "Current"}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      {resolvedUnallocated > 0 && (
+        <div
+          style={{
+            background: "#F0FDF4",
+            border: "1px solid #BBF7D0",
+            borderLeft: "4px solid #16A34A",
+            borderRadius: "6px",
+            padding: "10px 14px",
+            marginTop: "12px",
+            fontSize: "12px",
+            color: "#166534",
+            lineHeight: 1.5,
+          }}
+        >
+          <strong>On-Account Credit Applied:</strong> An unallocated payment of{" "}
+          <strong>{formatCurrency(resolvedUnallocated)}</strong> is credited on
+          your ledger and adjusted against your pending dues, reducing net rest
+          due to <strong>{formatCurrency(displayRestDue)}</strong>.
+        </div>
+      )}
     </div>
   );
 }
@@ -1138,6 +1401,8 @@ export function AccountFinancialSummary({
   totalNetPayable = null,
   paymentsReceived = null,
   netOutstanding = null,
+  onAccountAmount = null,
+  unallocatedAmount = null,
   overallLabel = "Net Payable Amount",
   deductionLabel = "Payment Received",
   restLabel = "Rest Due Amount",
@@ -1171,6 +1436,16 @@ export function AccountFinancialSummary({
         : restDueAmount !== undefined && restDueAmount !== null
           ? restDueAmount
           : parsedOverall - parsedDeduction,
+    ),
+  );
+  const parsedOnAccount = Math.max(
+    0,
+    Number(
+      onAccountAmount !== null && onAccountAmount !== undefined
+        ? onAccountAmount
+        : unallocatedAmount !== null && unallocatedAmount !== undefined
+          ? unallocatedAmount
+          : 0,
     ),
   );
   const isZeroRest = parsedRest <= 0;
@@ -1280,7 +1555,11 @@ export function AccountFinancialSummary({
                 fontWeight: 600,
               }}
             >
-              {parsedDeduction > 0 ? `✓ ${deductionSubtext}` : "Nil / Unpaid"}
+              {parsedDeduction > 0
+                ? parsedOnAccount > 0
+                  ? `✓ ${deductionSubtext} (incl. ${formatCurrency(parsedOnAccount)} on-account)`
+                  : `✓ ${deductionSubtext}`
+                : "Nil / Unpaid"}
             </div>
           </td>
 
