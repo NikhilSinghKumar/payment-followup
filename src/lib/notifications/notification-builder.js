@@ -27,6 +27,18 @@ function buildBaseNotification(type, data, message, templateVariables = {}) {
 }
 
 function buildInvoiceVariables(data) {
+  const rawGross = Number(data.invoiceAmount || 0);
+  const rawNet = Number(data.netPayableAmount || 0);
+  const invFace = rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
+  const netPayable = rawNet > 0 ? rawNet : invFace;
+  const paid = Number(data.paid ?? data.paidAmount ?? 0);
+  const due =
+    data.due !== undefined && data.due !== null
+      ? Number(data.due)
+      : data.outstandingAmount !== undefined && data.outstandingAmount !== null
+        ? Number(data.outstandingAmount)
+        : Math.max(0, netPayable - paid);
+
   return {
     companyName: data.companyName,
     clientName: data.clientName,
@@ -35,14 +47,16 @@ function buildInvoiceVariables(data) {
     invoiceDate: data.invoiceDate,
     dueDate: data.dueDate,
 
-    invoiceAmount: data.invoiceAmount,
+    invoiceAmount: invFace,
+    netPayableAmount: netPayable,
 
     // map from invoice summary
-    paidAmount: data.paid,
-    outstandingAmount: data.due,
-    overdueDays: data.dueDays,
+    paidAmount: paid,
+    outstandingAmount: due,
+    due,
+    overdueDays: data.dueDays || data.overdueDays || 0,
 
-    paymentAmount: data.paymentAmount,
+    paymentAmount: Number(data.paymentAmount || 0),
 
     senderCompany: data.senderCompany,
     senderEmail: data.senderEmail,
@@ -112,16 +126,24 @@ function buildPaymentReceived(data) {
   });
 
   const remainingOutstanding =
-    data.remainingOutstanding !== undefined
-      ? Number(data.remainingOutstanding)
-      : data.totalAccountOutstanding !== undefined
-        ? Number(data.totalAccountOutstanding)
-        : 0;
+    data.netOutstanding !== undefined
+      ? Number(data.netOutstanding)
+      : data.restDueAmount !== undefined
+        ? Number(data.restDueAmount)
+        : data.remainingOutstanding !== undefined
+          ? Number(data.remainingOutstanding)
+          : data.totalAccountOutstanding !== undefined
+            ? Number(data.totalAccountOutstanding)
+            : 0;
 
   const totalOutstanding =
-    data.totalOutstanding !== undefined
-      ? Number(data.totalOutstanding)
-      : remainingOutstanding + paymentAmount;
+    data.totalNetPayable !== undefined
+      ? Number(data.totalNetPayable)
+      : data.netPayableAmount !== undefined
+        ? Number(data.netPayableAmount)
+        : data.totalOutstanding !== undefined
+          ? Number(data.totalOutstanding)
+          : remainingOutstanding + paymentAmount;
 
   const formattedTotalOutstanding = totalOutstanding.toLocaleString("en-IN", {
     minimumFractionDigits: 2,
@@ -151,6 +173,10 @@ function buildPaymentReceived(data) {
         amount: formattedAmount,
         paymentAmount,
         formattedPaymentAmount: formattedAmount,
+        totalNetPayable: totalOutstanding,
+        netPayableAmount: totalOutstanding,
+        netOutstanding: remainingOutstanding,
+        restDueAmount: remainingOutstanding,
         totalOutstanding,
         formattedTotalOutstanding,
         remainingOutstanding,
@@ -168,6 +194,10 @@ function buildPaymentReceived(data) {
         amount: formattedAmount,
         paymentAmount,
         formattedPaymentAmount: formattedAmount,
+        totalNetPayable: totalOutstanding,
+        netPayableAmount: totalOutstanding,
+        netOutstanding: remainingOutstanding,
+        restDueAmount: remainingOutstanding,
         totalOutstanding,
         formattedTotalOutstanding,
         remainingOutstanding,
@@ -265,41 +295,64 @@ export function buildClientPaymentReminderVariables(data) {
 
     totalOutstanding: Number(data.totalOutstanding || 0),
     invoiceCount: Number(data.invoiceCount || 0),
+    totalNetPayable:
+      data.totalNetPayable ??
+      data.netPayableAmount ??
+      data.clientSummary?.totalNetPayable ??
+      Number(data.totalOutstanding || 0),
+    netPayableAmount:
+      data.totalNetPayable ??
+      data.netPayableAmount ??
+      data.clientSummary?.totalNetPayable ??
+      Number(data.totalOutstanding || 0),
+    paymentsReceived:
+      data.paymentsReceived ?? data.clientSummary?.paymentsReceived ?? 0,
+    netOutstanding:
+      data.netOutstanding ??
+      data.restDueAmount ??
+      data.clientSummary?.netOutstanding ??
+      Number(data.totalOutstanding || 0),
+    restDueAmount:
+      data.netOutstanding ??
+      data.restDueAmount ??
+      data.clientSummary?.netOutstanding ??
+      Number(data.totalOutstanding || 0),
+    clientSummary: data.clientSummary || null,
 
     // ====================================================
     // Outstanding Invoices
     // ====================================================
 
-    invoices: (data.invoices || []).map((invoice) => ({
-      invoiceId: invoice.invoiceId,
+    invoices: (data.invoices || []).map((invoice) => {
+      const rawGross = Number(invoice.invoiceAmount || 0);
+      const rawNet = Number(invoice.netPayableAmount || 0);
+      const invFace = rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
+      const netPayable = rawNet > 0 ? rawNet : invFace;
+      const paid = Number(invoice.paidAmount ?? invoice.paid ?? 0);
+      const outstanding = Number(
+        invoice.outstandingAmount !== undefined &&
+          invoice.outstandingAmount !== null
+          ? invoice.outstandingAmount
+          : invoice.due !== undefined && invoice.due !== null
+            ? invoice.due
+            : Math.max(0, netPayable - paid),
+      );
 
-      invoiceNumber: invoice.invoiceNumber,
-
-      invoiceDate: invoice.invoiceDate,
-      dueDate: invoice.dueDate,
-
-      invoiceAmount: Number(invoice.invoiceAmount || 0),
-
-      paidAmount: Number(invoice.paidAmount || 0),
-
-      outstandingAmount: Number(invoice.outstandingAmount || 0),
-
-      // ----------------------------------------------
-      // Credit Terms
-      // ----------------------------------------------
-
-      creditDays: Number(invoice.creditDays || 0),
-
-      // ----------------------------------------------
-      // Aging / Status
-      // ----------------------------------------------
-
-      agingDays: Number(invoice.agingDays || 0),
-
-      agingStatus: invoice.agingStatus || "",
-
-      agingColor: invoice.agingColor || "#16A34A",
-    })),
+      return {
+        invoiceId: invoice.invoiceId,
+        invoiceNumber: invoice.invoiceNumber,
+        invoiceDate: invoice.invoiceDate,
+        dueDate: invoice.dueDate,
+        invoiceAmount: invFace,
+        netPayableAmount: netPayable,
+        paidAmount: paid,
+        outstandingAmount: outstanding,
+        creditDays: Number(invoice.creditDays || 0),
+        agingDays: Number(invoice.agingDays || 0),
+        agingStatus: invoice.agingStatus || "",
+        agingColor: invoice.agingColor || "#16A34A",
+      };
+    }),
 
     // ====================================================
     // Sender Company

@@ -9,6 +9,7 @@ import {
 } from "@/db/schema";
 import { getClientById } from "@/app/actions/client";
 import { enrichInvoices } from "@/lib/invoice-summary";
+import { fetchClientFinancialSummary } from "@/lib/client-summary";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import ClientTabs from "@/app/components/client/clientTabs";
 import ClientOverviewTab from "@/app/components/client/tabs/clientOverviewTab";
@@ -67,125 +68,21 @@ export default async function ClientDetailPage({ params, searchParams }) {
   }
 
   // =====================================
-  // INVOICE SUMMARY
+  // INVOICE & FINANCIAL SUMMARY
   // =====================================
-  // =====================================
-  // AGGREGATE SUBQUERIES
-  // =====================================
-
-  const awbCounts = db
-    .select({
-      invoiceId: invoiceAwbs.invoiceId,
-
-      awbCount: count(invoiceAwbs.id).as("awb_count"),
-    })
-    .from(invoiceAwbs)
-    .where(isNull(invoiceAwbs.deletedAt))
-    .groupBy(invoiceAwbs.invoiceId)
-    .as("awb_counts");
-
-  // =====================================
-  // INVOICE SUMMARY
-  // =====================================
-
-  const invoiceData = await db
-    .select({
-      id: invoices.id,
-
-      financialYear: invoices.financialYear,
-
-      invoiceNumber: invoices.invoiceNumber,
-
-      invoiceAmount: invoices.invoiceAmount,
-
-      netPayableAmount: invoices.netPayableAmount,
-
-      paidAmount: invoices.paidAmount,
-      outstandingAmount: invoices.outstandingAmount,
-
-      status: invoices.status,
-
-      dueDate: invoices.dueDate,
-      isOpeningBalance: invoices.isOpeningBalance,
-
-      awbCount: sql`
-      COALESCE(${awbCounts.awbCount}, 0)
-    `.mapWith(Number),
-    })
-
-    .from(invoices)
-
-    .leftJoin(awbCounts, eq(awbCounts.invoiceId, invoices.id))
-
-    .where(and(eq(invoices.clientId, clientId), isNull(invoices.deletedAt)))
-
-    .orderBy(desc(invoices.id));
-
-  // NORMALIZED INVOIVE DATA
-  const normalizedInvoiceData = enrichInvoices(invoiceData);
-
-  // =====================================
-  // CLIENT PAYMENT SUMMARY
-  // =====================================
-
-  const paymentSummary = await db
-    .select({
-      paymentsReceived: sql`
-      COALESCE(
-        SUM(${payments.amount}),
-        0
-      )
-    `.mapWith(Number),
-    })
-    .from(payments)
-    .where(
-      and(
-        eq(payments.clientId, clientId),
-        isNull(payments.deletedAt),
-        eq(payments.isVoided, false),
-      ),
-    );
-
-  const paymentsReceived = Number(paymentSummary[0]?.paymentsReceived || 0);
-
-  // =====================================
-  // SUMMARY TOTALS
-  // =====================================
-
-  const totalInvoices = normalizedInvoiceData.length;
-
-  const totalAmount = normalizedInvoiceData.reduce(
-    (sum, item) => sum + Number(item.invoiceAmount || 0),
-    0,
-  );
-
-  const totalOutstanding = normalizedInvoiceData.reduce(
-    (sum, item) => sum + Number(item.due || 0),
-    0,
-  );
-
-  const overdueInvoices = normalizedInvoiceData.filter(
-    (invoice) => invoice.isOverdue,
-  ).length;
-
-  const totalNetPayable = normalizedInvoiceData.reduce(
-    (sum, item) => sum + Number(item.netPayableAmount || 0),
-    0,
-  );
-
-  const totalAllocated = normalizedInvoiceData.reduce(
-    (sum, item) => sum + Number(item.paidAmount || 0),
-    0,
-  );
-
-  // Unallocated payment funds currently held on account
-  const onAccountAmount = Math.max(paymentsReceived - totalAllocated, 0);
-
-  // Net Outstanding = Net Payable - Payments Received
-  const netOutstanding = Math.max(totalNetPayable - paymentsReceived, 0);
-
-  // True Credit Balance = Only when client payments received exceed total net payable
-  const creditBalance = Math.max(paymentsReceived - totalNetPayable, 0);
+  const {
+    totalInvoices,
+    totalAmount,
+    totalOutstanding,
+    overdueInvoices,
+    totalNetPayable,
+    totalAllocated,
+    paymentsReceived,
+    onAccountAmount,
+    netOutstanding,
+    creditBalance,
+    normalizedInvoices: normalizedInvoiceData,
+  } = await fetchClientFinancialSummary(clientId);
 
   return (
     <div className="bg-zinc-50">
@@ -283,7 +180,8 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2 className="mt-2 text-md font-semibold text-blue-600 dark:text-blue-400">
-              ₹{totalNetPayable.toLocaleString("en-IN", {
+              ₹
+              {totalNetPayable.toLocaleString("en-IN", {
                 maximumFractionDigits: 0,
               })}
             </h2>
@@ -296,7 +194,8 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2 className="mt-2 text-md font-semibold text-emerald-600 dark:text-emerald-400">
-              ₹{paymentsReceived.toLocaleString("en-IN", {
+              ₹
+              {paymentsReceived.toLocaleString("en-IN", {
                 maximumFractionDigits: 0,
               })}
             </h2>
@@ -315,7 +214,8 @@ export default async function ClientDetailPage({ params, searchParams }) {
                   : "text-zinc-600 dark:text-zinc-400"
               }`}
             >
-              ₹{onAccountAmount.toLocaleString("en-IN", {
+              ₹
+              {onAccountAmount.toLocaleString("en-IN", {
                 maximumFractionDigits: 0,
               })}
             </h2>
@@ -334,7 +234,8 @@ export default async function ClientDetailPage({ params, searchParams }) {
                   : "text-emerald-600 dark:text-emerald-400"
               }`}
             >
-              ₹{netOutstanding.toLocaleString("en-IN", {
+              ₹
+              {netOutstanding.toLocaleString("en-IN", {
                 maximumFractionDigits: 0,
               })}
             </h2>

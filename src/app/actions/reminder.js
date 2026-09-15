@@ -17,7 +17,10 @@ import { and, eq, inArray, isNull, sql, desc } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { enrichInvoices } from "@/lib/invoice-summary";
-import { calculateClientSummary } from "@/lib/client-summary";
+import {
+  calculateClientSummary,
+  fetchClientFinancialSummary,
+} from "@/lib/client-summary";
 import { sendEmail } from "@/lib/email";
 import {
   renderManualSingleInvoiceReminderEmail,
@@ -130,6 +133,17 @@ export async function getInvoiceReminderData(invoiceId) {
 
   const company = companyRows[0] || {};
 
+  // Fetch client financial summary matching clients/[id]/page.js
+  let clientFinancials = null;
+  try {
+    clientFinancials = await fetchClientFinancialSummary(invoice.clientId);
+  } catch (err) {
+    console.warn(
+      "Failed to fetch client financials for invoice reminder:",
+      err?.message,
+    );
+  }
+
   return {
     invoice: {
       ...invoice,
@@ -142,6 +156,7 @@ export async function getInvoiceReminderData(invoiceId) {
       companyCode: invoice.companyCode,
       email: invoice.clientEmail,
     },
+    clientSummary: clientFinancials,
     contacts,
     company,
   };
@@ -176,32 +191,16 @@ export async function getClientReminderData(clientId) {
 
   const client = clientRows[0];
 
-  // Get Invoices
-  const data = await db
-    .select({
-      id: invoices.id,
-      invoiceNumber: invoices.invoiceNumber,
-      financialYear: invoices.financialYear,
-      invoiceDate: invoices.invoiceDate,
-      dueDate: invoices.dueDate,
-      invoiceAmount: invoices.invoiceAmount,
-      netPayableAmount: invoices.netPayableAmount,
-      paidAmount: invoices.paidAmount,
-      outstandingAmount: invoices.outstandingAmount,
-    })
-    .from(invoices)
-    .where(
-      and(
-        eq(invoices.companyId, currentUser.companyId),
-        eq(invoices.clientId, parsedClientId),
-        isNull(invoices.deletedAt),
-      ),
-    )
-    .orderBy(invoices.dueDate);
+  // Fetch exact client financial summary matching clients/[id]/page.js (source of truth)
+  const clientFinancials = await fetchClientFinancialSummary(parsedClientId);
 
-  const invoiceList = enrichInvoices(data);
-  const clientSummary = calculateClientSummary(invoiceList);
+  const clientSummary = {
+    ...clientFinancials,
+    // ensure backward compatibility
+    outstandingAmount: clientFinancials.netOutstanding,
+  };
 
+  const invoiceList = clientFinancials.normalizedInvoices || [];
   const openInvoices = invoiceList.filter(
     (invoice) => Number(invoice.due || 0) > 0,
   );
@@ -354,11 +353,26 @@ export async function sendInvoiceReminder({
       ? invoice.awbs.map((a) => a.awbNumber).join(", ")
       : "";
 
+    // Fetch client financial summary matching clients/[id]/page.js
+    let clientFinancials = null;
+    try {
+      clientFinancials = await fetchClientFinancialSummary(invoice.clientId);
+    } catch (err) {
+      console.warn(
+        "Failed to fetch client financials for invoice reminder:",
+        err?.message,
+      );
+    }
+
     // Build unified HTML Email Body using shared automatic layout system
     const htmlBody = renderManualSingleInvoiceReminderEmail({
       invoice,
       client,
       company,
+      clientSummary: clientFinancials,
+      totalNetPayable: clientFinancials?.totalNetPayable,
+      netOutstanding: clientFinancials?.netOutstanding,
+      paymentsReceived: clientFinancials?.paymentsReceived,
       reminderType,
       customNote,
     });
@@ -488,6 +502,9 @@ export async function sendClientReminder({
     const htmlBody = renderManualClientStatementReminderEmail({
       client,
       clientSummary,
+      totalNetPayable: clientSummary.totalNetPayable,
+      netOutstanding: clientSummary.netOutstanding,
+      paymentsReceived: clientSummary.paymentsReceived,
       invoices: openInvoices,
       company,
       reminderType,
@@ -644,6 +661,19 @@ export async function getBulkInvoicesReminderPreview(invoiceIds = []) {
       contactsByClient[c.clientId].push(c);
     }
 
+    // Fetch financial summaries for all unique clients matching clients/[id]/page.js
+    const clientFinancialsMap = {};
+    for (const cId of clientIds) {
+      try {
+        clientFinancialsMap[cId] = await fetchClientFinancialSummary(cId);
+      } catch (err) {
+        console.error(
+          "Failed to fetch client financials for bulk reminder:",
+          err,
+        );
+      }
+    }
+
     // Get Sender Company details
     const companyRows = await db
       .select()
@@ -674,6 +704,8 @@ export async function getBulkInvoicesReminderPreview(invoiceIds = []) {
           defaultEmails.push(inv.clientEmail);
         }
 
+        const fin = clientFinancialsMap[cId];
+
         clientMap[cId] = {
           clientId: cId,
           companyName: inv.companyName,
@@ -682,6 +714,10 @@ export async function getBulkInvoicesReminderPreview(invoiceIds = []) {
           clientEmail: inv.clientEmail,
           invoices: [],
           totalDue: 0,
+          totalNetPayable: fin?.totalNetPayable ?? 0,
+          netOutstanding: fin?.netOutstanding ?? 0,
+          paymentsReceived: fin?.paymentsReceived ?? 0,
+          clientSummary: fin || null,
           overdueCount: 0,
           contacts: clientContactsList,
           selectedEmails: [...new Set(defaultEmails)],
@@ -798,11 +834,15 @@ export async function sendBulkGroupedReminders({
       // Build unified HTML Email Body using shared automatic layout system
       const htmlBody = renderManualBulkInvoicesReminderEmail({
         client: { companyName },
+        clientSummary: group.clientSummary,
+        totalNetPayable: group.totalNetPayable,
+        netOutstanding: group.netOutstanding,
+        paymentsReceived: group.paymentsReceived,
         groupInvoices,
         company,
         reminderType,
         customNote,
-        totalDue: totalDue || 0,
+        totalDue: group.netOutstanding || totalDue || 0,
         overdueCount,
       });
 
@@ -898,6 +938,10 @@ export async function getSingleInvoiceReminderPreviewHtml({
       invoice: data.invoice,
       client: data.client,
       company: data.company,
+      clientSummary: data.clientSummary,
+      totalNetPayable: data.clientSummary?.totalNetPayable,
+      netOutstanding: data.clientSummary?.netOutstanding,
+      paymentsReceived: data.clientSummary?.paymentsReceived,
       reminderType,
       customNote,
     });
@@ -940,6 +984,9 @@ export async function getClientStatementReminderPreviewHtml({
     const html = renderManualClientStatementReminderEmail({
       client: data.client,
       clientSummary: data.clientSummary,
+      totalNetPayable: data.clientSummary?.totalNetPayable,
+      netOutstanding: data.clientSummary?.netOutstanding,
+      paymentsReceived: data.clientSummary?.paymentsReceived,
       invoices: data.invoices,
       company: data.company,
       reminderType,
@@ -992,7 +1039,11 @@ export async function getBulkStatementPreviewHtml({
       company,
       reminderType,
       customNote,
-      totalDue: group.totalDue || 0,
+      totalDue: group.netOutstanding || group.totalDue || 0,
+      totalNetPayable: group.totalNetPayable,
+      netOutstanding: group.netOutstanding,
+      paymentsReceived: group.paymentsReceived,
+      clientSummary: group.clientSummary,
       overdueCount: group.overdueCount || 0,
     });
 

@@ -71,6 +71,10 @@ export function SingleInvoiceEmailTemplate({
   customNote = "",
   body = "",
   actionUrl = "",
+  clientSummary = null,
+  totalNetPayable = null,
+  netOutstanding = null,
+  paymentsReceived = null,
 }) {
   const normalizedType = String(
     urgency || reminderType || type || "OVERDUE",
@@ -131,29 +135,31 @@ export function SingleInvoiceEmailTemplate({
   const formattedDueDate = formatDate(invoice.dueDate);
   const formattedInvoiceDate = formatDate(invoice.invoiceDate);
 
-  const formattedTotal = Number(invoice.invoiceAmount || 0).toLocaleString(
-    "en-IN",
-    {
-      minimumFractionDigits: 2,
-    },
-  );
-  const formattedPaid = Number(invoice.paidAmount || 0).toLocaleString(
-    "en-IN",
-    {
-      minimumFractionDigits: 2,
-    },
+  const rawGross = Number(invoice.invoiceAmount || 0);
+  const rawNet = Number(invoice.netPayableAmount || 0);
+  const invoiceAmountVal = rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
+  const netPayableVal = rawNet > 0 ? rawNet : invoiceAmountVal;
+  const paidVal = Number(
+    invoice.paymentDeduction !== undefined && invoice.paymentDeduction !== null
+      ? invoice.paymentDeduction
+      : (invoice.paidAmount ?? invoice.paid ?? 0),
   );
   const dueAmt =
-    invoice.due !== undefined
-      ? invoice.due
-      : invoice.outstandingAmount !== undefined
-        ? invoice.outstandingAmount
-        : Math.max(
-            Number(invoice.invoiceAmount || 0) -
-              Number(invoice.paidAmount || 0),
-            0,
-          );
+    invoice.due !== undefined && invoice.due !== null
+      ? Number(invoice.due)
+      : invoice.restDueAmount !== undefined && invoice.restDueAmount !== null
+        ? Number(invoice.restDueAmount)
+        : invoice.outstandingAmount !== undefined &&
+            invoice.outstandingAmount !== null
+          ? Number(invoice.outstandingAmount)
+          : Math.max(0, netPayableVal - paidVal);
 
+  const formattedTotal = Number(invoiceAmountVal || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+  });
+  const formattedPaid = Number(paidVal || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+  });
   const formattedDue = Number(dueAmt || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
   });
@@ -199,21 +205,47 @@ export function SingleInvoiceEmailTemplate({
       {customNote && <CustomNote note={customNote} color={color} />}
 
       <AccountFinancialSummary
-        overallDue={Number(
-          invoice.invoiceAmount || invoice.netPayableAmount || 0,
-        )}
-        paymentDeduction={Number(invoice.paidAmount || 0)}
-        restDueAmount={Number(dueAmt || 0)}
+        overallDue={
+          clientSummary?.totalNetPayable ??
+          totalNetPayable ??
+          clientSummary?.netPayableAmount ??
+          invoiceAmountVal
+        }
+        paymentDeduction={
+          clientSummary?.paymentsReceived ??
+          paymentsReceived ??
+          clientSummary?.totalPaidAmount ??
+          paidVal
+        }
+        restDueAmount={
+          clientSummary?.netOutstanding ??
+          netOutstanding ??
+          clientSummary?.restDueAmount ??
+          dueAmt
+        }
+        totalNetPayable={
+          clientSummary?.totalNetPayable ??
+          totalNetPayable ??
+          clientSummary?.netPayableAmount ??
+          null
+        }
+        paymentsReceived={
+          clientSummary?.paymentsReceived ?? paymentsReceived ?? null
+        }
+        netOutstanding={
+          clientSummary?.netOutstanding ??
+          netOutstanding ??
+          clientSummary?.restDueAmount ??
+          null
+        }
         isOverdue={Boolean(invoice.isOverdue)}
       />
 
       <SingleInvoiceDataTable
         invoice={invoice}
-        overallDue={Number(
-          invoice.invoiceAmount || invoice.netPayableAmount || 0,
-        )}
-        paymentDeduction={Number(invoice.paidAmount || 0)}
-        restDueAmount={Number(dueAmt || 0)}
+        overallDue={invoiceAmountVal}
+        paymentDeduction={paidVal}
+        restDueAmount={dueAmt}
         awbs={invoice.awbs || []}
         isOverdue={Boolean(invoice.isOverdue)}
         dueDaysText={invoice.dueDaysText}
@@ -263,6 +295,9 @@ export function ClientStatementEmailTemplate({
   settledInvoices = null,
   paymentInfo = null,
   totalDue = null,
+  totalNetPayable: propTotalNetPayable = null,
+  netOutstanding: propNetOutstanding = null,
+  paymentsReceived: propPaymentsReceived = null,
   overdueCount: propOverdueCount = null,
   actionUrl = "",
 }) {
@@ -287,16 +322,24 @@ export function ClientStatementEmailTemplate({
       );
     }
 
-    const paidAmount = Number(inv.paidAmount || 0);
-    const invoiceAmount = Number(
-      inv.invoiceAmount || inv.netPayableAmount || 0,
+    const rawGross = Number(inv.invoiceAmount || 0);
+    const rawNet = Number(inv.netPayableAmount || 0);
+    const invoiceAmount = rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
+    const netPayableAmount = rawNet > 0 ? rawNet : invoiceAmount;
+    const paidAmount = Number(
+      inv.paymentDeduction !== undefined && inv.paymentDeduction !== null
+        ? inv.paymentDeduction
+        : (inv.paidAmount ?? inv.paid ?? 0),
     );
     const outstandingAmount =
-      inv.due !== undefined
+      inv.due !== undefined && inv.due !== null
         ? Number(inv.due)
-        : inv.outstandingAmount !== undefined
-          ? Number(inv.outstandingAmount)
-          : Math.max(invoiceAmount - paidAmount, 0);
+        : inv.restDueAmount !== undefined && inv.restDueAmount !== null
+          ? Number(inv.restDueAmount)
+          : inv.outstandingAmount !== undefined &&
+              inv.outstandingAmount !== null
+            ? Number(inv.outstandingAmount)
+            : Math.max(0, netPayableAmount - paidAmount);
 
     const isOverdue = Boolean(
       inv.isOverdue ||
@@ -339,15 +382,54 @@ export function ClientStatementEmailTemplate({
         ? Number(paymentInfo.totalAccountOutstanding)
         : null;
 
+  // Source of Truth matching clients/[id]/page.js:
+  // "Net Payable Amount" for a client is totalNetPayable
+  // "Payment Received" is paymentsReceived
+  // "Rest Due Amount" is netOutstanding: Math.max(totalNetPayable - paymentsReceived, 0)
+  const resolvedTotalNetPayable =
+    clientSummary?.totalNetPayable !== undefined &&
+    clientSummary?.totalNetPayable !== null
+      ? Number(clientSummary.totalNetPayable)
+      : propTotalNetPayable !== null && propTotalNetPayable !== undefined
+        ? Number(propTotalNetPayable)
+        : clientSummary?.netPayableAmount !== undefined &&
+            clientSummary?.netPayableAmount !== null
+          ? Number(clientSummary.netPayableAmount)
+          : mappedInvoices.reduce(
+              (s, i) =>
+                s + (Number(i.netPayableAmount ?? i.invoiceAmount) || 0),
+              0,
+            );
+
+  const resolvedPaymentsReceived =
+    clientSummary?.paymentsReceived !== undefined &&
+    clientSummary?.paymentsReceived !== null
+      ? Number(clientSummary.paymentsReceived)
+      : propPaymentsReceived !== null && propPaymentsReceived !== undefined
+        ? Number(propPaymentsReceived)
+        : clientSummary?.totalPaidAmount !== undefined &&
+            clientSummary?.totalPaidAmount !== null
+          ? Number(clientSummary.totalPaidAmount)
+          : mappedInvoices.reduce((s, i) => s + (Number(i.paidAmount) || 0), 0);
+
+  const resolvedNetOutstanding =
+    clientSummary?.netOutstanding !== undefined &&
+    clientSummary?.netOutstanding !== null
+      ? Number(clientSummary.netOutstanding)
+      : propNetOutstanding !== null && propNetOutstanding !== undefined
+        ? Number(propNetOutstanding)
+        : clientSummary?.restDueAmount !== undefined &&
+            clientSummary?.restDueAmount !== null
+          ? Number(clientSummary.restDueAmount)
+          : totalDue !== null && totalDue !== undefined
+            ? Number(totalDue)
+            : clientSummary?.outstandingAmount !== undefined &&
+                clientSummary?.outstandingAmount !== null
+              ? Number(clientSummary.outstandingAmount)
+              : Math.max(0, resolvedTotalNetPayable - resolvedPaymentsReceived);
+
   // Calculate summaries dynamically if not explicitly provided
-  const totalOutstanding =
-    totalDue !== null && totalDue !== undefined
-      ? Number(totalDue)
-      : clientSummary?.outstandingAmount !== undefined
-        ? Number(clientSummary.outstandingAmount)
-        : isSettlement && settlementRemaining !== null
-          ? settlementRemaining
-          : mappedInvoices.reduce((sum, i) => sum + i.outstandingAmount, 0);
+  const totalOutstanding = resolvedNetOutstanding;
 
   const overdueInvoicesCount =
     propOverdueCount !== null && propOverdueCount !== undefined
@@ -436,8 +518,8 @@ export function ClientStatementEmailTemplate({
         normalizedType === "SERVICE_SUSPENSION_NOTICE"
       ? `Please find below the consolidated statement of your outstanding ledger. There are currently ${mappedInvoices.length} unpaid invoices totaling ₹${formattedTotalOutstanding}, with ${overdueInvoicesCount} invoice(s) critically overdue. Please settle these outstanding balances immediately to avoid interruption to dispatch and credit services.`
       : overdueInvoicesCount > 0
-        ? `Please find below your statement of outstanding invoices. Kindly prioritize clearance of these pending bills.`
-        : `Please find below the consolidated statement of your open invoices with ${companyDisplayName}.`;
+        ? `Please find below your statement of outstanding invoices. There are currently ${overdueInvoicesCount} overdue invoice(s) totaling ₹${formattedOverdueAmount} out of total outstanding ₹${formattedTotalOutstanding}. Kindly prioritize clearance of these pending bills.`
+        : `Please find below the consolidated statement of your open invoices with ${companyDisplayName}. There are currently ${mappedInvoices.length} outstanding invoices with a total pending balance of ₹${formattedTotalOutstanding}.`;
 
   const paragraphText = body || defaultBody;
 
@@ -464,19 +546,23 @@ export function ClientStatementEmailTemplate({
           settledInvoices={settledInvoices || []}
           paymentInfo={paymentInfo || {}}
           totalAccountOutstanding={
+            paymentInfo?.netOutstanding ??
+            paymentInfo?.restDueAmount ??
+            resolvedNetOutstanding ??
             paymentInfo?.totalAccountOutstanding ??
             paymentInfo?.remainingOutstanding ??
             totalOutstanding
           }
           totalOutstanding={
-            paymentInfo?.totalOutstanding ??
-            (paymentInfo?.totalAccountOutstanding !== undefined &&
-            paymentInfo?.amount !== undefined
-              ? Number(paymentInfo.totalAccountOutstanding) +
-                Number(paymentInfo.amount)
-              : null)
+            paymentInfo?.totalNetPayable ??
+            paymentInfo?.netPayableAmount ??
+            resolvedTotalNetPayable ??
+            paymentInfo?.totalOutstanding
           }
           remainingOutstanding={
+            paymentInfo?.netOutstanding ??
+            paymentInfo?.restDueAmount ??
+            resolvedNetOutstanding ??
             paymentInfo?.remainingOutstanding ??
             paymentInfo?.totalAccountOutstanding ??
             totalOutstanding
@@ -486,18 +572,12 @@ export function ClientStatementEmailTemplate({
         <ClientOutstandingInvoices
           invoices={mappedInvoices}
           showSummaryCards={true}
-          overallDue={
-            clientSummary?.totalInvoicedAmount ??
-            mappedInvoices.reduce(
-              (s, i) => s + (Number(i.invoiceAmount) || 0),
-              0,
-            )
-          }
-          paymentDeduction={
-            clientSummary?.totalPaidAmount ??
-            mappedInvoices.reduce((s, i) => s + (Number(i.paidAmount) || 0), 0)
-          }
-          restDueAmount={totalOutstanding}
+          overallDue={resolvedTotalNetPayable}
+          paymentDeduction={resolvedPaymentsReceived}
+          restDueAmount={resolvedNetOutstanding}
+          totalNetPayable={resolvedTotalNetPayable}
+          paymentsReceived={resolvedPaymentsReceived}
+          netOutstanding={resolvedNetOutstanding}
         />
       )}
 
@@ -581,27 +661,43 @@ export function renderEmail(props = {}) {
     ) {
       if (vars.invoiceNumber || props.invoice?.invoiceNumber) {
         const invNum = vars.invoiceNumber || props.invoice?.invoiceNumber || "";
-        const invTotal = Number(
-          vars.invoiceAmount ||
-            props.invoice?.invoiceAmount ||
-            vars.paymentAmount ||
-            0,
+        const rawGross = Number(
+          vars.invoiceAmount ?? props.invoice?.invoiceAmount ?? 0,
         );
+        const rawNet = Number(
+          vars.netPayableAmount ?? props.invoice?.netPayableAmount ?? 0,
+        );
+        const invFace = rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
+        const netPayable = rawNet > 0 ? rawNet : invFace;
         const settledAmt = Number(
-          vars.paymentAmount || props.invoice?.paidAmount || invTotal || 0,
+          vars.paymentAmount ?? props.invoice?.paidAmount ?? 0,
         );
-        const remAmt = Number(
-          vars.remainingOutstanding ??
-            vars.outstandingAmount ??
-            props.invoice?.outstandingAmount ??
-            0,
-        );
+        const remAmt =
+          vars.remainingOutstanding !== undefined &&
+          vars.remainingOutstanding !== null
+            ? Number(vars.remainingOutstanding)
+            : vars.outstandingAmount !== undefined &&
+                vars.outstandingAmount !== null
+              ? Number(vars.outstandingAmount)
+              : props.invoice?.outstandingAmount !== undefined &&
+                  props.invoice?.outstandingAmount !== null
+                ? Number(props.invoice.outstandingAmount)
+                : vars.due !== undefined && vars.due !== null
+                  ? Number(vars.due)
+                  : props.invoice?.due !== undefined &&
+                      props.invoice?.due !== null
+                    ? Number(props.invoice.due)
+                    : Math.max(0, netPayable - settledAmt);
+
+        const invTotal = invFace > 0 ? invFace : settledAmt + remAmt;
+
         settledInvoicesList = [
           {
             invoiceNumber: invNum,
             invoiceDate: vars.invoiceDate || props.invoice?.invoiceDate || "",
             dueDate: vars.dueDate || props.invoice?.dueDate || "",
-            invoiceAmount: invTotal > 0 ? invTotal : settledAmt + remAmt,
+            invoiceAmount: invTotal,
+            netPayableAmount: netPayable > 0 ? netPayable : invTotal,
             settledAmount: settledAmt,
             remainingBalance: remAmt,
             status: remAmt <= 0 ? "paid" : "partial",
@@ -613,21 +709,35 @@ export function renderEmail(props = {}) {
     const normalizedSettledInvoices = (settledInvoicesList || []).map(
       (inv, idx) => {
         const invNum = inv.invoiceNumber || inv.number || `INV-${idx + 1}`;
-        const invTotal = Number(
-          inv.invoiceAmount || inv.totalAmount || inv.netPayableAmount || 0,
-        );
+        const rawGross = Number(inv.invoiceAmount || 0);
+        const rawNet = Number(inv.netPayableAmount || 0);
+        const invFace =
+          rawGross > 0
+            ? rawGross
+            : rawNet > 0
+              ? rawNet
+              : Number(inv.totalAmount || 0);
+        const netPayable = rawNet > 0 ? rawNet : invFace;
         const settled = Number(
-          inv.settledAmount ||
-            inv.amountSettled ||
-            inv.allocatedAmount ||
-            inv.paidAmount ||
+          inv.settledAmount ??
+            inv.amountSettled ??
+            inv.allocatedAmount ??
+            inv.paidAmount ??
             0,
         );
         const remaining =
           inv.remainingBalance !== undefined && inv.remainingBalance !== null
             ? Number(inv.remainingBalance)
-            : Math.max(0, (invTotal > 0 ? invTotal : settled) - settled);
-        const totalAmount = invTotal > 0 ? invTotal : settled + remaining;
+            : inv.outstandingAmount !== undefined &&
+                inv.outstandingAmount !== null
+              ? Number(inv.outstandingAmount)
+              : inv.due !== undefined && inv.due !== null
+                ? Number(inv.due)
+                : Math.max(
+                    0,
+                    (netPayable > 0 ? netPayable : invFace) - settled,
+                  );
+        const totalAmount = invFace > 0 ? invFace : settled + remaining;
 
         return {
           ...inv,
@@ -635,6 +745,7 @@ export function renderEmail(props = {}) {
           invoiceDate: inv.invoiceDate || "",
           dueDate: inv.dueDate || "",
           invoiceAmount: totalAmount,
+          netPayableAmount: netPayable > 0 ? netPayable : totalAmount,
           settledAmount: settled,
           remainingBalance: remaining,
           status: inv.status || (remaining <= 0 ? "paid" : "partial"),
@@ -647,53 +758,214 @@ export function renderEmail(props = {}) {
       0,
     );
 
-    const paymentAmount =
-      vars.paymentAmount !== undefined && vars.paymentAmount !== null
-        ? Number(vars.paymentAmount)
-        : props.paymentInfo?.amount !== undefined &&
-            props.paymentInfo?.amount !== null
-          ? Number(props.paymentInfo.amount)
-          : totalSettledFromInvoices;
-
-    const remainingOutstanding =
-      vars.remainingOutstanding !== undefined &&
-      vars.remainingOutstanding !== null
-        ? Number(vars.remainingOutstanding)
-        : vars.totalAccountOutstanding !== undefined &&
-            vars.totalAccountOutstanding !== null
-          ? Number(vars.totalAccountOutstanding)
-          : props.paymentInfo?.remainingOutstanding !== undefined &&
-              props.paymentInfo?.remainingOutstanding !== null
-            ? Number(props.paymentInfo.remainingOutstanding)
-            : props.paymentInfo?.totalAccountOutstanding !== undefined &&
-                props.paymentInfo?.totalAccountOutstanding !== null
-              ? Number(props.paymentInfo.totalAccountOutstanding)
-              : normalizedSettledInvoices.reduce(
-                  (sum, i) => sum + Number(i.remainingBalance || 0),
-                  0,
-                );
+    const totalNetPayableFromInvoices = normalizedSettledInvoices.reduce(
+      (sum, i) => sum + Number(i.netPayableAmount || i.invoiceAmount || 0),
+      0,
+    );
 
     const totalInvoiceAmount = normalizedSettledInvoices.reduce(
       (sum, i) => sum + Number(i.invoiceAmount || 0),
       0,
     );
 
-    const candidateTotal =
-      vars.totalOutstanding !== undefined && vars.totalOutstanding !== null
-        ? Number(vars.totalOutstanding)
-        : props.paymentInfo?.totalOutstanding !== undefined &&
-            props.paymentInfo?.totalOutstanding !== null
-          ? Number(props.paymentInfo.totalOutstanding)
-          : null;
-
-    const totalOutstanding = Math.max(
-      candidateTotal || 0,
-      totalInvoiceAmount,
-      paymentAmount + (remainingOutstanding || 0),
+    const unallocatedAmount = Number(
+      vars.unallocatedAmount ??
+        vars.onAccount ??
+        vars.onAccountAmount ??
+        vars.clientUnallocatedBalance ??
+        props.paymentInfo?.unallocatedAmount ??
+        props.paymentInfo?.onAccount ??
+        props.paymentInfo?.onAccountAmount ??
+        props.paymentInfo?.clientUnallocatedBalance ??
+        (vars.paymentAmount &&
+        Number(vars.paymentAmount) > totalSettledFromInvoices
+          ? Number(vars.paymentAmount) - totalSettledFromInvoices
+          : props.paymentInfo?.amount &&
+              Number(props.paymentInfo.amount) > totalSettledFromInvoices
+            ? Number(props.paymentInfo.amount) - totalSettledFromInvoices
+            : 0),
     );
+
+    // Payment Received = Settled against invoice(s) + unallocated amount (OR On Account)
+    const paymentAmount =
+      vars.paymentAmount !== undefined && vars.paymentAmount !== null
+        ? Math.max(
+            Number(vars.paymentAmount),
+            totalSettledFromInvoices + unallocatedAmount,
+          )
+        : props.paymentInfo?.amount !== undefined &&
+            props.paymentInfo?.amount !== null
+          ? Math.max(
+              Number(props.paymentInfo.amount),
+              totalSettledFromInvoices + unallocatedAmount,
+            )
+          : totalSettledFromInvoices + unallocatedAmount;
+
+    // Overall Outstanding of client (Net Payable Amount)
+    let candidateOverall = null;
+    if (
+      vars.overallOutstanding !== undefined &&
+      vars.overallOutstanding !== null
+    ) {
+      candidateOverall = Number(vars.overallOutstanding);
+    } else if (
+      vars.clientOverallOutstanding !== undefined &&
+      vars.clientOverallOutstanding !== null
+    ) {
+      candidateOverall = Number(vars.clientOverallOutstanding);
+    } else if (
+      vars.totalOutstanding !== undefined &&
+      vars.totalOutstanding !== null
+    ) {
+      candidateOverall = Number(vars.totalOutstanding);
+    } else if (
+      props.paymentInfo?.overallOutstanding !== undefined &&
+      props.paymentInfo?.overallOutstanding !== null
+    ) {
+      candidateOverall = Number(props.paymentInfo.overallOutstanding);
+    } else if (
+      props.paymentInfo?.clientOverallOutstanding !== undefined &&
+      props.paymentInfo?.clientOverallOutstanding !== null
+    ) {
+      candidateOverall = Number(props.paymentInfo.clientOverallOutstanding);
+    } else if (
+      props.paymentInfo?.totalOutstanding !== undefined &&
+      props.paymentInfo?.totalOutstanding !== null
+    ) {
+      candidateOverall = Number(props.paymentInfo.totalOutstanding);
+    } else if (
+      vars.netPayableAmount !== undefined &&
+      vars.netPayableAmount !== null
+    ) {
+      candidateOverall = Number(vars.netPayableAmount);
+    }
+
+    const accountRemaining =
+      vars.totalAccountOutstanding !== undefined &&
+      vars.totalAccountOutstanding !== null
+        ? Number(vars.totalAccountOutstanding)
+        : props.paymentInfo?.totalAccountOutstanding !== undefined &&
+            props.paymentInfo?.totalAccountOutstanding !== null
+          ? Number(props.paymentInfo.totalAccountOutstanding)
+          : vars.remainingOutstanding !== undefined &&
+              vars.remainingOutstanding !== null
+            ? Number(vars.remainingOutstanding)
+            : props.paymentInfo?.remainingOutstanding !== undefined &&
+                props.paymentInfo?.remainingOutstanding !== null
+              ? Number(props.paymentInfo.remainingOutstanding)
+              : null;
+
+    const derivedFromRemaining =
+      accountRemaining !== null ? accountRemaining + paymentAmount : null;
+
+    // Net Payable Amount: for a client should be totalNetPayable that is used on clients/[id]/page.js file
+    let candidateTotalNetPayable = null;
+    if (
+      props.clientSummary?.totalNetPayable !== undefined &&
+      props.clientSummary?.totalNetPayable !== null
+    ) {
+      candidateTotalNetPayable = Number(props.clientSummary.totalNetPayable);
+    } else if (
+      vars.clientSummary?.totalNetPayable !== undefined &&
+      vars.clientSummary?.totalNetPayable !== null
+    ) {
+      candidateTotalNetPayable = Number(vars.clientSummary.totalNetPayable);
+    } else if (
+      props.paymentInfo?.clientSummary?.totalNetPayable !== undefined &&
+      props.paymentInfo?.clientSummary?.totalNetPayable !== null
+    ) {
+      candidateTotalNetPayable = Number(
+        props.paymentInfo.clientSummary.totalNetPayable,
+      );
+    } else if (
+      vars.totalNetPayable !== undefined &&
+      vars.totalNetPayable !== null
+    ) {
+      candidateTotalNetPayable = Number(vars.totalNetPayable);
+    } else if (
+      props.paymentInfo?.totalNetPayable !== undefined &&
+      props.paymentInfo?.totalNetPayable !== null
+    ) {
+      candidateTotalNetPayable = Number(props.paymentInfo.totalNetPayable);
+    } else if (
+      vars.netPayableAmount !== undefined &&
+      vars.netPayableAmount !== null
+    ) {
+      candidateTotalNetPayable = Number(vars.netPayableAmount);
+    } else if (
+      props.paymentInfo?.netPayableAmount !== undefined &&
+      props.paymentInfo?.netPayableAmount !== null
+    ) {
+      candidateTotalNetPayable = Number(props.paymentInfo.netPayableAmount);
+    } else if (candidateOverall !== null) {
+      candidateTotalNetPayable = candidateOverall;
+    }
+
+    const netPayableAmount =
+      candidateTotalNetPayable !== null
+        ? candidateTotalNetPayable
+        : Math.max(
+            derivedFromRemaining || 0,
+            totalNetPayableFromInvoices,
+            totalInvoiceAmount,
+          );
+
+    // Rest Due Amount: should be netOutstanding that is used on clients/[id]/page.js
+    let candidateNetOutstanding = null;
+    if (
+      props.clientSummary?.netOutstanding !== undefined &&
+      props.clientSummary?.netOutstanding !== null
+    ) {
+      candidateNetOutstanding = Number(props.clientSummary.netOutstanding);
+    } else if (
+      vars.clientSummary?.netOutstanding !== undefined &&
+      vars.clientSummary?.netOutstanding !== null
+    ) {
+      candidateNetOutstanding = Number(vars.clientSummary.netOutstanding);
+    } else if (
+      props.paymentInfo?.clientSummary?.netOutstanding !== undefined &&
+      props.paymentInfo?.clientSummary?.netOutstanding !== null
+    ) {
+      candidateNetOutstanding = Number(
+        props.paymentInfo.clientSummary.netOutstanding,
+      );
+    } else if (
+      vars.netOutstanding !== undefined &&
+      vars.netOutstanding !== null
+    ) {
+      candidateNetOutstanding = Number(vars.netOutstanding);
+    } else if (
+      props.paymentInfo?.netOutstanding !== undefined &&
+      props.paymentInfo?.netOutstanding !== null
+    ) {
+      candidateNetOutstanding = Number(props.paymentInfo.netOutstanding);
+    } else if (
+      vars.restDueAmount !== undefined &&
+      vars.restDueAmount !== null
+    ) {
+      candidateNetOutstanding = Number(vars.restDueAmount);
+    } else if (
+      props.paymentInfo?.restDueAmount !== undefined &&
+      props.paymentInfo?.restDueAmount !== null
+    ) {
+      candidateNetOutstanding = Number(props.paymentInfo.restDueAmount);
+    }
+
+    const remainingOutstanding =
+      candidateNetOutstanding !== null
+        ? candidateNetOutstanding
+        : Math.max(0, netPayableAmount - paymentAmount);
+
+    const totalOutstanding = netPayableAmount;
 
     const paymentInfo = {
       amount: paymentAmount,
+      settledAmount: totalSettledFromInvoices,
+      unallocatedAmount,
+      totalNetPayable: netPayableAmount,
+      netPayableAmount,
+      netOutstanding: remainingOutstanding,
+      restDueAmount: remainingOutstanding,
       paymentDate:
         vars.paymentDate ||
         props.paymentInfo?.paymentDate ||
@@ -769,17 +1041,30 @@ export function renderEmail(props = {}) {
     let settledInvoicesList =
       vars.settledInvoices || props.settledInvoices || null;
     if (!settledInvoicesList && isExplicitSettlement && vars.invoiceNumber) {
+      const rawGross = Number(vars.invoiceAmount || 0);
+      const rawNet = Number(vars.netPayableAmount || 0);
+      const invFace = rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
+      const netPayable = rawNet > 0 ? rawNet : invFace;
+      const pAmt = Number(vars.paymentAmount || 0);
+      const remAmt =
+        vars.remainingOutstanding !== undefined &&
+        vars.remainingOutstanding !== null
+          ? Number(vars.remainingOutstanding)
+          : vars.outstandingAmount !== undefined &&
+              vars.outstandingAmount !== null
+            ? Number(vars.outstandingAmount)
+            : vars.due !== undefined && vars.due !== null
+              ? Number(vars.due)
+              : Math.max(0, (netPayable > 0 ? netPayable : invFace) - pAmt);
+
       settledInvoicesList = [
         {
           invoiceNumber: vars.invoiceNumber,
           invoiceDate: vars.invoiceDate || "",
-          invoiceAmount: vars.invoiceAmount || vars.paymentAmount || 0,
-          settledAmount: vars.paymentAmount || 0,
-          remainingBalance: Math.max(
-            0,
-            Number(vars.outstandingAmount || 0) -
-              Number(vars.paymentAmount || 0),
-          ),
+          invoiceAmount: invFace > 0 ? invFace : pAmt + remAmt,
+          netPayableAmount: netPayable > 0 ? netPayable : invFace,
+          settledAmount: pAmt,
+          remainingBalance: remAmt,
         },
       ];
     }
@@ -858,21 +1143,56 @@ export function renderEmail(props = {}) {
       settledInvoices: settledInvoicesList,
       paymentInfo,
       totalDue: totalOutstanding ?? remainingOutstanding ?? props.totalDue,
-      clientSummary: props.clientSummary || null,
+      totalNetPayable:
+        vars.totalNetPayable ??
+        props.totalNetPayable ??
+        props.clientSummary?.totalNetPayable ??
+        null,
+      netOutstanding:
+        vars.netOutstanding ??
+        props.netOutstanding ??
+        remainingOutstanding ??
+        props.clientSummary?.netOutstanding ??
+        null,
+      paymentsReceived:
+        vars.paymentsReceived ??
+        props.paymentsReceived ??
+        props.clientSummary?.paymentsReceived ??
+        null,
+      clientSummary: props.clientSummary || vars.clientSummary || null,
     });
   }
 
   // Single Invoice Fallback
   return renderSingleInvoiceEmail({
+    totalNetPayable:
+      vars.totalNetPayable ??
+      props.totalNetPayable ??
+      props.clientSummary?.totalNetPayable ??
+      null,
+    netOutstanding:
+      vars.netOutstanding ??
+      props.netOutstanding ??
+      props.clientSummary?.netOutstanding ??
+      null,
+    paymentsReceived:
+      vars.paymentsReceived ??
+      props.paymentsReceived ??
+      props.clientSummary?.paymentsReceived ??
+      null,
+    clientSummary: props.clientSummary || vars.clientSummary || null,
     invoice: props.invoice || {
       invoiceNumber: vars.invoiceNumber || "",
       invoiceDate: vars.invoiceDate || "",
       dueDate: vars.dueDate || "",
-      invoiceAmount: vars.invoiceAmount || 0,
-      paidAmount: vars.paidAmount || 0,
-      outstandingAmount: vars.outstandingAmount || 0,
-      isOverdue: vars.isOverdue || false,
-      dueDays: vars.dueDays || vars.overdueDays || 0,
+      invoiceAmount: Number(vars.invoiceAmount || 0),
+      netPayableAmount: Number(vars.netPayableAmount || 0),
+      paidAmount: Number(vars.paidAmount ?? vars.totalPaid ?? vars.paid ?? 0),
+      outstandingAmount: Number(
+        vars.outstandingAmount ?? vars.due ?? vars.restDueAmount ?? 0,
+      ),
+      isOverdue: Boolean(vars.isOverdue),
+      dueDays: Number(vars.dueDays || vars.overdueDays || 0),
       dueDaysText: vars.dueDaysText || "",
       awbs: vars.awbs || [],
     },

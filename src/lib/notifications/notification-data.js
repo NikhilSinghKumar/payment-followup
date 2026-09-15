@@ -14,6 +14,8 @@ import {
 
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
+import { enrichInvoices } from "@/lib/invoice-summary";
+import { fetchClientFinancialSummary } from "@/lib/client-summary";
 
 export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
   // =====================================
@@ -473,6 +475,25 @@ export async function getClientPaymentReminderData(clientId = null) {
     clientData.invoiceCount += 1;
   }
 
+  // Attach exact client-level financials matching clients/[id]/page.js
+  for (const clientItem of clientsMap.values()) {
+    try {
+      const fin = await fetchClientFinancialSummary(clientItem.clientId);
+      clientItem.totalNetPayable = fin.totalNetPayable;
+      clientItem.netPayableAmount = fin.totalNetPayable;
+      clientItem.paymentsReceived = fin.paymentsReceived;
+      clientItem.netOutstanding = fin.netOutstanding;
+      clientItem.restDueAmount = fin.netOutstanding;
+      clientItem.totalOutstanding = fin.netOutstanding;
+      clientItem.clientSummary = fin;
+    } catch (err) {
+      console.warn(
+        "Failed to fetch client financials in getClientPaymentReminderData:",
+        err?.message,
+      );
+    }
+  }
+
   // ======================================================
   // RETURN CLIENT ARRAY
   // ======================================================
@@ -490,6 +511,8 @@ export async function getClientPaymentReceivedData({
   paymentDetails = {},
   settledInvoices = [], // Array of { invoiceId, settledAmount, invoiceNumber, etc. }
 }) {
+  const parsedClientId = Number(clientId);
+
   // 1. Fetch Client info & primary email
   let clientQuery;
   try {
@@ -501,7 +524,7 @@ export async function getClientPaymentReceivedData({
         email: clients.email,
       })
       .from(clients)
-      .where(eq(clients.id, clientId))
+      .where(eq(clients.id, parsedClientId))
       .limit(1);
   } catch (err) {
     throw new Error(
@@ -586,43 +609,59 @@ export async function getClientPaymentReceivedData({
     try {
       enrichedSettledInvoices = await Promise.all(
         settledInvoices.map(async (item) => {
-          if (item.invoiceNumber && item.invoiceAmount) {
-            return item;
+          let inv = null;
+          if (
+            !item.invoiceNumber ||
+            item.invoiceAmount === undefined ||
+            item.netPayableAmount === undefined
+          ) {
+            const rows = await db
+              .select({
+                id: invoices.id,
+                invoiceNumber: invoices.invoiceNumber,
+                invoiceDate: invoices.invoiceDate,
+                dueDate: invoices.dueDate,
+                invoiceAmount: invoices.invoiceAmount,
+                netPayableAmount: invoices.netPayableAmount,
+              })
+              .from(invoices)
+              .where(eq(invoices.id, item.invoiceId))
+              .limit(1);
+            inv = rows[0];
           }
-          const rows = await db
-            .select({
-              id: invoices.id,
-              invoiceNumber: invoices.invoiceNumber,
-              invoiceDate: invoices.invoiceDate,
-              dueDate: invoices.dueDate,
-              invoiceAmount: invoices.invoiceAmount,
-              netPayableAmount: invoices.netPayableAmount,
-            })
-            .from(invoices)
-            .where(eq(invoices.id, item.invoiceId))
-            .limit(1);
-          const inv = rows[0];
 
-          const totalAmount = Number(
-            inv?.netPayableAmount || inv?.invoiceAmount || 0,
+          const grossInvoiceAmount = Number(
+            item.invoiceAmount ?? inv?.invoiceAmount ?? 0,
           );
-          const settledAmount = Number(item.settledAmount || item.amount || 0);
+          const netPayable = Number(
+            item.netPayableAmount ??
+              inv?.netPayableAmount ??
+              (grossInvoiceAmount > 0 ? grossInvoiceAmount : 0),
+          );
+          const settledAmount = Number(
+            item.settledAmount ?? item.amount ?? item.allocatedAmount ?? 0,
+          );
+          // Rest Due Amount should be calculated (Net Payable - Payment Received), exclude Unallocated Amount
           const remainingBalance =
-            item.remainingBalance !== undefined
+            item.remainingBalance !== undefined &&
+            item.remainingBalance !== null
               ? Number(item.remainingBalance)
-              : Math.max(0, totalAmount - settledAmount);
+              : Math.max(0, netPayable - settledAmount);
 
           return {
-            invoiceId: item.invoiceId,
+            invoiceId: item.invoiceId || inv?.id,
             invoiceNumber:
-              inv?.invoiceNumber ||
               item.invoiceNumber ||
+              inv?.invoiceNumber ||
               `INV-${item.invoiceId}`,
-            invoiceDate: inv?.invoiceDate || item.invoiceDate,
-            dueDate: inv?.dueDate || item.dueDate,
-            invoiceAmount: totalAmount,
+            invoiceDate: item.invoiceDate || inv?.invoiceDate,
+            dueDate: item.dueDate || inv?.dueDate,
+            invoiceAmount:
+              grossInvoiceAmount > 0 ? grossInvoiceAmount : netPayable,
+            netPayableAmount: netPayable,
             settledAmount,
             remainingBalance,
+            status: remainingBalance <= 0 ? "paid" : "partial",
           };
         }),
       );
@@ -633,59 +672,103 @@ export async function getClientPaymentReceivedData({
     }
   }
 
-  // 5. Compute total current account outstanding
-  let allClientInvoices = [];
+  // 5. Compute client-level totals matching clients/[id]/page.js
+  let clientFinancials = null;
   try {
-    allClientInvoices = await db
+    clientFinancials = await fetchClientFinancialSummary(parsedClientId);
+  } catch (err) {
+    console.warn(
+      `[getClientPaymentReceivedData - fetchClientFinancialSummary]`,
+      err.message,
+    );
+  }
+
+  // totalNetPayable that is used on clients/[id]/page.js file
+  const totalNetPayableFromClient = clientFinancials?.totalNetPayable ?? 0;
+
+  // Payments received that is used on clients/[id]/page.js file
+  const paymentsReceivedFromClient = clientFinancials?.paymentsReceived ?? 0;
+
+  // netOutstanding that is used on clients/[id]/page.js: Math.max(totalNetPayable - paymentsReceived, 0)
+  const netOutstandingFromClient = clientFinancials?.netOutstanding ?? 0;
+
+  // Client's unallocated balance across account
+  let clientUnallocatedBalance = 0;
+  try {
+    const unallocatedRows = await db
       .select({
-        id: invoices.id,
-        netPayableAmount: invoices.netPayableAmount,
-        invoiceAmount: invoices.invoiceAmount,
-        paidAmount: sql`
-          COALESCE(
-            SUM(${paymentAllocations.allocatedAmount}),
-            0
-          )
-        `,
+        paymentId: payments.id,
+        amount: payments.amount,
+        allocated: sql`COALESCE(SUM(${paymentAllocations.allocatedAmount}), 0)`,
       })
-      .from(invoices)
+      .from(payments)
       .leftJoin(
         paymentAllocations,
         and(
-          eq(paymentAllocations.invoiceId, invoices.id),
+          eq(paymentAllocations.paymentId, payments.id),
           isNull(paymentAllocations.deletedAt),
         ),
       )
       .where(
         and(
-          eq(invoices.clientId, clientId),
-          eq(invoices.companyId, activeCompanyId),
-          isNull(invoices.deletedAt),
-          ne(invoices.status, "cancelled"),
+          eq(payments.clientId, parsedClientId),
+          isNull(payments.deletedAt),
+          eq(payments.isVoided, false),
         ),
       )
-      .groupBy(invoices.id, invoices.netPayableAmount, invoices.invoiceAmount);
-  } catch (err) {
-    throw new Error(
-      `[getClientPaymentReceivedData - Query 5 (outstanding)] ${err.message}`,
-    );
+      .groupBy(payments.id, payments.amount);
+
+    for (const p of unallocatedRows) {
+      const pAmt = Number(p.amount || 0);
+      const alloc = Number(p.allocated || 0);
+      clientUnallocatedBalance += Math.max(0, pAmt - alloc);
+    }
+  } catch (uErr) {
+    console.warn("[getClientPaymentReceivedData - unallocated]", uErr?.message);
   }
 
-  let totalAccountOutstanding = 0;
-  for (const inv of allClientInvoices) {
-    const total = Number(inv.netPayableAmount || inv.invoiceAmount || 0);
-    const paid = Number(inv.paidAmount || 0);
-    const due = Math.max(0, total - paid);
-    totalAccountOutstanding += due;
-  }
+  const totalSettledAmount = enrichedSettledInvoices.reduce(
+    (sum, i) => sum + Number(i.settledAmount || 0),
+    0,
+  );
+  const totalInvoiceAmount = enrichedSettledInvoices.reduce(
+    (sum, i) => sum + Number(i.invoiceAmount || 0),
+    0,
+  );
+  const batchNetPayableTotal = enrichedSettledInvoices.reduce(
+    (sum, i) => sum + Number(i.netPayableAmount || i.invoiceAmount || 0),
+    0,
+  );
+
+  // Payment Received = Settled against invoice(s) + unallocated amount (OR On Account)
+  const rawUnallocated =
+    paymentDetails.unallocatedAmount !== undefined
+      ? Number(paymentDetails.unallocatedAmount)
+      : paymentDetails.amount !== undefined &&
+          Number(paymentDetails.amount) > totalSettledAmount
+        ? Number(paymentDetails.amount) - totalSettledAmount
+        : 0;
+  const unallocatedAmount = Math.max(0, rawUnallocated);
 
   const totalPaymentAmount =
     paymentDetails.amount !== undefined
-      ? Number(paymentDetails.amount)
-      : enrichedSettledInvoices.reduce(
-          (sum, i) => sum + Number(i.settledAmount || 0),
-          0,
-        );
+      ? Math.max(
+          Number(paymentDetails.amount),
+          totalSettledAmount + unallocatedAmount,
+        )
+      : totalSettledAmount + unallocatedAmount;
+
+  // "Net Payable Amount" for a client should be totalNetPayable that is used on clients/[id]/page.js file
+  const finalTotalNetPayable =
+    totalNetPayableFromClient > 0
+      ? totalNetPayableFromClient
+      : batchNetPayableTotal;
+
+  // "Rest Due Amount" should be netOutstanding that is used on clients/[id]/page.js
+  const finalNetOutstanding =
+    totalNetPayableFromClient > 0
+      ? netOutstandingFromClient
+      : Math.max(0, finalTotalNetPayable - totalPaymentAmount);
 
   return {
     companyId: activeCompanyId,
@@ -695,6 +778,22 @@ export async function getClientPaymentReceivedData({
     clientName: client.clientName,
 
     paymentAmount: totalPaymentAmount,
+    settledAmount: totalSettledAmount,
+    unallocatedAmount,
+    clientUnallocatedBalance,
+    invoiceAmount: totalInvoiceAmount,
+    // "Net Payable Amount" for client matches totalNetPayable on clients/[id]/page.js
+    totalNetPayable: finalTotalNetPayable,
+    netPayableAmount: finalTotalNetPayable,
+    // "Rest Due Amount" matches netOutstanding on clients/[id]/page.js
+    netOutstanding: finalNetOutstanding,
+    restDueAmount: finalNetOutstanding,
+    overallOutstanding: finalNetOutstanding,
+    totalOutstanding: finalTotalNetPayable,
+    totalAccountOutstanding: finalNetOutstanding,
+    remainingOutstanding: finalNetOutstanding,
+    paymentsReceived: paymentsReceivedFromClient,
+    clientSummary: clientFinancials,
     paymentDate: paymentDetails.paymentDate || new Date().toISOString(),
     paymentMethod:
       paymentDetails.paymentMethod ||
@@ -704,7 +803,6 @@ export async function getClientPaymentReceivedData({
       paymentDetails.referenceNumber || paymentDetails.reference || "N/A",
 
     settledInvoices: enrichedSettledInvoices,
-    totalAccountOutstanding,
 
     senderCompany: company.senderCompany || "PAFEX Logistics",
     senderEmail: company.senderEmail || "",

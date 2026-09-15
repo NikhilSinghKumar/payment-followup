@@ -16,6 +16,7 @@ import { getCurrentUser } from "@/lib/auth/auth";
 import { sendEmail } from "@/lib/email";
 import { renderEmail } from "@/lib/notifications/email-renderer";
 import { NOTIFICATION_TYPES } from "@/lib/notifications/notification-types";
+import { fetchClientFinancialSummary } from "@/lib/client-summary";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -394,9 +395,11 @@ export async function sendBulkPaymentConfirmationEmails({
             if (!inv) continue;
             const invId = inv.id;
             const allocated = Number(alloc.allocatedAmount || 0);
-            const totalAmount = Number(
-              inv.netPayableAmount || inv.invoiceAmount || 0,
-            );
+            const rawGross = Number(inv.invoiceAmount || 0);
+            const rawNet = Number(inv.netPayableAmount || 0);
+            const invoiceFaceAmount =
+              rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
+            const netPayable = rawNet > 0 ? rawNet : invoiceFaceAmount;
 
             if (settledInvoicesMap.has(invId)) {
               const existing = settledInvoicesMap.get(invId);
@@ -410,7 +413,7 @@ export async function sendBulkPaymentConfirmationEmails({
                 inv.outstandingAmount !== null &&
                   inv.outstandingAmount !== undefined
                   ? inv.outstandingAmount
-                  : Math.max(0, totalAmount - Number(inv.paidAmount || 0)),
+                  : Math.max(0, netPayable - Number(inv.paidAmount || 0)),
               );
 
               settledInvoicesMap.set(invId, {
@@ -419,7 +422,8 @@ export async function sendBulkPaymentConfirmationEmails({
                 invoiceDate: inv.invoiceDate,
                 dueDate: inv.dueDate,
                 invoiceAmount:
-                  totalAmount > 0 ? totalAmount : allocated + remainingBalance,
+                  invoiceFaceAmount > 0 ? invoiceFaceAmount : netPayable,
+                netPayableAmount: netPayable,
                 settledAmount: allocated,
                 remainingBalance,
                 status: inv.status,
@@ -434,14 +438,16 @@ export async function sendBulkPaymentConfirmationEmails({
             payment.invoice || fallbackInvoicesMap.get(payment.invoiceId);
           const invId = inv.id;
           const allocated = Number(payment.amount || 0);
-          const totalAmount = Number(
-            inv.netPayableAmount || inv.invoiceAmount || 0,
-          );
+          const rawGross = Number(inv.invoiceAmount || 0);
+          const rawNet = Number(inv.netPayableAmount || 0);
+          const invoiceFaceAmount =
+            rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
+          const netPayable = rawNet > 0 ? rawNet : invoiceFaceAmount;
           const remainingBalance = Number(
             inv.outstandingAmount !== null &&
               inv.outstandingAmount !== undefined
               ? inv.outstandingAmount
-              : Math.max(0, totalAmount - Number(inv.paidAmount || 0)),
+              : Math.max(0, netPayable - Number(inv.paidAmount || 0)),
           );
 
           if (settledInvoicesMap.has(invId)) {
@@ -458,7 +464,8 @@ export async function sendBulkPaymentConfirmationEmails({
               invoiceDate: inv.invoiceDate,
               dueDate: inv.dueDate,
               invoiceAmount:
-                totalAmount > 0 ? totalAmount : allocated + remainingBalance,
+                invoiceFaceAmount > 0 ? invoiceFaceAmount : netPayable,
+              netPayableAmount: netPayable,
               settledAmount: allocated,
               remainingBalance,
               status: inv.status,
@@ -469,54 +476,46 @@ export async function sendBulkPaymentConfirmationEmails({
 
       const settledInvoices = Array.from(settledInvoicesMap.values());
 
-      // Query current total account outstanding
-      let totalAccountOutstanding = 0;
+      // Fetch authoritative client financial summary from single source of truth (matching clients/[id]/page.js)
+      let clientSummary = null;
       try {
-        const clientInvoices = await db
-          .select({
-            id: invoices.id,
-            netPayableAmount: invoices.netPayableAmount,
-            invoiceAmount: invoices.invoiceAmount,
-            paidAmount: sql`
-              COALESCE(
-                SUM(${paymentAllocations.allocatedAmount}),
-                0
-              )
-            `,
-          })
-          .from(invoices)
-          .leftJoin(
-            paymentAllocations,
-            and(
-              eq(paymentAllocations.invoiceId, invoices.id),
-              isNull(paymentAllocations.deletedAt),
-            ),
-          )
-          .where(
-            and(
-              eq(invoices.clientId, clientId),
-              eq(invoices.companyId, companyId),
-              isNull(invoices.deletedAt),
-              sql`${invoices.status} != 'cancelled'`,
-            ),
-          )
-          .groupBy(
-            invoices.id,
-            invoices.netPayableAmount,
-            invoices.invoiceAmount,
-          );
-
-        for (const inv of clientInvoices) {
-          const total = Number(inv.netPayableAmount || inv.invoiceAmount || 0);
-          const paid = Number(inv.paidAmount || 0);
-          totalAccountOutstanding += Math.max(0, total - paid);
-        }
+        clientSummary = await fetchClientFinancialSummary(clientId, companyId);
       } catch (err) {
         console.warn(
-          "Error calculating totalAccountOutstanding for bulk receipt:",
+          `[sendBulkPaymentConfirmationEmails] Error fetching client summary for #${clientId}:`,
           err,
         );
       }
+
+      // Net Payable Amount for a client should strictly be totalNetPayable matching clients/[id]/page.js
+      const resolvedTotalNetPayable =
+        clientSummary?.totalNetPayable !== undefined &&
+        clientSummary?.totalNetPayable !== null
+          ? Number(clientSummary.totalNetPayable)
+          : settledInvoices.reduce(
+              (sum, inv) =>
+                sum + Number(inv.netPayableAmount || inv.invoiceAmount || 0),
+              0,
+            );
+
+      // Rest Due Amount should strictly be netOutstanding matching clients/[id]/page.js
+      const resolvedNetOutstanding =
+        clientSummary?.netOutstanding !== undefined &&
+        clientSummary?.netOutstanding !== null
+          ? Number(clientSummary.netOutstanding)
+          : Math.max(0, resolvedTotalNetPayable - totalBatchAmount);
+
+      const resolvedPaymentsReceived =
+        clientSummary?.paymentsReceived !== undefined &&
+        clientSummary?.paymentsReceived !== null
+          ? Number(clientSummary.paymentsReceived)
+          : totalBatchAmount;
+
+      const resolvedOnAccount =
+        clientSummary?.onAccountAmount !== undefined &&
+        clientSummary?.onAccountAmount !== null
+          ? Number(clientSummary.onAccountAmount)
+          : 0;
 
       // Collect payment details
       const uniqueMethods = Array.from(
@@ -558,14 +557,22 @@ export async function sendBulkPaymentConfirmationEmails({
         type: NOTIFICATION_TYPES.PAYMENT_RECEIVED,
         body: defaultBody,
         settledInvoices,
+        clientSummary,
         paymentInfo: {
           amount: totalBatchAmount,
           paymentDate: latestPaymentDate,
           method: paymentMethod,
           reference: referenceNumber,
-          totalAccountOutstanding,
-          remainingOutstanding: totalAccountOutstanding,
-          totalOutstanding: totalAccountOutstanding + totalBatchAmount,
+          totalNetPayable: resolvedTotalNetPayable,
+          netPayableAmount: resolvedTotalNetPayable,
+          totalOutstanding: resolvedTotalNetPayable,
+          netOutstanding: resolvedNetOutstanding,
+          restDueAmount: resolvedNetOutstanding,
+          totalAccountOutstanding: resolvedNetOutstanding,
+          remainingOutstanding: resolvedNetOutstanding,
+          paymentsReceived: resolvedPaymentsReceived,
+          unallocatedAmount: resolvedOnAccount,
+          clientSummary,
         },
         variables: {
           clientName: clientName || "Valued Customer",
@@ -574,9 +581,16 @@ export async function sendBulkPaymentConfirmationEmails({
           paymentMethod,
           referenceNumber,
           settledInvoices,
-          totalAccountOutstanding,
-          remainingOutstanding: totalAccountOutstanding,
-          totalOutstanding: totalAccountOutstanding + totalBatchAmount,
+          totalNetPayable: resolvedTotalNetPayable,
+          netPayableAmount: resolvedTotalNetPayable,
+          totalOutstanding: resolvedTotalNetPayable,
+          netOutstanding: resolvedNetOutstanding,
+          restDueAmount: resolvedNetOutstanding,
+          totalAccountOutstanding: resolvedNetOutstanding,
+          remainingOutstanding: resolvedNetOutstanding,
+          paymentsReceived: resolvedPaymentsReceived,
+          unallocatedAmount: resolvedOnAccount,
+          clientSummary,
           customNote: finalCustomNote,
           company: company || {},
           senderCompany,

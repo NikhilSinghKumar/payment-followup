@@ -554,6 +554,24 @@ export async function previewPaymentReceivedEmailAction(clientId = null) {
           .limit(1)
       : [null];
 
+    let clientSummary = null;
+    if (activeClientId) {
+      try {
+        const { fetchClientFinancialSummary } =
+          await import("@/lib/client-summary");
+        clientSummary = await fetchClientFinancialSummary(
+          activeClientId,
+          activeCompanyId,
+        );
+      } catch (sumErr) {
+        console.warn("Could not fetch client financial summary:", sumErr);
+      }
+    }
+
+    const totalNetPayable =
+      clientSummary?.totalNetPayable ?? 50000 + totalSettled;
+    const netOutstanding = clientSummary?.netOutstanding ?? 50000;
+
     const payload = {
       clientId: activeClientId,
       companyId: activeCompanyId,
@@ -564,9 +582,16 @@ export async function previewPaymentReceivedEmailAction(clientId = null) {
       paymentMethod: "NEFT / Bank Transfer",
       referenceNumber: "UTR98320481239X",
       settledInvoices,
-      totalAccountOutstanding: 50000,
-      remainingOutstanding: 50000,
-      totalOutstanding: 50000 + totalSettled,
+      totalNetPayable,
+      netPayableAmount: totalNetPayable,
+      totalOutstanding: totalNetPayable,
+      netOutstanding,
+      restDueAmount: netOutstanding,
+      totalAccountOutstanding: netOutstanding,
+      remainingOutstanding: netOutstanding,
+      unallocatedAmount: clientSummary?.onAccountAmount ?? 0,
+      paymentsReceived: clientSummary?.paymentsReceived ?? totalSettled,
+      clientSummary,
       senderCompany: company?.companyName || "PAFEX Express & Logistics",
       senderEmail: company?.email || "accounts@pafex.com",
       senderPhone: company?.phone || "+91 98765 43210",
