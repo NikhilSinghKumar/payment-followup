@@ -155,30 +155,15 @@ export async function generateClientLedgerPdf({
     const isOpening = Boolean(p.isOpeningBalance);
     const amount = Number(p.amount || 0);
 
-    // Identify settled invoices for this payment
-    let settledInvoices = "";
-    if (isOpening) {
-      settledInvoices = "Open Balance";
-    } else if (p.allocations && p.allocations.length > 0) {
-      const invNumbers = p.allocations
-        .map((a) => {
-          if (a.invoice?.isOpeningBalance) return "Open Balance";
-          return a.invoice?.invoiceNumber;
-        })
-        .filter(Boolean);
-      const uniqueInvs = Array.from(new Set(invNumbers));
-      settledInvoices = uniqueInvs.length > 0 ? uniqueInvs.join(", ") : "";
-    }
-
     const receiptNumber = isOpening
-      ? ""
+      ? p.receiptNumber || "Open Balance"
       : p.receiptNumber || p.reference || "-";
 
     transactions.push({
       dateStr: formatLedgerDate(p.paymentDate),
       sortDate: p.paymentDate ? new Date(p.paymentDate).getTime() : 0,
       isOpening,
-      invoiceNo: settledInvoices || "",
+      invoiceNo: "",
       receiptNo: receiptNumber || "",
       debit: 0,
       credit: amount,
