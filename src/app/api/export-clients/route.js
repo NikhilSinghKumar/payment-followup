@@ -15,6 +15,7 @@ export async function GET() {
     rows.push([
       client.companyName ?? "",
       client.companyCode ?? "",
+      client.gstNumber ?? "",
       client.tdsApplicable ? "true" : "false",
       client.isActive ? "true" : "false",
     ]);
