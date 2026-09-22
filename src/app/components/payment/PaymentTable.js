@@ -106,7 +106,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                 </th>
 
                 <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  On Account / Credit
+                  Advance / Credit
                 </th>
 
                 <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -212,14 +212,6 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                               >
                                 {formatCurrency(unallocatedNum)}
                               </span>
-                              {isCredit && (
-                                <span
-                                  className="inline-block rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-950/80 dark:text-violet-300"
-                                  title="Payment exceeded outstanding balance; surplus is stored as client credit / advance"
-                                >
-                                  Credit Surplus
-                                </span>
-                              )}
                             </div>
                           );
                         }
