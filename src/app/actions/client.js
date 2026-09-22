@@ -1,11 +1,13 @@
 "use server";
 
 import { db } from "@/db";
-import { clients, invoices } from "@/db/schema";
+import { clients, invoices, payments } from "@/db/schema";
 import { ilike, or, and, sql, eq, isNull } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/auth";
 import { getFinancialYear } from "@/lib/financial-year";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
+import { parseImportDate } from "@/lib/date-parser";
 
 // Create client
 export async function createClient(prevState, formData) {
@@ -16,9 +18,15 @@ export async function createClient(prevState, formData) {
   const gstNumber = formData.get("gstNumber")?.trim().toUpperCase();
 
   const tdsApplicable = formData.get("tdsApplicable") === "on";
+  const rawTdsRate = formData.get("tdsRate");
+  const parsedTdsRate = rawTdsRate ? parseFloat(rawTdsRate) : 2.0;
+  const tdsRate = !isNaN(parsedTdsRate) ? parsedTdsRate.toFixed(2) : "2.00";
 
   const rawOpeningBalance = formData.get("openingBalance");
   const openingBalance = rawOpeningBalance ? parseFloat(rawOpeningBalance) : 0;
+  const openingBalanceType = (
+    formData.get("openingBalanceType") || "DEBIT"
+  ).toUpperCase();
   const openingBalanceDateStr = formData.get("openingBalanceDate");
   const openingBalanceNotes =
     formData.get("openingBalanceNotes")?.trim() || "Opening Balance";
@@ -60,54 +68,75 @@ export async function createClient(prevState, formData) {
         phone,
         gstNumber,
         tdsApplicable,
+        tdsRate: tdsApplicable ? tdsRate : "2.00",
       })
       .returning({
         id: clients.id,
       });
 
-    // Automatically create opening balance virtual invoice if specified
+    // Automatically create opening balance if specified
     if (newClient?.id && openingBalance > 0) {
-      const asOfDate = openingBalanceDateStr
-        ? new Date(openingBalanceDateStr)
-        : new Date();
-      const validDate = isNaN(asOfDate.getTime()) ? new Date() : asOfDate;
-      const financialYear = getFinancialYear(validDate);
-      const invoiceNumber = `OPENING-BAL`;
+      const parsedDate = parseImportDate(openingBalanceDateStr);
+      const validDate = parsedDate || new Date();
 
-      const statusResult = calculateInvoiceStatus({
-        netPayable: openingBalance,
-        paid: 0,
-        dueDate: validDate,
-      });
+      if (openingBalanceType === "CREDIT") {
+        // Create initial credit / advance payment record
+        await db.insert(payments).values({
+          companyId: currentUser.companyId,
+          clientId: newClient.id,
+          subClientId: null,
+          amount: openingBalance.toFixed(2),
+          paymentDate: validDate,
+          receiptNumber: `RCPT-OPENING-${newClient.id}`,
+          method: "adjustment",
+          reference: "OPENING-ADVANCE",
+          notes:
+            openingBalanceNotes ||
+            "Opening Balance (Credit) / Advance Carried Forward",
+          isOpeningBalance: true,
+        });
+      } else {
+        // Create opening balance virtual invoice (Debit)
+        const financialYear = getFinancialYear(validDate);
+        const invoiceNumber = `OPENING-BAL`;
 
-      await db.insert(invoices).values({
-        companyId: currentUser.companyId,
-        clientId: newClient.id,
-        subClientId: null,
-        financialYear,
-        invoiceNumber,
-        invoiceDate: validDate,
-        dueDate: validDate,
-        paymentTerms: 0,
-        invoiceAmount: openingBalance.toFixed(2),
-        basicAmount: openingBalance.toFixed(2),
-        cgstAmount: "0.00",
-        sgstAmount: "0.00",
-        igstAmount: "0.00",
-        tdsAmount: "0.00",
-        deductionAmount: "0.00",
-        otherCharges: "0.00",
-        netPayableAmount: openingBalance.toFixed(2),
-        paidAmount: "0.00",
-        outstandingAmount: openingBalance.toFixed(2),
-        gstNumberUsed: gstNumber || null,
-        tdsApplicableUsed: tdsApplicable || false,
-        status: statusResult.status,
-        isOpeningBalance: true,
-        notes: openingBalanceNotes,
-      });
+        const statusResult = calculateInvoiceStatus({
+          netPayable: openingBalance,
+          paid: 0,
+          dueDate: validDate,
+        });
+
+        await db.insert(invoices).values({
+          companyId: currentUser.companyId,
+          clientId: newClient.id,
+          subClientId: null,
+          financialYear,
+          invoiceNumber,
+          invoiceDate: validDate,
+          dueDate: validDate,
+          paymentTerms: 0,
+          invoiceAmount: openingBalance.toFixed(2),
+          basicAmount: openingBalance.toFixed(2),
+          cgstAmount: "0.00",
+          sgstAmount: "0.00",
+          igstAmount: "0.00",
+          tdsAmount: "0.00",
+          deductionAmount: "0.00",
+          otherCharges: "0.00",
+          netPayableAmount: openingBalance.toFixed(2),
+          paidAmount: "0.00",
+          outstandingAmount: openingBalance.toFixed(2),
+          gstNumberUsed: gstNumber || null,
+          tdsApplicableUsed: tdsApplicable || false,
+          tdsRateUsed: tdsApplicable ? tdsRate : "2.00",
+          status: statusResult.status,
+          isOpeningBalance: true,
+          notes: openingBalanceNotes,
+        });
+      }
     }
 
+    revalidatePath("/clients");
     return { success: true };
   } catch (err) {
     console.error("Create Client Error:");
@@ -162,6 +191,9 @@ export async function updateClient(id, prevState, formData) {
   const companyCode = formData.get("companyCode");
   const gstNumber = formData.get("gstNumber");
   const tdsApplicable = formData.get("tdsApplicable") === "on";
+  const rawTdsRate = formData.get("tdsRate");
+  const parsedTdsRate = rawTdsRate ? parseFloat(rawTdsRate) : 2.0;
+  const tdsRate = !isNaN(parsedTdsRate) ? parsedTdsRate.toFixed(2) : "2.00";
 
   if (!companyName) {
     return { error: "Company name is required" };
@@ -181,11 +213,14 @@ export async function updateClient(id, prevState, formData) {
         phone: formData.get("phone"),
         gstNumber,
         tdsApplicable,
+        tdsRate: tdsApplicable ? tdsRate : "2.00",
         isActive: formData.get("isActive") === "true",
         updatedAt: new Date(),
       })
       .where(eq(clients.id, id));
 
+    revalidatePath(`/clients/${id}`);
+    revalidatePath("/clients");
     return { success: true };
   } catch (err) {
     return { error: "Failed to update client" };

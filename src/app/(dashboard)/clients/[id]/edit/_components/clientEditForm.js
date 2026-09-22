@@ -8,6 +8,10 @@ import Alert from "@/app/components/ui/Alert";
 export default function ClientEditForm({ client }) {
   const updateClientWithId = updateClient.bind(null, client.id);
   const [state, formAction, pending] = useActionState(updateClientWithId, null);
+  const [tdsEnabled, setTdsEnabled] = useState(Boolean(client.tdsApplicable));
+  const [tdsRate, setTdsRate] = useState(
+    client.tdsRate ? Number(client.tdsRate).toFixed(2) : "2.00",
+  );
 
   return (
     <>
@@ -74,21 +78,52 @@ export default function ClientEditForm({ client }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <input
-              id="tdsApplicable"
-              name="tdsApplicable"
-              type="checkbox"
-              defaultChecked={client.tdsApplicable}
-              className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
-            />
+          {/* TDS Applicable & Rate */}
+          <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50/50 p-3.5">
+            <div className="flex items-center gap-3">
+              <input
+                id="tdsApplicable"
+                name="tdsApplicable"
+                type="checkbox"
+                checked={tdsEnabled}
+                onChange={(e) => setTdsEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
 
-            <label
-              htmlFor="tdsApplicable"
-              className="text-sm text-zinc-600 cursor-pointer"
-            >
-              TDS Applicable
-            </label>
+              <label
+                htmlFor="tdsApplicable"
+                className="text-sm font-medium text-zinc-700 cursor-pointer"
+              >
+                Is TDS Applicable?
+              </label>
+            </div>
+
+            {tdsEnabled && (
+              <div className="pt-2 pl-7 flex items-center gap-3 border-t border-zinc-200/60">
+                <label className="text-xs font-medium text-zinc-600">
+                  TDS Rate (%):
+                </label>
+                <div className="relative w-28">
+                  <input
+                    name="tdsRate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={tdsRate}
+                    onChange={(e) => setTdsRate(e.target.value)}
+                    placeholder="2.00"
+                    className="input-primary py-1 px-2.5 text-xs text-right pr-6 focus:ring-blue-500 bg-white"
+                  />
+                  <span className="absolute right-2.5 top-1 text-xs text-zinc-400 font-semibold">
+                    %
+                  </span>
+                </div>
+                <span className="text-[11px] text-zinc-400">
+                  (Standard is 2%)
+                </span>
+              </div>
+            )}
           </div>
           {/* Status */}
           <div>

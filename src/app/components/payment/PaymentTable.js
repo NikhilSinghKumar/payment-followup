@@ -106,7 +106,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                 </th>
 
                 <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  On Account
+                  On Account / Credit
                 </th>
 
                 <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -183,23 +183,53 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                       {formatCurrency(payment.amount)}
                     </td>
 
-                    {/* On Account (Unallocated) */}
+                    {/* On Account / Credit */}
 
                     <td className="whitespace-nowrap px-2 py-4 text-right">
-                      <span
-                        className={`text-sm font-medium ${
-                          Number(payment.unallocatedAmount || 0) > 0
-                            ? "text-orange-600 dark:text-orange-400"
-                            : "text-zinc-500 dark:text-zinc-400"
-                        }`}
-                        title={
-                          Number(payment.unallocatedAmount || 0) > 0
-                            ? `₹${Number(payment.unallocatedAmount).toLocaleString("en-IN")} on account`
-                            : "Fully allocated"
+                      {(() => {
+                        const unallocatedNum = Number(
+                          payment.unallocatedAmount || 0,
+                        );
+                        const isCredit =
+                          Boolean(payment.isOpeningBalance) ||
+                          (typeof payment.notes === "string" &&
+                            /credit|advance|surplus/i.test(payment.notes));
+
+                        if (unallocatedNum > 0.001) {
+                          return (
+                            <div className="inline-flex flex-col items-end">
+                              <span
+                                className={`text-sm font-semibold ${
+                                  isCredit
+                                    ? "text-violet-600 dark:text-violet-400"
+                                    : "text-orange-600 dark:text-orange-400"
+                                }`}
+                                title={
+                                  isCredit
+                                    ? `₹${unallocatedNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })} credit / advance surplus (payment exceeded outstanding)`
+                                    : `₹${unallocatedNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })} on account`
+                                }
+                              >
+                                {formatCurrency(unallocatedNum)}
+                              </span>
+                              {isCredit && (
+                                <span
+                                  className="inline-block rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-950/80 dark:text-violet-300"
+                                  title="Payment exceeded outstanding balance; surplus is stored as client credit / advance"
+                                >
+                                  Credit Surplus
+                                </span>
+                              )}
+                            </div>
+                          );
                         }
-                      >
-                        {formatCurrency(payment.unallocatedAmount)}
-                      </span>
+
+                        return (
+                          <span className="text-sm font-medium text-zinc-400 dark:text-zinc-500">
+                            {formatCurrency(0)}
+                          </span>
+                        );
+                      })()}
                     </td>
 
                     {/* Related Invoices */}

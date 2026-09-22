@@ -12,6 +12,11 @@ export function getGstAppliedText(gstNumber) {
   return gst.startsWith("07") ? "CGST + SGST (9% + 9%)" : "IGST (18%)";
 }
 
-export function getTdsAppliedText(tdsApplicable) {
-  return tdsApplicable ? "Yes (2%)" : "No";
+export function getTdsAppliedText(tdsApplicable, tdsRate = 2) {
+  if (!tdsApplicable) return "No";
+  const rateNum = Number(tdsRate ?? 2);
+  const formattedRate = isNaN(rateNum)
+    ? "2%"
+    : `${rateNum % 1 === 0 ? rateNum.toFixed(0) : rateNum}%`;
+  return `Yes (${formattedRate})`;
 }

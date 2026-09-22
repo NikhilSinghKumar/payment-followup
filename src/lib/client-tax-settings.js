@@ -8,7 +8,8 @@ import { eq } from "drizzle-orm";
  * @param {number} clientId
  * @returns {Promise<{
  *   gstNumber: string | null,
- *   tdsApplicable: boolean
+ *   tdsApplicable: boolean,
+ *   tdsRate: string | number | null
  * }>}
  */
 export async function getClientTaxSettings(clientId) {
@@ -17,6 +18,7 @@ export async function getClientTaxSettings(clientId) {
     columns: {
       gstNumber: true,
       tdsApplicable: true,
+      tdsRate: true,
     },
   });
 
@@ -24,5 +26,8 @@ export async function getClientTaxSettings(clientId) {
     throw new Error(`Client with ID ${clientId} not found.`);
   }
 
-  return client;
+  return {
+    ...client,
+    tdsRate: client.tdsRate ? Number(client.tdsRate) : 2.0,
+  };
 }

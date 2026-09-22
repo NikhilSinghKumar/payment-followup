@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Search, Calendar, X, Plus, RotateCcw, Mail } from "lucide-react";
 import Link from "next/link";
 import ImportPayments from "./ImportPayments";
+import ExportPayments from "./ExportPayments";
 import BulkPaymentNotificationModal from "./BulkPaymentNotificationModal";
 
 export default function PaymentToolbar({ totalCount = 0 }) {
@@ -366,6 +367,8 @@ export default function PaymentToolbar({ totalCount = 0 }) {
           </Link>
 
           <ImportPayments />
+
+          <ExportPayments totalCount={totalCount} />
 
           <Link
             href="/payments/new"

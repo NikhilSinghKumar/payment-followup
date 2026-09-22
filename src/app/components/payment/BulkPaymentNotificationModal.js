@@ -25,6 +25,7 @@ import {
   CreditCard,
   X,
   FileSpreadsheet,
+  FileText,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
@@ -62,6 +63,7 @@ export default function BulkPaymentNotificationModal({
   const [clientEmailsMap, setClientEmailsMap] = useState({});
   const [customNote, setCustomNote] = useState("");
   const [customSubject, setCustomSubject] = useState("");
+  const [attachLedgerPdf, setAttachLedgerPdf] = useState(true);
   const [ccAccounts, setCcAccounts] = useState(true);
   const [feedback, setFeedback] = useState(null);
   const [expandedClients, setExpandedClients] = useState(new Set());
@@ -205,6 +207,7 @@ export default function BulkPaymentNotificationModal({
         clientBatches: batches,
         subjectTemplate: customSubject,
         customMessage: customNote,
+        attachLedgerPdf,
         ccAccounts,
       });
 
@@ -395,19 +398,32 @@ export default function BulkPaymentNotificationModal({
 
           {/* Email Customization Options */}
           <div className="rounded-xl border border-zinc-200 bg-white p-3.5 space-y-3 dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
                 Email Template & Dispatch Customization
               </span>
-              <label className="flex items-center gap-1.5 text-xs text-zinc-600 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={ccAccounts}
-                  onChange={(e) => setCcAccounts(e.target.checked)}
-                  className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span>CC Company Accounts Email</span>
-              </label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={attachLedgerPdf}
+                    onChange={(e) => setAttachLedgerPdf(e.target.checked)}
+                    className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                    Attach Ledger Statement (PDF)
+                  </span>
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={ccAccounts}
+                    onChange={(e) => setCcAccounts(e.target.checked)}
+                    className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span>CC Accounts</span>
+                </label>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -522,6 +538,17 @@ export default function BulkPaymentNotificationModal({
                       </div>
 
                       <div className="flex items-center gap-2">
+                        <a
+                          href={`/api/client-ledger-pdf?clientId=${group.clientId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-600 hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                          title="Preview in-memory Ledger Account Statement PDF"
+                        >
+                          <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>Ledger PDF</span>
+                        </a>
+
                         <button
                           type="button"
                           onClick={() => toggleExpanded(group.clientId)}

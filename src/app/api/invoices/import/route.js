@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { invoices } from "@/db/schema";
+import { invoices, clients } from "@/db/schema";
 import { parse } from "csv-parse/sync";
 import { and, eq, isNull } from "drizzle-orm";
 import { calculateInvoice } from "@/lib/invoice-calculator";
@@ -20,6 +20,25 @@ export async function POST(req) {
         },
         {
           status: 400,
+        },
+      );
+    }
+
+    const clientRecord = await db.query.clients.findFirst({
+      where: eq(clients.id, clientId),
+      columns: {
+        id: true,
+        companyId: true,
+      },
+    });
+
+    if (!clientRecord) {
+      return NextResponse.json(
+        {
+          error: "Client not found.",
+        },
+        {
+          status: 404,
         },
       );
     }
@@ -108,6 +127,7 @@ export async function POST(req) {
           invoiceAmount,
           gstNumber: taxSettings.gstNumber,
           tdsApplicable: taxSettings.tdsApplicable,
+          tdsRate: taxSettings.tdsRate ?? 2.0,
           deductionAmount,
           otherCharges,
         });
@@ -120,6 +140,7 @@ export async function POST(req) {
         existingInvoiceNumbers.add(invoiceNumber);
 
         invoicesToInsert.push({
+          companyId: clientRecord.companyId,
           clientId,
           invoiceNumber,
           financialYear,
@@ -136,6 +157,9 @@ export async function POST(req) {
           netPayableAmount: summary.netPayableAmount,
           gstNumberUsed: summary.gstNumberUsed,
           tdsApplicableUsed: summary.tdsApplicableUsed,
+          tdsRateUsed: String(
+            summary.tdsRateUsed ?? taxSettings.tdsRate ?? "2.00",
+          ),
           notes,
           status: "pending",
         });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FileText } from "lucide-react";
 import { db } from "@/db";
 import {
   clients,
@@ -114,6 +115,15 @@ export default async function ClientDetailPage({ params, searchParams }) {
                         <span>{client.gstNumber}</span>
                       </>
                     )}
+
+                    {client.tdsApplicable && (
+                      <>
+                        <span className="text-pink-500 text-md">•</span>
+                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200/60 dark:border-blue-900/40 dark:bg-blue-950/40 dark:text-blue-300">
+                          TDS {Number(client.tdsRate || 2.0)}%
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -136,6 +146,16 @@ export default async function ClientDetailPage({ params, searchParams }) {
                 clientId={client.id}
                 clientName={client.companyName}
               />
+              <a
+                href={`/api/client-ledger-pdf?clientId=${client.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:border-emerald-500 hover:bg-emerald-50/40 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                title="Download or view Ledger Account Statement PDF"
+              >
+                <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                <span>Ledger Statement</span>
+              </a>
               <Link
                 href={`/clients/${client.id}/edit`}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"

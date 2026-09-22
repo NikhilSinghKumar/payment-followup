@@ -23,6 +23,7 @@ export function calculateInvoice({
   invoiceAmount,
   gstNumber,
   tdsApplicable = false,
+  tdsRate = 2.0,
   deductionAmount = 0,
   otherCharges = 0,
 }) {
@@ -32,6 +33,11 @@ export function calculateInvoice({
   invoiceAmount = Number(invoiceAmount || 0);
   deductionAmount = Number(deductionAmount || 0);
   otherCharges = Number(otherCharges || 0);
+
+  const numTdsRate =
+    tdsRate !== undefined && tdsRate !== null && !isNaN(Number(tdsRate))
+      ? Number(tdsRate)
+      : 2.0;
 
   // -----------------------------
   // Basic Amount
@@ -58,9 +64,9 @@ export function calculateInvoice({
   }
 
   // -----------------------------
-  // TDS
+  // TDS (Dynamic Rate)
   // -----------------------------
-  const tdsAmount = tdsApplicable ? round(basicAmount * 0.02) : 0;
+  const tdsAmount = tdsApplicable ? round(basicAmount * (numTdsRate / 100)) : 0;
 
   // -----------------------------
   // Net Payable
@@ -87,5 +93,6 @@ export function calculateInvoice({
 
     gstNumberUsed: gstNumber ?? null,
     tdsApplicableUsed: tdsApplicable,
+    tdsRateUsed: tdsApplicable ? numTdsRate : 0,
   };
 }

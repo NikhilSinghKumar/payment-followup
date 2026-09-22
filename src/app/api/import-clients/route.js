@@ -1,21 +1,29 @@
 import { db } from "@/db";
-import { clients, invoices } from "@/db/schema";
+import { clients } from "@/db/schema";
 import { parse } from "csv-parse/sync";
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
-import { getFinancialYear } from "@/lib/financial-year";
-import { calculateInvoiceStatus } from "@/lib/invoice-status";
+import { setOrUpdateClientOpeningBalance } from "@/lib/client-opening-balance";
+import { parseImportDate } from "@/lib/date-parser";
+import { revalidatePath } from "next/cache";
 
 export async function POST(req) {
   const currentUser = await getCurrentUser();
 
   if (!currentUser.user) {
-    throw new Error("Unauthorized");
+    return Response.json(
+      { status: "error", message: "Unauthorized" },
+      { status: 401 },
+    );
   }
 
   if (!currentUser.companyId) {
-    throw new Error("User is not associated with a company.");
+    return Response.json(
+      { status: "error", message: "User is not associated with a company." },
+      { status: 400 },
+    );
   }
+
   try {
     const formData = await req.formData();
     const file = formData.get("file");
@@ -74,138 +82,242 @@ export async function POST(req) {
 
     // ✅ Prepare stats
     let inserted = 0;
+    let updated = 0;
     let skipped = 0;
     const errors = [];
 
-    // ✅ Normalize + collect codes
+    // ✅ Normalize + collect company codes
     const codes = records.map((r) => r.company_code?.trim()).filter(Boolean);
 
-    // ✅ Fetch existing clients (single query)
+    // ✅ Fetch existing clients in this company
     const existingClients = codes.length
       ? await db
-          .select()
+          .select({
+            id: clients.id,
+            companyCode: clients.companyCode,
+            companyName: clients.companyName,
+            gstNumber: clients.gstNumber,
+            email: clients.email,
+            phone: clients.phone,
+            address: clients.address,
+            tdsApplicable: clients.tdsApplicable,
+            tdsRate: clients.tdsRate,
+          })
           .from(clients)
-          .where(inArray(clients.companyCode, codes))
+          .where(
+            and(
+              eq(clients.companyId, currentUser.companyId),
+              inArray(clients.companyCode, codes),
+              isNull(clients.deletedAt),
+            ),
+          )
       : [];
 
-    const existingSet = new Set(existingClients.map((c) => c.companyCode));
-
-    const toInsert = [];
+    const existingClientsMap = new Map(
+      existingClients.map((c) => [c.companyCode, c]),
+    );
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    // ✅ Validate + filter rows
+    // ✅ Process each row (Insert or Update)
     for (let i = 0; i < records.length; i++) {
       const row = records[i];
+      const rowNum = i + 2; // header is row 1
 
       const companyName = row.company_name?.trim();
       const companyCode = row.company_code?.trim();
       const email = row.email?.trim() || null;
       const phone = row.phone?.trim() || null;
       const gstNumber = row.gst_number?.trim() || null;
-      const tdsApplicable =
-        row.tds_applicable?.toString().trim().toLowerCase() === "true";
+      const address = row.address?.trim() || null;
 
-      const rowNum = i + 2; // header = row 1
+      const rawTdsApplicable = row.tds_applicable
+        ?.toString()
+        .trim()
+        .toLowerCase();
+      const hasTdsApplicableCol =
+        row.tds_applicable !== undefined &&
+        row.tds_applicable !== null &&
+        row.tds_applicable.toString().trim() !== "";
+      const tdsApplicable =
+        rawTdsApplicable === "true" ||
+        rawTdsApplicable === "yes" ||
+        rawTdsApplicable === "1";
+
+      const rawTdsRate = row.tds_rate?.toString().trim();
+      const parsedTdsRate = rawTdsRate ? parseFloat(rawTdsRate) : 2.0;
+      const tdsRate = !isNaN(parsedTdsRate) ? parsedTdsRate.toFixed(2) : "2.00";
 
       // Required validation
       if (!companyName || !companyCode) {
         skipped++;
-        errors.push(`Row ${rowNum}: Missing required fields`);
+        errors.push(
+          `Row ${rowNum}: Missing required company_name or company_code`,
+        );
         continue;
       }
 
-      // Email validation
+      // Email validation (only if provided)
       if (email && !emailRegex.test(email)) {
         skipped++;
         errors.push(`Row ${rowNum}: Invalid email (${email})`);
         continue;
       }
 
-      // Duplicate check (DB + CSV)
-      if (existingSet.has(companyCode)) {
-        skipped++;
-        errors.push(`Row ${rowNum}: Duplicate (${companyCode})`);
-        continue;
-      }
+      const hasOpeningBalanceInRow =
+        row.opening_balance !== undefined &&
+        row.opening_balance !== null &&
+        row.opening_balance.toString().trim() !== "";
 
-      const rawOpeningBalance = row.opening_balance?.toString().trim();
-      const openingBalance = rawOpeningBalance
+      const rawOpeningBalance = hasOpeningBalanceInRow
+        ? row.opening_balance.toString().trim()
+        : null;
+      const parsedOpeningBalance = rawOpeningBalance
         ? parseFloat(rawOpeningBalance)
         : 0;
+      const openingBalance =
+        !isNaN(parsedOpeningBalance) && parsedOpeningBalance >= 0
+          ? parsedOpeningBalance
+          : 0;
+
+      const rawType =
+        row.opening_balance_type?.toString().trim().toUpperCase() || "DEBIT";
+      const openingBalanceType =
+        rawType === "CREDIT" || rawType === "CR" ? "CREDIT" : "DEBIT";
+
       const openingBalanceDate = row.opening_balance_date?.toString().trim();
+      const parsedDate = parseImportDate(openingBalanceDate);
+      const validDate = parsedDate || new Date();
+      const openingBalanceNotes =
+        row.opening_balance_notes?.toString().trim() || "";
 
-      toInsert.push({
-        companyId: currentUser.companyId,
-        companyName,
-        email,
-        phone,
-        companyCode,
-        gstNumber,
-        tdsApplicable,
-        _openingBalance:
-          !isNaN(openingBalance) && openingBalance > 0 ? openingBalance : 0,
-        _openingBalanceDate: openingBalanceDate || null,
-      });
+      // ----------------------------------------------------
+      // CASE 1: EXISTING CLIENT -> UPDATE (UPSERT)
+      // ----------------------------------------------------
+      if (existingClientsMap.has(companyCode)) {
+        const existingClient = existingClientsMap.get(companyCode);
 
-      existingSet.add(companyCode);
-    }
+        const updateData = {
+          companyName,
+          updatedAt: new Date(),
+        };
 
-    // ✅ Insert (safe + fast)
-    if (toInsert.length > 0) {
-      for (const clientItem of toInsert) {
-        const { _openingBalance, _openingBalanceDate, ...clientData } =
-          clientItem;
-        const [insertedClient] = await db
-          .insert(clients)
-          .values(clientData)
-          .onConflictDoNothing()
-          .returning({ id: clients.id });
+        if (row.email !== undefined) updateData.email = email;
+        if (row.phone !== undefined) updateData.phone = phone;
+        if (row.gst_number !== undefined) updateData.gstNumber = gstNumber;
+        if (row.address !== undefined) updateData.address = address;
 
-        if (insertedClient?.id && _openingBalance > 0) {
-          const asOfDate = _openingBalanceDate
-            ? new Date(_openingBalanceDate)
-            : new Date();
-          const validDate = isNaN(asOfDate.getTime()) ? new Date() : asOfDate;
-          const financialYear = getFinancialYear(validDate);
-          const invoiceNumber = `OPENING-BAL`;
+        if (hasTdsApplicableCol) {
+          updateData.tdsApplicable = tdsApplicable;
+          updateData.tdsRate = tdsApplicable ? tdsRate : "2.00";
+        } else if (rawTdsRate !== undefined && rawTdsRate !== "") {
+          updateData.tdsRate = tdsRate;
+        }
 
-          const statusResult = calculateInvoiceStatus({
-            netPayable: _openingBalance,
-            paid: 0,
-            dueDate: validDate,
+        try {
+          await db
+            .update(clients)
+            .set(updateData)
+            .where(eq(clients.id, existingClient.id));
+
+          // Update opening balance if specified in the CSV row
+          if (hasOpeningBalanceInRow) {
+            await setOrUpdateClientOpeningBalance({
+              companyId: currentUser.companyId,
+              clientId: existingClient.id,
+              amount: openingBalance,
+              type: openingBalanceType,
+              asOfDate: validDate,
+              notes:
+                openingBalanceNotes ||
+                (openingBalanceType === "CREDIT"
+                  ? "Opening Balance (Credit) / Advance Carried Forward"
+                  : "Imported Opening Balance"),
+              gstNumber: updateData.gstNumber ?? existingClient.gstNumber,
+              tdsApplicable:
+                updateData.tdsApplicable ?? existingClient.tdsApplicable,
+              tdsRate: updateData.tdsRate ?? existingClient.tdsRate,
+            });
+          }
+
+          // Update map with new values
+          existingClientsMap.set(companyCode, {
+            ...existingClient,
+            ...updateData,
           });
 
-          await db.insert(invoices).values({
-            companyId: currentUser.companyId,
-            clientId: insertedClient.id,
-            subClientId: null,
-            financialYear,
-            invoiceNumber,
-            invoiceDate: validDate,
-            dueDate: validDate,
-            paymentTerms: 0,
-            invoiceAmount: _openingBalance.toFixed(2),
-            basicAmount: _openingBalance.toFixed(2),
-            cgstAmount: "0.00",
-            sgstAmount: "0.00",
-            igstAmount: "0.00",
-            tdsAmount: "0.00",
-            deductionAmount: "0.00",
-            otherCharges: "0.00",
-            netPayableAmount: _openingBalance.toFixed(2),
-            paidAmount: "0.00",
-            outstandingAmount: _openingBalance.toFixed(2),
-            gstNumberUsed: clientData.gstNumber || null,
-            tdsApplicableUsed: clientData.tdsApplicable || false,
-            status: statusResult.status,
-            isOpeningBalance: true,
-            notes: "Imported Opening Balance",
-          });
+          updated++;
+        } catch (updateErr) {
+          errors.push(
+            `Row ${rowNum} (${companyCode}): ${updateErr.message || "Failed to update client"}`,
+          );
+          skipped++;
+        }
+      } else {
+        // ----------------------------------------------------
+        // CASE 2: NEW CLIENT -> INSERT
+        // ----------------------------------------------------
+        const newClientData = {
+          companyId: currentUser.companyId,
+          companyName,
+          email,
+          phone,
+          companyCode,
+          gstNumber,
+          address,
+          tdsApplicable,
+          tdsRate: tdsApplicable ? tdsRate : "2.00",
+        };
+
+        try {
+          const [insertedClient] = await db
+            .insert(clients)
+            .values(newClientData)
+            .returning({ id: clients.id });
+
+          if (insertedClient?.id) {
+            existingClientsMap.set(companyCode, {
+              id: insertedClient.id,
+              ...newClientData,
+            });
+
+            if (hasOpeningBalanceInRow && openingBalance > 0) {
+              await setOrUpdateClientOpeningBalance({
+                companyId: currentUser.companyId,
+                clientId: insertedClient.id,
+                amount: openingBalance,
+                type: openingBalanceType,
+                asOfDate: validDate,
+                notes:
+                  openingBalanceNotes ||
+                  (openingBalanceType === "CREDIT"
+                    ? "Opening Balance (Credit) / Advance Carried Forward"
+                    : "Imported Opening Balance"),
+                gstNumber,
+                tdsApplicable,
+                tdsRate: tdsApplicable ? tdsRate : "2.00",
+              });
+            }
+
+            inserted++;
+          } else {
+            skipped++;
+            errors.push(
+              `Row ${rowNum} (${companyCode}): Could not insert client`,
+            );
+          }
+        } catch (insertErr) {
+          errors.push(
+            `Row ${rowNum} (${companyCode}): ${insertErr.message || "Failed to insert client"}`,
+          );
+          skipped++;
         }
       }
-      inserted = toInsert.length;
     }
+
+    revalidatePath("/clients");
+    revalidatePath("/invoices");
+    revalidatePath("/payments");
 
     // ✅ Final response
     return Response.json({
@@ -214,12 +326,13 @@ export async function POST(req) {
       summary: {
         total: records.length,
         inserted,
+        updated,
         skipped,
       },
-      errors: errors.slice(0, 10), // limit output
+      errors: errors.slice(0, 15),
     });
   } catch (err) {
-    console.error(err);
+    console.error("Client Import Error:", err);
 
     return Response.json(
       {

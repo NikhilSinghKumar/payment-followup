@@ -8,7 +8,18 @@ import {
 } from "@/db/schema";
 
 import { parse } from "csv-parse/sync";
-import { and, eq, isNull, inArray, or, ilike } from "drizzle-orm";
+import {
+  and,
+  eq,
+  isNull,
+  inArray,
+  notInArray,
+  or,
+  ilike,
+  sql,
+  desc,
+  asc,
+} from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth/auth";
 import { parseImportDate } from "@/lib/date-parser";
@@ -297,58 +308,6 @@ export async function POST(req) {
         }
 
         // =====================================
-        // FIND & VALIDATE INVOICES
-        // =====================================
-
-        let invoiceRows = [];
-
-        if (invoiceNumbers.length > 0) {
-          invoiceRows = await db
-            .select({
-              id: invoices.id,
-              invoiceNumber: invoices.invoiceNumber,
-              subClientId: invoices.subClientId,
-              outstandingAmount: invoices.outstandingAmount,
-            })
-            .from(invoices)
-            .where(
-              and(
-                eq(invoices.companyId, companyId),
-                eq(invoices.clientId, clientData.id),
-                inArray(invoices.invoiceNumber, invoiceNumbers),
-                isNull(invoices.deletedAt),
-              ),
-            );
-
-          // Preserve the order entered in the CSV
-          invoiceRows = invoiceNumbers
-            .map((invoiceNumber) =>
-              invoiceRows.find((i) => i.invoiceNumber === invoiceNumber),
-            )
-            .filter(Boolean);
-
-          if (invoiceRows.length !== invoiceNumbers.length) {
-            const foundNumbers = invoiceRows.map((x) => x.invoiceNumber);
-            const missing = invoiceNumbers.filter(
-              (x) => !foundNumbers.includes(x),
-            );
-
-            skipped++;
-
-            errors.push({
-              row: csvRow,
-              clientCode: clientData.companyCode || clientCode,
-              subClientCode: subClientCode || "",
-              invoices: invoiceNumbers.join(", "),
-              reference: reference || receiptNumber || "",
-              reason: `Invoice(s) not found for this client: ${missing.join(", ")}`,
-            });
-
-            continue;
-          }
-        }
-
-        // =====================================
         // RESOLVE SUBCLIENT (IF ANY)
         // =====================================
         let targetSubClientId = null;
@@ -394,35 +353,145 @@ export async function POST(req) {
           matchedSubClientLabel = subClientRows[0].companyCode
             ? `${subClientRows[0].companyName} (${subClientRows[0].companyCode})`
             : subClientRows[0].companyName;
-        } else if (invoiceRows.length > 0 && invoiceRows[0].subClientId) {
-          // If no subclient specified explicitly, check if all invoices belong to one subclient
-          const commonSubId = invoiceRows[0].subClientId;
-          const allSameSubclient = invoiceRows.every(
-            (inv) => inv.subClientId === commonSubId,
-          );
-          if (allSameSubclient) {
-            targetSubClientId = commonSubId;
-          }
         }
 
-        // Validate invoice subclient affinity if subclient is specified
-        if (targetSubClientId && invoiceRows.length > 0) {
-          const conflictingInvoices = invoiceRows.filter(
-            (inv) => inv.subClientId && inv.subClientId !== targetSubClientId,
-          );
-          if (conflictingInvoices.length > 0) {
+        // =====================================
+        // FIND & VALIDATE INVOICES (OR FIFO AUTO-ALLOCATION)
+        // =====================================
+
+        let invoiceRows = [];
+
+        if (invoiceNumbers.length > 0) {
+          // Explicit invoices specified in CSV
+          invoiceRows = await db
+            .select({
+              id: invoices.id,
+              invoiceNumber: invoices.invoiceNumber,
+              subClientId: invoices.subClientId,
+              outstandingAmount: invoices.outstandingAmount,
+              isOpeningBalance: invoices.isOpeningBalance,
+              invoiceDate: invoices.invoiceDate,
+            })
+            .from(invoices)
+            .where(
+              and(
+                eq(invoices.companyId, companyId),
+                eq(invoices.clientId, clientData.id),
+                inArray(invoices.invoiceNumber, invoiceNumbers),
+                isNull(invoices.deletedAt),
+              ),
+            );
+
+          // Preserve the order entered in the CSV
+          invoiceRows = invoiceNumbers
+            .map((invoiceNumber) =>
+              invoiceRows.find((i) => i.invoiceNumber === invoiceNumber),
+            )
+            .filter(Boolean);
+
+          if (invoiceRows.length !== invoiceNumbers.length) {
+            const foundNumbers = invoiceRows.map((x) => x.invoiceNumber);
+            const missing = invoiceNumbers.filter(
+              (x) => !foundNumbers.includes(x),
+            );
+
             skipped++;
 
             errors.push({
               row: csvRow,
               clientCode: clientData.companyCode || clientCode,
-              subClientCode: matchedSubClientLabel || subClientCode,
+              subClientCode: subClientCode || "",
               invoices: invoiceNumbers.join(", "),
               reference: reference || receiptNumber || "",
-              reason: `Invoice(s) ${conflictingInvoices.map((inv) => inv.invoiceNumber).join(", ")} belong to a different subclient than '${matchedSubClientLabel}'.`,
+              reason: `Invoice(s) not found for this client: ${missing.join(", ")}`,
             });
 
             continue;
+          }
+
+          // If no subclient specified explicitly, check if all invoices belong to one subclient
+          if (
+            !targetSubClientId &&
+            invoiceRows.length > 0 &&
+            invoiceRows[0].subClientId
+          ) {
+            const commonSubId = invoiceRows[0].subClientId;
+            const allSameSubclient = invoiceRows.every(
+              (inv) => inv.subClientId === commonSubId,
+            );
+            if (allSameSubclient) {
+              targetSubClientId = commonSubId;
+            }
+          }
+
+          // Validate invoice subclient affinity if subclient is specified
+          if (targetSubClientId && invoiceRows.length > 0) {
+            const conflictingInvoices = invoiceRows.filter(
+              (inv) => inv.subClientId && inv.subClientId !== targetSubClientId,
+            );
+            if (conflictingInvoices.length > 0) {
+              skipped++;
+
+              errors.push({
+                row: csvRow,
+                clientCode: clientData.companyCode || clientCode,
+                subClientCode: matchedSubClientLabel || subClientCode,
+                invoices: invoiceNumbers.join(", "),
+                reference: reference || receiptNumber || "",
+                reason: `Invoice(s) ${conflictingInvoices.map((inv) => inv.invoiceNumber).join(", ")} belong to a different subclient than '${matchedSubClientLabel}'.`,
+              });
+
+              continue;
+            }
+          }
+        } else {
+          // FIFO AUTO-ALLOCATION:
+          // Invoices were NOT specified in the CSV.
+          // Fetch unpaid invoices sorted by:
+          // 1. Opening Debit Balance invoice first (isOpeningBalance DESC)
+          // 2. Oldest invoice date next (FIFO aging: invoiceDate ASC)
+          // 3. ID as deterministic tie-breaker
+          const fifoConditions = [
+            eq(invoices.companyId, companyId),
+            eq(invoices.clientId, clientData.id),
+            isNull(invoices.deletedAt),
+            sql`COALESCE(CAST(${invoices.outstandingAmount} AS numeric), 0) > 0.001`,
+          ];
+
+          if (targetSubClientId) {
+            fifoConditions.push(eq(invoices.subClientId, targetSubClientId));
+          }
+
+          invoiceRows = await db
+            .select({
+              id: invoices.id,
+              invoiceNumber: invoices.invoiceNumber,
+              subClientId: invoices.subClientId,
+              outstandingAmount: invoices.outstandingAmount,
+              isOpeningBalance: invoices.isOpeningBalance,
+              invoiceDate: invoices.invoiceDate,
+            })
+            .from(invoices)
+            .where(and(...fifoConditions))
+            .orderBy(
+              desc(invoices.isOpeningBalance),
+              sql`${invoices.invoiceDate} ASC NULLS LAST`,
+              asc(invoices.id),
+            );
+
+          // If no subclient specified explicitly, check if all matched invoices belong to one subclient
+          if (
+            !targetSubClientId &&
+            invoiceRows.length > 0 &&
+            invoiceRows[0].subClientId
+          ) {
+            const commonSubId = invoiceRows[0].subClientId;
+            const allSameSubclient = invoiceRows.every(
+              (inv) => inv.subClientId === commonSubId,
+            );
+            if (allSameSubclient) {
+              targetSubClientId = commonSubId;
+            }
           }
         }
 
@@ -498,10 +567,103 @@ export async function POST(req) {
         }
 
         // =====================================
+        // CALCULATE ALLOCATIONS & CREDIT SURPLUS
+        // =====================================
+
+        let remaining = amount;
+        let totalAllocated = 0;
+        const plannedAllocations = [];
+        let affectedInvoiceIds = [];
+
+        // 1. Allocate to explicitly specified invoices (or initial FIFO set if no invoices were specified)
+        for (const invoice of invoiceRows) {
+          if (remaining <= 0) break;
+
+          const outstanding = Number(invoice.outstandingAmount || 0);
+          if (outstanding <= 0) continue;
+
+          const allocation = Math.min(remaining, outstanding);
+          plannedAllocations.push({
+            invoiceId: invoice.id,
+            allocatedAmount: allocation.toFixed(2),
+          });
+
+          affectedInvoiceIds.push(invoice.id);
+          totalAllocated += allocation;
+          remaining = Math.max(0, remaining - allocation);
+        }
+
+        // 2. If explicit invoices were provided in CSV and payment has remaining amount,
+        // settle the rest of the payment amount against other unpaid invoices in order of aging (FIFO).
+        if (invoiceNumbers.length > 0 && remaining > 0.001) {
+          const agingConditions = [
+            eq(invoices.companyId, companyId),
+            eq(invoices.clientId, clientData.id),
+            isNull(invoices.deletedAt),
+            sql`COALESCE(CAST(${invoices.outstandingAmount} AS numeric), 0) > 0.001`,
+          ];
+
+          if (affectedInvoiceIds.length > 0) {
+            agingConditions.push(notInArray(invoices.id, affectedInvoiceIds));
+          }
+
+          // If subclient was explicitly entered in CSV row, stay within that subclient.
+          // If subclient was left blank in CSV, allocate across client's unpaid invoices.
+          if (subClientCode && targetSubClientId) {
+            agingConditions.push(eq(invoices.subClientId, targetSubClientId));
+          }
+
+          const agedInvoiceRows = await db
+            .select({
+              id: invoices.id,
+              invoiceNumber: invoices.invoiceNumber,
+              subClientId: invoices.subClientId,
+              outstandingAmount: invoices.outstandingAmount,
+              isOpeningBalance: invoices.isOpeningBalance,
+              invoiceDate: invoices.invoiceDate,
+            })
+            .from(invoices)
+            .where(and(...agingConditions))
+            .orderBy(
+              desc(invoices.isOpeningBalance),
+              sql`${invoices.invoiceDate} ASC NULLS LAST`,
+              asc(invoices.id),
+            );
+
+          for (const invoice of agedInvoiceRows) {
+            if (remaining <= 0) break;
+
+            const outstanding = Number(invoice.outstandingAmount || 0);
+            if (outstanding <= 0) continue;
+
+            const allocation = Math.min(remaining, outstanding);
+            plannedAllocations.push({
+              invoiceId: invoice.id,
+              allocatedAmount: allocation.toFixed(2),
+            });
+
+            affectedInvoiceIds.push(invoice.id);
+            totalAllocated += allocation;
+            remaining = Math.max(0, remaining - allocation);
+          }
+        }
+
+        // Determine if payment exceeds total outstanding (Credit / Advance surplus)
+        let finalNotes = notes || "";
+        if (remaining > 0.001) {
+          if (plannedAllocations.length > 0) {
+            const creditTag = `[Credit / Advance surplus: ₹${remaining.toFixed(2)}]`;
+            finalNotes = finalNotes ? `${finalNotes} ${creditTag}` : creditTag;
+          } else {
+            const creditTag = `[Credit / Advance: ₹${remaining.toFixed(2)} (No outstanding invoices)]`;
+            finalNotes = finalNotes ? `${finalNotes} ${creditTag}` : creditTag;
+          }
+        }
+
+        // =====================================
         // INSERT PAYMENT
         // =====================================
 
-        let affectedInvoiceIds = [];
         let createdPaymentId = null;
 
         await db.transaction(async (tx) => {
@@ -529,7 +691,7 @@ export async function POST(req) {
 
               reference: reference || null,
 
-              notes,
+              notes: finalNotes || null,
 
               createdBy: userId,
               updatedBy: userId,
@@ -544,30 +706,16 @@ export async function POST(req) {
           // CREATE ALLOCATIONS
           // =====================================
 
-          let remaining = amount;
-
-          for (const invoice of invoiceRows) {
-            if (remaining <= 0) break;
-
-            const outstanding = Number(invoice.outstandingAmount);
-
-            if (outstanding <= 0) continue;
-
-            const allocation = Math.min(remaining, outstanding);
-
+          for (const alloc of plannedAllocations) {
             await tx.insert(paymentAllocations).values({
               paymentId: payment.id,
 
-              invoiceId: invoice.id,
+              invoiceId: alloc.invoiceId,
 
-              allocatedAmount: allocation.toFixed(2),
+              allocatedAmount: alloc.allocatedAmount,
 
               createdBy: userId,
             });
-
-            affectedInvoiceIds.push(invoice.id);
-
-            remaining -= allocation;
           }
         });
 

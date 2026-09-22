@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createSubClient } from "@/app/actions/sub-client";
 
 export default function SubClientForm({
@@ -13,6 +13,12 @@ export default function SubClientForm({
 }) {
   const formServerAction = action ?? createSubClient.bind(null, clientId);
   const [state, formAction] = useActionState(formServerAction, {});
+  const [tdsEnabled, setTdsEnabled] = useState(
+    Boolean(subClient?.tdsApplicable ?? false),
+  );
+  const [tdsRate, setTdsRate] = useState(
+    subClient?.tdsRate ? Number(subClient.tdsRate).toFixed(2) : "2.00",
+  );
 
   return (
     <div className="bg-zinc-50 flex items-center justify-center">
@@ -171,21 +177,51 @@ export default function SubClientForm({
             </div> */}
 
             {/* TDS */}
-            <div className="flex items-center gap-3">
-              <input
-                id="tdsApplicable"
-                name="tdsApplicable"
-                type="checkbox"
-                defaultChecked={subClient?.tdsApplicable ?? false}
-                className="h-4 w-4 rounded border-zinc-300 text-blue-600"
-              />
+            <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50/50 p-3.5">
+              <div className="flex items-center gap-3">
+                <input
+                  id="tdsApplicable"
+                  name="tdsApplicable"
+                  type="checkbox"
+                  checked={tdsEnabled}
+                  onChange={(e) => setTdsEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
 
-              <label
-                htmlFor="tdsApplicable"
-                className="cursor-pointer text-sm text-zinc-600"
-              >
-                Is TDS Applicable?
-              </label>
+                <label
+                  htmlFor="tdsApplicable"
+                  className="cursor-pointer text-sm font-medium text-zinc-700"
+                >
+                  Is TDS Applicable?
+                </label>
+              </div>
+
+              {tdsEnabled && (
+                <div className="pt-2 pl-7 flex items-center gap-3 border-t border-zinc-200/60">
+                  <label className="text-xs font-medium text-zinc-600">
+                    TDS Rate (%):
+                  </label>
+                  <div className="relative w-28">
+                    <input
+                      name="tdsRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={tdsRate}
+                      onChange={(e) => setTdsRate(e.target.value)}
+                      placeholder="2.00"
+                      className="input-primary py-1 px-2.5 text-xs text-right pr-6 focus:ring-blue-500 bg-white"
+                    />
+                    <span className="absolute right-2.5 top-1 text-xs text-zinc-400 font-semibold">
+                      %
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-zinc-400">
+                    (Standard is 2%)
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Buttons */}

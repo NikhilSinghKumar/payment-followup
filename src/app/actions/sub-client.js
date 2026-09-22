@@ -17,6 +17,9 @@ export async function createSubClient(clientId, prevState, formData) {
   const gstNumber = formData.get("gstNumber");
 
   const tdsApplicable = formData.get("tdsApplicable") === "on";
+  const rawTdsRate = formData.get("tdsRate");
+  const parsedTdsRate = rawTdsRate ? parseFloat(rawTdsRate) : 2.0;
+  const tdsRate = !isNaN(parsedTdsRate) ? parsedTdsRate.toFixed(2) : "2.00";
 
   if (!companyName) {
     return { error: "Company name is required" };
@@ -40,6 +43,7 @@ export async function createSubClient(clientId, prevState, formData) {
       pincode: formData.get("pincode"),
 
       tdsApplicable,
+      tdsRate: tdsApplicable ? tdsRate : "2.00",
     });
 
     return { success: true };
@@ -69,6 +73,7 @@ export async function getSubClients() {
       companyCode: clientSubClients.companyCode,
       gstNumber: clientSubClients.gstNumber,
       tdsApplicable: clientSubClients.tdsApplicable,
+      tdsRate: clientSubClients.tdsRate,
       isActive: clientSubClients.isActive,
     })
     .from(clientSubClients)
@@ -148,6 +153,9 @@ export async function updateSubClient(prevState, formData) {
   const state = formData.get("state");
   const pincode = formData.get("pincode");
   const tdsApplicable = formData.get("tdsApplicable") === "on";
+  const rawTdsRate = formData.get("tdsRate");
+  const parsedTdsRate = rawTdsRate ? parseFloat(rawTdsRate) : 2.0;
+  const tdsRate = !isNaN(parsedTdsRate) ? parsedTdsRate.toFixed(2) : "2.00";
 
   if (!companyName) {
     return {
@@ -169,6 +177,7 @@ export async function updateSubClient(prevState, formData) {
       state,
       pincode,
       tdsApplicable,
+      tdsRate: tdsApplicable ? tdsRate : "2.00",
       updatedAt: new Date(),
     })
     .where(eq(clientSubClients.id, id));

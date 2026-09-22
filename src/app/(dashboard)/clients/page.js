@@ -5,6 +5,8 @@ import SearchBox from "../../components/SearchBox";
 import ClientAlphabetDropdown from "../../components/client/ClientAlphabetDropdown";
 import DeleteInvoiceButton from "../../components/DeleteInvoiceButton";
 
+export const dynamic = "force-dynamic";
+
 export default async function ClientsPage({ searchParams }) {
   const resolvedParams = await searchParams;
 
@@ -100,7 +102,13 @@ export default async function ClientsPage({ searchParams }) {
 
                   {/* TDS */}
                   <div className="text-center text-zinc-600 dark:text-zinc-400">
-                    {c.tdsApplicable ? "Yes" : "No"}
+                    {c.tdsApplicable ? (
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                        {Number(c.tdsRate || 2)}%
+                      </span>
+                    ) : (
+                      "No"
+                    )}
                   </div>
 
                   {/* Status */}

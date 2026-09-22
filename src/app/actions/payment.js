@@ -560,12 +560,16 @@ export async function getPayments(
   let date = "";
   let startDate = "";
   let endDate = "";
+  let clientId = null;
+  let scope = "";
 
   if (typeof queryOrOptions === "object" && queryOrOptions !== null) {
     query = queryOrOptions.query ?? queryOrOptions.q ?? "";
     date = queryOrOptions.date ?? "";
     startDate = queryOrOptions.startDate ?? "";
     endDate = queryOrOptions.endDate ?? "";
+    clientId = queryOrOptions.clientId ?? null;
+    scope = queryOrOptions.scope ?? "";
   } else {
     query = queryOrOptions || "";
     date = maybeDate || "";
@@ -587,6 +591,7 @@ export async function getPayments(
       method: payments.method,
       reference: payments.reference,
       notes: payments.notes,
+      isOpeningBalance: payments.isOpeningBalance,
       isVoided: payments.isVoided,
       createdAt: payments.createdAt,
       updatedAt: payments.updatedAt,
@@ -666,44 +671,57 @@ export async function getPayments(
     };
   });
 
-  // Filter by search query (companyName, companyCode, receiptNumber, reference)
-  if (query && query.trim()) {
-    const q = query.trim().toLowerCase();
-    results = results.filter((payment) => {
-      const companyName = payment.client?.companyName?.toLowerCase() || "";
-      const companyCode = payment.client?.companyCode?.toLowerCase() || "";
-      const receiptNumber = payment.receiptNumber?.toLowerCase() || "";
-      const reference = payment.reference?.toLowerCase() || "";
+  // If scope is explicitly "all", bypass query/date filters to return all payments
+  if (scope !== "all") {
+    // Filter by search query (companyName, companyCode, receiptNumber, reference)
+    if (query && query.trim()) {
+      const q = query.trim().toLowerCase();
+      results = results.filter((payment) => {
+        const companyName = payment.client?.companyName?.toLowerCase() || "";
+        const companyCode = payment.client?.companyCode?.toLowerCase() || "";
+        const receiptNumber = payment.receiptNumber?.toLowerCase() || "";
+        const reference = payment.reference?.toLowerCase() || "";
 
-      return (
-        companyName.includes(q) ||
-        companyCode.includes(q) ||
-        receiptNumber.includes(q) ||
-        reference.includes(q)
-      );
-    });
+        return (
+          companyName.includes(q) ||
+          companyCode.includes(q) ||
+          receiptNumber.includes(q) ||
+          reference.includes(q)
+        );
+      });
+    }
+
+    // Filter by date or date range
+    if (date) {
+      results = results.filter((payment) => {
+        if (!payment.paymentDate) return false;
+        const paymentDateStr = new Date(payment.paymentDate)
+          .toISOString()
+          .slice(0, 10);
+        return paymentDateStr === date;
+      });
+    } else if (startDate || endDate) {
+      results = results.filter((payment) => {
+        if (!payment.paymentDate) return false;
+        const paymentDateStr = new Date(payment.paymentDate)
+          .toISOString()
+          .slice(0, 10);
+
+        if (startDate && paymentDateStr < startDate) return false;
+        if (endDate && paymentDateStr > endDate) return false;
+        return true;
+      });
+    }
   }
 
-  // Filter by date or date range
-  if (date) {
-    results = results.filter((payment) => {
-      if (!payment.paymentDate) return false;
-      const paymentDateStr = new Date(payment.paymentDate)
-        .toISOString()
-        .slice(0, 10);
-      return paymentDateStr === date;
-    });
-  } else if (startDate || endDate) {
-    results = results.filter((payment) => {
-      if (!payment.paymentDate) return false;
-      const paymentDateStr = new Date(payment.paymentDate)
-        .toISOString()
-        .slice(0, 10);
-
-      if (startDate && paymentDateStr < startDate) return false;
-      if (endDate && paymentDateStr > endDate) return false;
-      return true;
-    });
+  // Filter by clientId if provided
+  if (clientId) {
+    const parsedClientId = Number(clientId);
+    if (!isNaN(parsedClientId) && parsedClientId > 0) {
+      results = results.filter(
+        (payment) => payment.clientId === parsedClientId,
+      );
+    }
   }
 
   return results;

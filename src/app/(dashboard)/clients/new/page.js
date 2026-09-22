@@ -6,6 +6,9 @@ import Link from "next/link";
 
 export default function NewClientPage() {
   const [state, formAction] = useActionState(createClient, {});
+  const [tdsEnabled, setTdsEnabled] = useState(false);
+  const [tdsRate, setTdsRate] = useState("2.00");
+  const [openingType, setOpeningType] = useState("DEBIT");
 
   return (
     <div className="bg-zinc-50 flex items-center justify-center p-4">
@@ -91,20 +94,51 @@ export default function NewClientPage() {
               />
             </div>
 
-            {/* TDS Applicable */}
-            <div className="flex items-center gap-3">
-              <input
-                id="tdsApplicable"
-                name="tdsApplicable"
-                type="checkbox"
-                className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label
-                htmlFor="tdsApplicable"
-                className="text-sm text-zinc-600 cursor-pointer"
-              >
-                Is TDS Applicable ?
-              </label>
+            {/* TDS Applicable & Rate */}
+            <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50/50 p-3.5">
+              <div className="flex items-center gap-3">
+                <input
+                  id="tdsApplicable"
+                  name="tdsApplicable"
+                  type="checkbox"
+                  checked={tdsEnabled}
+                  onChange={(e) => setTdsEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <label
+                  htmlFor="tdsApplicable"
+                  className="text-sm font-medium text-zinc-700 cursor-pointer"
+                >
+                  Is TDS Applicable?
+                </label>
+              </div>
+
+              {tdsEnabled && (
+                <div className="pt-2 pl-7 flex items-center gap-3 border-t border-zinc-200/60">
+                  <label className="text-xs font-medium text-zinc-600">
+                    TDS Rate (%):
+                  </label>
+                  <div className="relative w-28">
+                    <input
+                      name="tdsRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={tdsRate}
+                      onChange={(e) => setTdsRate(e.target.value)}
+                      placeholder="2.00"
+                      className="input-primary py-1 px-2.5 text-xs text-right pr-6 focus:ring-blue-500 bg-white"
+                    />
+                    <span className="absolute right-2.5 top-1 text-xs text-zinc-400 font-semibold">
+                      %
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-zinc-400">
+                    (Standard is 2%)
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Opening Balance (Optional) */}
@@ -114,14 +148,55 @@ export default function NewClientPage() {
                   Opening Balance (Optional)
                 </span>
                 <span className="text-[11px] text-zinc-400">
-                  For historical/un-invoiced debt
+                  Historical debt or initial credit
                 </span>
+              </div>
+
+              {/* Type Switcher: Debit vs Credit */}
+              <div className="grid grid-cols-2 gap-2">
+                <label
+                  className={`flex items-center justify-center gap-2 p-2 rounded-lg border text-xs font-medium cursor-pointer transition ${
+                    openingType === "DEBIT"
+                      ? "bg-white border-purple-300 text-purple-700 shadow-2xs"
+                      : "bg-purple-100/40 border-transparent text-zinc-600 hover:bg-white/60"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="openingBalanceType"
+                    value="DEBIT"
+                    checked={openingType === "DEBIT"}
+                    onChange={() => setOpeningType("DEBIT")}
+                    className="sr-only"
+                  />
+                  <span>Debit (Dr - Client Owes)</span>
+                </label>
+
+                <label
+                  className={`flex items-center justify-center gap-2 p-2 rounded-lg border text-xs font-medium cursor-pointer transition ${
+                    openingType === "CREDIT"
+                      ? "bg-white border-emerald-300 text-emerald-700 shadow-2xs"
+                      : "bg-purple-100/40 border-transparent text-zinc-600 hover:bg-white/60"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="openingBalanceType"
+                    value="CREDIT"
+                    checked={openingType === "CREDIT"}
+                    onChange={() => setOpeningType("CREDIT")}
+                    className="sr-only"
+                  />
+                  <span>Credit (Cr - Initial Advance)</span>
+                </label>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="text-xs text-zinc-600 mb-1 block">
-                    Amount (₹)
+                    {openingType === "CREDIT"
+                      ? "Initial Credit (₹)"
+                      : "Opening Balance (₹)"}
                   </label>
                   <input
                     name="openingBalance"
@@ -152,7 +227,11 @@ export default function NewClientPage() {
                 </label>
                 <input
                   name="openingBalanceNotes"
-                  placeholder="e.g. Previous FY carried forward balance"
+                  placeholder={
+                    openingType === "CREDIT"
+                      ? "e.g. Previous period advance balance"
+                      : "e.g. Previous FY carried forward balance"
+                  }
                   className="input-primary focus:ring-purple-500 caret-purple-500 bg-white"
                 />
               </div>

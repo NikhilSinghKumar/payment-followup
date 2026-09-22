@@ -26,15 +26,19 @@ export default function ImportClients() {
 
     if (res.ok && data.status === "success") {
       router.refresh();
+      setFile(null);
     }
 
-    alert(`
-    Import Completed
+    const warningText =
+      data.errors && data.errors.length > 0
+        ? `\n\nNotes/Warnings:\n${data.errors.join("\n")}`
+        : "";
 
-    Inserted: ${data.summary.inserted}
-    Skipped: ${data.summary.skipped}
-    Total: ${data.summary.total}
-    `);
+    alert(`Import Summary:
+Total Rows: ${data.summary?.total ?? 0}
+Inserted (New): ${data.summary?.inserted ?? 0}
+Updated (Existing): ${data.summary?.updated ?? 0}
+Skipped: ${data.summary?.skipped ?? 0}${warningText}`);
   };
 
   const truncateFileName = (name, max = 20) => {

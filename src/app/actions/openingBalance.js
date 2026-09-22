@@ -1,21 +1,22 @@
 "use server";
 
 import { db } from "@/db";
-import { invoices, clients, paymentAllocations } from "@/db/schema";
+import { invoices, clients, payments, paymentAllocations } from "@/db/schema";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/auth";
+import { setOrUpdateClientOpeningBalance } from "@/lib/client-opening-balance";
 import { getFinancialYear } from "@/lib/financial-year";
-import { calculateInvoiceStatus } from "@/lib/invoice-status";
 
 /**
- * Fetch the opening balance invoice for a specific client.
+ * Fetch the opening balance for a specific client (either Debit in invoices or Credit in payments).
  */
 export async function getOpeningBalanceByClientId(clientId) {
   if (!clientId) return null;
 
   try {
-    const records = await db
+    // 1. Check for Debit opening balance invoice
+    const invoiceRecords = await db
       .select()
       .from(invoices)
       .where(
@@ -27,7 +28,63 @@ export async function getOpeningBalanceByClientId(clientId) {
       )
       .limit(1);
 
-    return records[0] || null;
+    if (invoiceRecords.length > 0) {
+      const inv = invoiceRecords[0];
+      return {
+        id: inv.id,
+        type: "DEBIT",
+        amount: inv.netPayableAmount || inv.invoiceAmount || "0",
+        invoiceAmount: inv.invoiceAmount,
+        netPayableAmount: inv.netPayableAmount,
+        paidAmount: inv.paidAmount || "0",
+        invoiceDate: inv.invoiceDate,
+        dueDate: inv.dueDate,
+        notes: inv.notes,
+        isOpeningBalance: true,
+      };
+    }
+
+    // 2. Check for Credit opening balance payment
+    const paymentRecords = await db
+      .select()
+      .from(payments)
+      .where(
+        and(
+          eq(payments.clientId, clientId),
+          eq(payments.isOpeningBalance, true),
+          eq(payments.isVoided, false),
+          isNull(payments.deletedAt),
+        ),
+      )
+      .limit(1);
+
+    if (paymentRecords.length > 0) {
+      const pay = paymentRecords[0];
+      // Check allocations for this payment
+      const allocResult = await db
+        .select({
+          total: sql`COALESCE(SUM(${paymentAllocations.allocatedAmount}), 0)`,
+        })
+        .from(paymentAllocations)
+        .where(eq(paymentAllocations.paymentId, pay.id));
+
+      const allocated = Number(allocResult[0]?.total || 0);
+
+      return {
+        id: pay.id,
+        type: "CREDIT",
+        amount: pay.amount || "0",
+        invoiceAmount: pay.amount || "0",
+        netPayableAmount: pay.amount || "0",
+        paidAmount: allocated.toString(),
+        invoiceDate: pay.paymentDate,
+        dueDate: pay.paymentDate,
+        notes: pay.notes,
+        isOpeningBalance: true,
+      };
+    }
+
+    return null;
   } catch (err) {
     console.warn("[getOpeningBalanceByClientId]", err?.message || err);
     return null;
@@ -35,7 +92,7 @@ export async function getOpeningBalanceByClientId(clientId) {
 }
 
 /**
- * Save or update a client's opening balance as a virtual invoice record.
+ * Save or update a client's opening balance as a virtual invoice (Debit) or initial credit payment (Credit).
  */
 export async function saveClientOpeningBalance(formData) {
   try {
@@ -52,8 +109,13 @@ export async function saveClientOpeningBalance(formData) {
     const clientId = Number(formData.get("clientId"));
     const rawAmount = formData.get("amount");
     const amount = parseFloat(rawAmount || "0");
+    const type = (formData.get("type") || "DEBIT").toUpperCase(); // "DEBIT" or "CREDIT"
     const asOfDateStr = formData.get("asOfDate");
-    const notes = formData.get("notes")?.trim() || "Opening Balance";
+    const notes =
+      formData.get("notes")?.trim() ||
+      (type === "CREDIT"
+        ? "Opening Balance (Credit) / Advance Carried Forward"
+        : "Opening Balance");
 
     if (!clientId || isNaN(clientId)) {
       return { error: "Invalid client ID" };
@@ -89,108 +151,24 @@ export async function saveClientOpeningBalance(formData) {
 
     const client = clientRecord[0];
 
-    // Check if an opening balance invoice already exists for this client
-    const existing = await db
-      .select()
-      .from(invoices)
-      .where(
-        and(
-          eq(invoices.clientId, clientId),
-          eq(invoices.isOpeningBalance, true),
-          isNull(invoices.deletedAt),
-        ),
-      )
-      .limit(1);
-
-    if (existing.length > 0) {
-      const currentOpening = existing[0];
-      const paid = Number(currentOpening.paidAmount || 0);
-
-      if (amount < paid) {
-        return {
-          error: `Cannot reduce opening balance below the already received payment amount (₹${paid.toLocaleString("en-IN")}).`,
-        };
-      }
-
-      if (amount === 0 && paid === 0) {
-        // Soft delete the opening balance record if amount is reset to 0
-        await db
-          .update(invoices)
-          .set({
-            deletedAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(invoices.id, currentOpening.id));
-      } else {
-        const netPayable = amount;
-        const outstanding = Math.max(0, netPayable - paid);
-
-        const statusResult = calculateInvoiceStatus({
-          netPayable,
-          paid,
-          dueDate: asOfDate,
-        });
-
-        await db
-          .update(invoices)
-          .set({
-            invoiceAmount: amount.toFixed(2),
-            basicAmount: amount.toFixed(2),
-            netPayableAmount: amount.toFixed(2),
-            outstandingAmount: outstanding.toFixed(2),
-            invoiceDate: asOfDate,
-            dueDate: asOfDate,
-            financialYear,
-            status: statusResult.status,
-            notes,
-            updatedAt: new Date(),
-          })
-          .where(eq(invoices.id, currentOpening.id));
-      }
-    } else if (amount > 0) {
-      // Create new opening balance invoice
-      const invoiceNumber = `OPENING-BAL`;
-      const netPayable = amount;
-      const outstanding = amount;
-
-      const statusResult = calculateInvoiceStatus({
-        netPayable,
-        paid: 0,
-        dueDate: asOfDate,
-      });
-
-      await db.insert(invoices).values({
-        companyId: currentUser.companyId,
-        clientId,
-        subClientId: null,
-        financialYear,
-        invoiceNumber,
-        invoiceDate: asOfDate,
-        dueDate: asOfDate,
-        paymentTerms: 0,
-        invoiceAmount: amount.toFixed(2),
-        basicAmount: amount.toFixed(2),
-        cgstAmount: "0.00",
-        sgstAmount: "0.00",
-        igstAmount: "0.00",
-        tdsAmount: "0.00",
-        deductionAmount: "0.00",
-        otherCharges: "0.00",
-        netPayableAmount: netPayable.toFixed(2),
-        paidAmount: "0.00",
-        outstandingAmount: outstanding.toFixed(2),
-        gstNumberUsed: client.gstNumber || null,
-        tdsApplicableUsed: client.tdsApplicable || false,
-        status: statusResult.status,
-        isOpeningBalance: true,
-        notes,
-      });
-    }
+    await setOrUpdateClientOpeningBalance({
+      companyId: currentUser.companyId,
+      clientId,
+      amount,
+      type,
+      asOfDate,
+      notes,
+      gstNumber: client.gstNumber,
+      tdsApplicable: client.tdsApplicable,
+      tdsRate: client.tdsRate,
+    });
 
     revalidatePath(`/clients/${clientId}`);
     revalidatePath(`/clients/${clientId}?tab=invoices`);
+    revalidatePath(`/clients/${clientId}?tab=payments`);
     revalidatePath("/clients");
     revalidatePath("/invoices");
+    revalidatePath("/payments");
 
     return { success: true };
   } catch (err) {

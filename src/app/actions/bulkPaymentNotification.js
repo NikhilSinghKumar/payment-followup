@@ -246,6 +246,7 @@ export async function sendBulkPaymentConfirmationEmails({
   clientBatches = [],
   subjectTemplate = "",
   customMessage = "",
+  attachLedgerPdf = true,
   ccAccounts = true,
   ccEmails = [],
 } = {}) {
@@ -604,12 +605,43 @@ export async function sendBulkPaymentConfirmationEmails({
         },
       });
 
+      // In-memory Ledger Account Statement PDF generation (no storage needed)
+      let ledgerAttachment = null;
+      if (attachLedgerPdf) {
+        try {
+          const { generateClientLedgerPdf } =
+            await import("@/lib/pdf/generateLedgerPdf");
+          const pdfResult = await generateClientLedgerPdf({
+            clientId,
+            companyId,
+            statementDate: latestPaymentDate || new Date(),
+          });
+          if (pdfResult?.buffer) {
+            ledgerAttachment = {
+              filename: pdfResult.filename,
+              content: pdfResult.buffer,
+              contentType: "application/pdf",
+            };
+          }
+        } catch (pdfErr) {
+          console.warn(
+            `[sendBulkPaymentConfirmationEmails] Could not attach Ledger PDF for client #${clientId}:`,
+            pdfErr?.message || pdfErr,
+          );
+        }
+      }
+
       // Send to each recipient email
       for (const email of recipientEmails) {
         let isSuccess = false;
         let errorMsg = null;
 
         try {
+          const attachments = [];
+          if (ledgerAttachment) {
+            attachments.push(ledgerAttachment);
+          }
+
           const sendResult = await sendEmail({
             from: `"${senderCompany}" <${senderEmail}>`,
             to: email,
@@ -619,6 +651,7 @@ export async function sendBulkPaymentConfirmationEmails({
                 : ccEmails,
             subject: emailSubject,
             html: emailHtml,
+            attachments,
           });
 
           isSuccess = Boolean(

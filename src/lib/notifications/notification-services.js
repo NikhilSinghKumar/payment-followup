@@ -150,12 +150,42 @@ export const paymentReceived = (data) =>
 
 /**
  * Sends client-wise payment received acknowledgment email with multi/single invoice settlement table
+ * and automatically attaches the in-memory Ledger Account Statement PDF
  */
 export const notifyClientPaymentReceived = async (clientPaymentData) => {
+  const data = { ...clientPaymentData };
+
+  // Automatically attach in-memory Ledger Account Statement PDF if not explicitly provided
+  if (!data.attachments && data.clientId) {
+    try {
+      const { generateClientLedgerPdf } =
+        await import("@/lib/pdf/generateLedgerPdf");
+      const pdfRes = await generateClientLedgerPdf({
+        clientId: data.clientId,
+        companyId: data.companyId,
+        statementDate: data.paymentDate || new Date(),
+      });
+      if (pdfRes?.buffer) {
+        data.attachments = [
+          {
+            filename: pdfRes.filename,
+            content: pdfRes.buffer,
+            contentType: "application/pdf",
+          },
+        ];
+      }
+    } catch (pdfErr) {
+      console.warn(
+        `[notifyClientPaymentReceived] Ledger PDF generation warning for client #${data.clientId}:`,
+        pdfErr?.message || pdfErr,
+      );
+    }
+  }
+
   return sendNotification(
     NOTIFICATION_TYPES.PAYMENT_RECEIVED,
     TEMPLATE_TYPES.PAYMENT_RECEIVED,
-    clientPaymentData,
+    data,
   );
 };
 
@@ -287,6 +317,7 @@ export async function processNotification(
       to: data.email,
       subject: emailContent.subject,
       html,
+      attachments: data.attachments || [],
     });
 
     if (log?.id) {

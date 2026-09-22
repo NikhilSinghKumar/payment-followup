@@ -56,6 +56,13 @@ export async function POST(req) {
         continue;
       }
 
+      const isTdsApplicable =
+        row["TDS Applicable"]?.toLowerCase() === "yes" ||
+        row["TDS Applicable"]?.toLowerCase() === "true";
+      const rawTdsRate = row["TDS Rate"] || row["tds_rate"];
+      const parsedTdsRate = rawTdsRate ? parseFloat(rawTdsRate) : 2.0;
+      const tdsRate = !isNaN(parsedTdsRate) ? parsedTdsRate.toFixed(2) : "2.00";
+
       // Restore soft-deleted record
       if (existing && existing.deletedAt) {
         await db
@@ -68,7 +75,8 @@ export async function POST(req) {
             city: row["City"] || null,
             state: row["State"] || null,
             pincode: row["Pincode"] || null,
-            tdsApplicable: row["TDS Applicable"]?.toLowerCase() === "yes",
+            tdsApplicable: isTdsApplicable,
+            tdsRate: isTdsApplicable ? tdsRate : "2.00",
             deletedAt: null,
             updatedAt: new Date(),
           })
@@ -86,7 +94,8 @@ export async function POST(req) {
         companyCode: row["Company Code"],
         gstNumber: row["GST Number"],
 
-        tdsApplicable: row["TDS Applicable"]?.toLowerCase() === "yes",
+        tdsApplicable: isTdsApplicable,
+        tdsRate: isTdsApplicable ? tdsRate : "2.00",
       });
 
       imported++;

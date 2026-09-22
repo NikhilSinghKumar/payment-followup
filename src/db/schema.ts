@@ -347,6 +347,7 @@ export const clients = pgTable("clients", {
   // Status
   isActive: boolean("is_active").notNull().default(true),
   tdsApplicable: boolean("tds_applicable").notNull().default(false),
+  tdsRate: numeric("tds_rate", { precision: 5, scale: 2 }).default("2.00"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   deletedAt: timestamp("deleted_at", {
@@ -388,6 +389,11 @@ export const clientSubClients = pgTable(
     country: text("country").default("India"),
 
     tdsApplicable: boolean("tds_applicable").notNull().default(false),
+
+    tdsRate: numeric("tds_rate", {
+      precision: 5,
+      scale: 2,
+    }).default("2.00"),
 
     isActive: boolean("is_active").notNull().default(true),
 
@@ -928,6 +934,12 @@ export const invoices = pgTable(
     // TDS setting used while creating invoice
     tdsApplicableUsed: boolean("tds_applicable_used").notNull().default(false),
 
+    // TDS rate (%) used while creating invoice
+    tdsRateUsed: numeric("tds_rate_used", {
+      precision: 5,
+      scale: 2,
+    }).default("2.00"),
+
     // Snapshot of opening balance status
     isOpeningBalance: boolean("is_opening_balance").notNull().default(false),
 
@@ -1140,6 +1152,9 @@ export const payments = pgTable(
     reference: text("reference"),
 
     notes: text("notes"),
+
+    // Snapshot of opening balance status (initial credit/advance)
+    isOpeningBalance: boolean("is_opening_balance").notNull().default(false),
 
     // =====================================
     // VOIDING

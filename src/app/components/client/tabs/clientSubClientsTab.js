@@ -76,7 +76,9 @@ export default function ClientSubClientsTab({
 
                     <td className="px-4 py-3 text-center">
                       {subClient.tdsApplicable ? (
-                        <span className="text-green-600 font-medium">Yes</span>
+                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                          {Number(subClient.tdsRate || 2)}%
+                        </span>
                       ) : (
                         <span className="text-zinc-400">No</span>
                       )}

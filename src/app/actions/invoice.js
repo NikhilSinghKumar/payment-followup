@@ -172,6 +172,9 @@ export async function createInvoice(formData) {
     taxSettings = {
       gstNumber: selectedSubClient.gstNumber,
       tdsApplicable: selectedSubClient.tdsApplicable,
+      tdsRate: selectedSubClient.tdsRate
+        ? Number(selectedSubClient.tdsRate)
+        : 2.0,
     };
   } else {
     // Invoice belongs directly to parent client.
@@ -188,6 +191,7 @@ export async function createInvoice(formData) {
     invoiceAmount,
     gstNumber: taxSettings.gstNumber,
     tdsApplicable: taxSettings.tdsApplicable,
+    tdsRate: taxSettings.tdsRate,
     deductionAmount,
     otherCharges,
   });
@@ -275,6 +279,10 @@ export async function createInvoice(formData) {
       gstNumberUsed: calculatedInvoice.gstNumberUsed,
 
       tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
+
+      tdsRateUsed: calculatedInvoice.tdsRateUsed
+        ? calculatedInvoice.tdsRateUsed.toFixed(2)
+        : "2.00",
 
       paidAmount: "0",
 
@@ -587,6 +595,9 @@ export async function updateInvoice(id, formData) {
     taxSettings = {
       gstNumber: selectedSubClient.gstNumber,
       tdsApplicable: selectedSubClient.tdsApplicable,
+      tdsRate: selectedSubClient.tdsRate
+        ? Number(selectedSubClient.tdsRate)
+        : 2.0,
     };
   } else {
     taxSettings = await getClientTaxSettings(client.id);
@@ -600,6 +611,7 @@ export async function updateInvoice(id, formData) {
     invoiceAmount,
     gstNumber: taxSettings.gstNumber,
     tdsApplicable: taxSettings.tdsApplicable,
+    tdsRate: taxSettings.tdsRate,
     deductionAmount,
     otherCharges,
   });
@@ -648,6 +660,9 @@ export async function updateInvoice(id, formData) {
       netPayableAmount: calculatedInvoice.netPayableAmount,
       gstNumberUsed: calculatedInvoice.gstNumberUsed,
       tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
+      tdsRateUsed: calculatedInvoice.tdsRateUsed
+        ? calculatedInvoice.tdsRateUsed.toFixed(2)
+        : "2.00",
       notes,
       updatedAt: new Date(),
     })

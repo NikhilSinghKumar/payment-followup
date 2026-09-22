@@ -220,10 +220,19 @@ export async function POST(req) {
           taxSettings = {
             gstNumber: selectedSubClient.gstNumber,
             tdsApplicable: selectedSubClient.tdsApplicable,
+            tdsRate: selectedSubClient.tdsRate
+              ? Number(selectedSubClient.tdsRate)
+              : 2.0,
           };
         } else {
           taxSettings = await getClientTaxSettings(clientId);
         }
+
+        const rowTdsRate = row.tds_rate ? parseFloat(row.tds_rate) : null;
+        const effectiveTdsRate =
+          rowTdsRate !== null && !isNaN(rowTdsRate)
+            ? rowTdsRate
+            : (taxSettings.tdsRate ?? 2.0);
 
         //------------------------------------------
         // Calculate Invoice
@@ -233,6 +242,7 @@ export async function POST(req) {
           invoiceAmount,
           gstNumber: taxSettings.gstNumber,
           tdsApplicable: taxSettings.tdsApplicable,
+          tdsRate: effectiveTdsRate,
           deductionAmount,
           otherCharges,
         });
@@ -286,6 +296,9 @@ export async function POST(req) {
           gstNumberUsed: calculatedInvoice.gstNumberUsed,
 
           tdsApplicableUsed: calculatedInvoice.tdsApplicableUsed,
+          tdsRateUsed: String(
+            calculatedInvoice.tdsRateUsed ?? effectiveTdsRate ?? "2.00",
+          ),
 
           status: invoiceStatus.status,
 
