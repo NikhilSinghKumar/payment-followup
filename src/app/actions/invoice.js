@@ -17,6 +17,7 @@ import { enrichInvoices } from "@/lib/invoice-summary";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { eq, sql, ilike, isNull, or, and, ne, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/auth";
 import { processInvoiceEvents } from "@/lib/notifications/event-services";
 import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
@@ -300,11 +301,19 @@ export async function createInvoice(formData) {
   // PROCESS NOTIFICATIONS
   // =====================================
 
-  await processInvoiceEvents(invoice.id);
+  try {
+    await processInvoiceEvents(invoice.id);
+  } catch (notificationErr) {
+    console.warn(
+      `[createInvoice] Notification event failed for invoice #${invoice.id}:`,
+      notificationErr?.message || notificationErr,
+    );
+  }
 
-  return {
-    success: true,
-  };
+  revalidatePath("/invoices");
+  revalidatePath(`/clients/${clientId}`);
+
+  redirect("/invoices");
 }
 
 export async function getInvoices(

@@ -44,7 +44,7 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
       invoiceAmount: invoices.invoiceAmount,
       netPayableAmount: invoices.netPayableAmount,
       paidAmount: invoices.paidAmount,
-      tdsDeducted: invoices.tdsDeducted,
+      tdsDeducted: invoices.tdsAmount,
       outstandingAmount: invoices.outstandingAmount,
       basicAmount: invoices.basicAmount,
       tdsApplicableUsed: invoices.tdsApplicableUsed,
@@ -71,12 +71,6 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
         0
       )
     `,
-      totalTds: sql`
-      COALESCE(
-        SUM(CAST(${paymentAllocations.allocatedTds} AS numeric)),
-        0
-      )
-    `,
     })
     .from(paymentAllocations)
     .where(
@@ -87,14 +81,13 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
     );
 
   const totalCash = Number(allocationResult[0]?.totalCash || 0);
-  const totalTds = Number(allocationResult[0]?.totalTds || 0);
+  const totalTds = Number(invoice.tdsDeducted || 0);
   const totalSettled = Number((totalCash + totalTds).toFixed(2));
 
   const paymentResult = paymentId
     ? await db
         .select({
           amount: payments.amount,
-          tdsAmount: payments.tdsAmount,
           paymentDate: payments.paymentDate,
           receiptNumber: payments.receiptNumber,
           reference: payments.reference,
@@ -260,12 +253,7 @@ export async function getClientPaymentReminderData(clientId = null) {
           0
         )
       `,
-      tdsDeducted: sql`
-        COALESCE(
-          SUM(CAST(${paymentAllocations.allocatedTds} AS numeric)),
-          0
-        )
-      `,
+      tdsDeducted: invoices.tdsAmount,
     })
 
     .from(invoices)
@@ -742,9 +730,7 @@ export async function getClientPaymentReceivedData({
       .select({
         paymentId: payments.id,
         amount: payments.amount,
-        tdsAmount: payments.tdsAmount,
         allocatedCash: sql`COALESCE(SUM(CAST(${paymentAllocations.allocatedAmount} AS numeric)), 0)`,
-        allocatedTds: sql`COALESCE(SUM(CAST(${paymentAllocations.allocatedTds} AS numeric)), 0)`,
       })
       .from(payments)
       .leftJoin(
@@ -761,7 +747,7 @@ export async function getClientPaymentReceivedData({
           eq(payments.isVoided, false),
         ),
       )
-      .groupBy(payments.id, payments.amount, payments.tdsAmount);
+      .groupBy(payments.id, payments.amount);
 
     for (const p of unallocatedRows) {
       const pAmt = Number(p.amount || 0);
