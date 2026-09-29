@@ -2,6 +2,31 @@ import { db } from "@/db";
 import { notificationLogs } from "@/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 
+const VALID_EMAIL_TYPES = new Set([
+  "BILL_SUBMITTED",
+  "DUE_REMINDER",
+  "OVERDUE_REMINDER",
+  "FINAL_REMINDER",
+  "PAYMENT_RECEIVED",
+  "PAYMENT_CLEARED",
+  "BLOCK_NOTICE",
+  "SERVICE_SUSPENSION_NOTICE",
+  "SERVICE_SUSPENSION_ALERT",
+  "DUE_TODAY",
+]);
+
+function normalizeEmailType(type) {
+  if (!type) return null;
+  const upper = String(type).toUpperCase();
+  if (VALID_EMAIL_TYPES.has(upper)) return upper;
+  if (upper.includes("SUSPENSION") || upper.includes("BLOCK"))
+    return "SERVICE_SUSPENSION_NOTICE";
+  if (upper.includes("OVERDUE")) return "OVERDUE_REMINDER";
+  if (upper.includes("DUE")) return "DUE_REMINDER";
+  if (upper.includes("PAYMENT")) return "PAYMENT_RECEIVED";
+  return null;
+}
+
 function sanitizeLogPayload(data) {
   return {
     companyId: data.companyId,
@@ -9,7 +34,7 @@ function sanitizeLogPayload(data) {
     invoiceId: data.invoiceId || null,
     paymentId: data.paymentId || null,
     channel: data.channel || "EMAIL",
-    emailType: data.emailType || null,
+    emailType: normalizeEmailType(data.emailType),
     recipient: data.recipient || "",
     subject: data.subject || null,
     status: data.status || "PENDING",
@@ -20,12 +45,34 @@ function sanitizeLogPayload(data) {
  * Create notification log
  */
 export async function createLog(data) {
-  const [log] = await db
-    .insert(notificationLogs)
-    .values(sanitizeLogPayload(data))
-    .returning();
+  try {
+    const [log] = await db
+      .insert(notificationLogs)
+      .values(sanitizeLogPayload(data))
+      .returning();
 
-  return log;
+    return log;
+  } catch (err) {
+    console.warn(
+      "createLog initial insert error, retrying with fallback:",
+      err?.message,
+    );
+    try {
+      const fallbackPayload = {
+        ...sanitizeLogPayload(data),
+        emailType: "BLOCK_NOTICE",
+      };
+      const [log] = await db
+        .insert(notificationLogs)
+        .values(fallbackPayload)
+        .returning();
+
+      return log;
+    } catch (fallbackErr) {
+      console.error("createLog failed completely:", fallbackErr?.message);
+      return null;
+    }
+  }
 }
 
 /**

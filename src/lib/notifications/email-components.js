@@ -2119,12 +2119,20 @@ export function ClientPaymentSettlementTable({
         : Math.max(0, (rawNet > 0 ? rawNet : invTotal) - settled);
     const isFullySettled = remaining <= 0;
 
+    const netPayable =
+      rawNet > 0
+        ? rawNet
+        : rawGross > 0
+          ? rawGross
+          : Number(inv.totalAmount || 0);
+
     return {
       ...inv,
       invoiceNumber: inv.invoiceNumber || inv.number || "Invoice",
       invoiceDate: inv.invoiceDate || "",
       dueDate: inv.dueDate || "",
       invTotal,
+      netPayable,
       settled,
       remaining,
       isFullySettled,
@@ -2139,7 +2147,12 @@ export function ClientPaymentSettlementTable({
       acc.remainingBalance += row.remaining;
       return acc;
     },
-    { invoiceAmount: 0, netPayable: 0, settledNow: 0, remainingBalance: 0 },
+    {
+      invoiceAmount: 0,
+      netPayable: 0,
+      settledNow: 0,
+      remainingBalance: 0,
+    },
   );
 
   // 1. Payment Received = Settled against invoice(s) + unallocated amount (OR On Account)
@@ -2491,7 +2504,7 @@ export function ClientPaymentSettlementTable({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    Invoice Amount (₹)
+                    Net Payable Amount (₹)
                   </th>
                   <th
                     style={{
@@ -2575,7 +2588,7 @@ export function ClientPaymentSettlementTable({
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {formatCurrency(inv.invTotal)}
+                        {formatCurrency(inv.netPayableAmount)}
                       </td>
                       <td
                         style={{
@@ -2671,7 +2684,7 @@ export function ClientPaymentSettlementTable({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(totals.invoiceAmount)}
+                    {formatCurrency(totals.netPayable)}
                   </td>
                   <td
                     style={{

@@ -48,15 +48,21 @@ function buildInvoiceVariables(data) {
     dueDate: data.dueDate,
 
     invoiceAmount: invFace,
+    tdsAmount: Number(data.tdsAmount || 0),
+    tdsDeducted: Number(data.tdsDeducted || 0),
     netPayableAmount: netPayable,
+    status: data.status || "Active / Due",
 
     // map from invoice summary
     paidAmount: paid,
+    settledAmount: paid,
+    totalSettled: paid,
     outstandingAmount: due,
     due,
     overdueDays: data.dueDays || data.overdueDays || 0,
 
     paymentAmount: Number(data.paymentAmount || 0),
+    cashAmount: Number(data.cashAmount || data.paymentAmount || 0),
 
     senderCompany: data.senderCompany,
     senderEmail: data.senderEmail,
@@ -70,9 +76,20 @@ function buildClientVariables(data) {
   return {
     clientId: data.clientId,
     clientName: data.clientName,
+    companyCode: data.companyCode,
 
-    totalOutstanding: Number(data.totalOutstanding || 0),
-    invoiceCount: Number(data.invoiceCount || 0),
+    totalOutstanding: Number(data.totalOutstanding || data.totalOverdue || 0),
+    totalOverdue: Number(data.totalOverdue || data.totalOutstanding || 0),
+    invoiceCount: Number(
+      data.invoiceCount ||
+        data.overdueInvoiceCount ||
+        data.invoices?.length ||
+        0,
+    ),
+    invoices: data.invoices || [],
+    customNote: data.customNote || "",
+    maxOverdueDays: data.maxOverdueDays || 0,
+    oldestDueDate: data.oldestDueDate || "",
 
     senderCompany: data.senderCompany,
     senderEmail: data.senderEmail,
@@ -120,8 +137,20 @@ function buildOverdueReminder(data) {
 function buildPaymentReceived(data) {
   const isMultiInvoice =
     Array.isArray(data.settledInvoices) && data.settledInvoices.length > 0;
-  const paymentAmount = Number(data.paymentAmount || 0);
+  const cashAmount = Number(data.cashAmount || data.paymentAmount || 0);
+  const tdsAmount = Number(data.tdsAmount || 0);
+  const totalSettledAmount = Number(
+    data.settledAmount || cashAmount + tdsAmount,
+  );
+  const paymentAmount = Number(data.paymentAmount || totalSettledAmount);
+
   const formattedAmount = paymentAmount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+  });
+  const formattedCash = cashAmount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+  });
+  const formattedTds = tdsAmount.toLocaleString("en-IN", {
     minimumFractionDigits: 2,
   });
 
@@ -156,9 +185,14 @@ function buildPaymentReceived(data) {
     },
   );
 
+  const paymentBreakdownText =
+    tdsAmount > 0.001
+      ? `₹${formattedAmount} (Cash: ₹${formattedCash}, TDS: ₹${formattedTds})`
+      : `₹${formattedAmount}`;
+
   const description = isMultiInvoice
-    ? `We are thankful for receiving your payment of ₹${formattedAmount}, which has been successfully settled against ${data.settledInvoices.length} invoice(s). Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`
-    : `We are thankful for receiving your payment of ₹${formattedAmount} against invoice ${data.invoiceNumber || ""}. Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`;
+    ? `We are thankful for receiving your payment of ${paymentBreakdownText}, which has been successfully settled against ${data.settledInvoices.length} invoice(s). Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`
+    : `We are thankful for receiving your payment of ${paymentBreakdownText} against invoice ${data.invoiceNumber || ""}. Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`;
 
   const invoiceSummary = isMultiInvoice
     ? data.settledInvoices.length === 1
@@ -172,7 +206,12 @@ function buildPaymentReceived(data) {
         invoiceNumber: invoiceSummary,
         amount: formattedAmount,
         paymentAmount,
+        cashAmount,
+        tdsAmount,
         formattedPaymentAmount: formattedAmount,
+        formattedCash,
+        formattedTds,
+        paymentBreakdownText,
         totalNetPayable: totalOutstanding,
         netPayableAmount: totalOutstanding,
         netOutstanding: remainingOutstanding,
@@ -193,7 +232,12 @@ function buildPaymentReceived(data) {
         ...buildInvoiceVariables(data),
         amount: formattedAmount,
         paymentAmount,
+        cashAmount,
+        tdsAmount,
         formattedPaymentAmount: formattedAmount,
+        formattedCash,
+        formattedTds,
+        paymentBreakdownText,
         totalNetPayable: totalOutstanding,
         netPayableAmount: totalOutstanding,
         netOutstanding: remainingOutstanding,

@@ -1,10 +1,43 @@
 import { db } from "@/db";
-import { notifications } from "@/db/schema";
+import { notifications, clients, invoices, companies } from "@/db/schema";
 import { and, desc, eq, isNotNull, isNull, lt } from "drizzle-orm";
 
-function sanitizeNotificationPayload(data) {
+async function resolveNotificationCompanyId(data) {
+  if (data?.companyId) return data.companyId;
+  try {
+    if (data?.clientId) {
+      const [c] = await db
+        .select({ companyId: clients.companyId })
+        .from(clients)
+        .where(eq(clients.id, data.clientId))
+        .limit(1);
+      if (c?.companyId) return c.companyId;
+    }
+    if (data?.invoiceId) {
+      const [inv] = await db
+        .select({ companyId: invoices.companyId })
+        .from(invoices)
+        .where(eq(invoices.id, data.invoiceId))
+        .limit(1);
+      if (inv?.companyId) return inv.companyId;
+    }
+    const [comp] = await db
+      .select({ id: companies.id })
+      .from(companies)
+      .limit(1);
+    if (comp?.id) return comp.id;
+  } catch (err) {
+    console.warn(
+      "Failed to auto-resolve companyId for notification:",
+      err?.message,
+    );
+  }
+  return null;
+}
+
+function sanitizeNotificationPayload(data, resolvedCompanyId) {
   return {
-    companyId: data.companyId,
+    companyId: data.companyId || resolvedCompanyId,
     userId: data.userId || null,
     clientId: data.clientId || null,
     invoiceId: data.invoiceId || null,
@@ -23,9 +56,11 @@ function sanitizeNotificationPayload(data) {
  * Create a notification
  */
 export async function createNotification(data) {
+  const companyId = await resolveNotificationCompanyId(data);
+  const payload = sanitizeNotificationPayload(data, companyId);
   const [notification] = await db
     .insert(notifications)
-    .values(sanitizeNotificationPayload(data))
+    .values(payload)
     .returning();
 
   return notification;
@@ -36,7 +71,12 @@ export async function createNotification(data) {
  */
 export async function createNotifications(data) {
   if (!Array.isArray(data) || data.length === 0) return [];
-  const sanitized = data.map(sanitizeNotificationPayload);
+  const sanitized = await Promise.all(
+    data.map(async (item) => {
+      const companyId = await resolveNotificationCompanyId(item);
+      return sanitizeNotificationPayload(item, companyId);
+    }),
+  );
   return db.insert(notifications).values(sanitized).returning();
 }
 

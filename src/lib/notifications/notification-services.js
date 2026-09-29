@@ -1,6 +1,6 @@
 import { db } from "@/db";
 
-import { companyUsers } from "@/db/schema";
+import { companyUsers, clients, invoices, companies } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 import { buildNotification } from "./notification-builder";
@@ -37,6 +37,46 @@ async function sendInternalNotification(notificationType, data) {
     throw new Error(`Failed to build notification: ${notificationType}`);
   }
 
+  let companyId = data.companyId;
+  if (!companyId && data.clientId) {
+    try {
+      const [c] = await db
+        .select({ companyId: clients.companyId })
+        .from(clients)
+        .where(eq(clients.id, data.clientId))
+        .limit(1);
+      if (c?.companyId) companyId = c.companyId;
+    } catch {}
+  }
+  if (!companyId && data.invoiceId) {
+    try {
+      const [inv] = await db
+        .select({ companyId: invoices.companyId })
+        .from(invoices)
+        .where(eq(invoices.id, data.invoiceId))
+        .limit(1);
+      if (inv?.companyId) companyId = inv.companyId;
+    } catch {}
+  }
+  if (!companyId) {
+    try {
+      const [comp] = await db
+        .select({ id: companies.id })
+        .from(companies)
+        .limit(1);
+      if (comp?.id) companyId = comp.id;
+    } catch {}
+  }
+  data.companyId = companyId;
+
+  if (!companyId) {
+    return {
+      success: true,
+      skipped: true,
+      reason: "No companyId available for internal notification",
+    };
+  }
+
   // Find active users belonging to this company
   const companyUsersList = await db
     .select({
@@ -45,7 +85,7 @@ async function sendInternalNotification(notificationType, data) {
     .from(companyUsers)
     .where(
       and(
-        eq(companyUsers.companyId, data.companyId),
+        eq(companyUsers.companyId, companyId),
         eq(companyUsers.isActive, true),
       ),
     );
@@ -60,7 +100,7 @@ async function sendInternalNotification(notificationType, data) {
 
   // Create one in-app notification for each company user
   const notificationsData = companyUsersList.map((companyUser) => ({
-    companyId: data.companyId,
+    companyId: companyId,
 
     userId: companyUser.userId,
 
@@ -85,12 +125,41 @@ async function sendInternalNotification(notificationType, data) {
 // Public APIs
 // ======================================================
 
-export const billSubmission = (data) =>
-  sendNotification(
+export const billSubmission = async (invoiceBillData) => {
+  const data = { ...invoiceBillData };
+
+  // Automatically attach Bill / Tax Invoice PDF if not explicitly provided
+  if (!data.attachments && (data.invoiceId || data.id)) {
+    try {
+      const { generateInvoiceBillPdf } =
+        await import("@/lib/pdf/generateBillPdf");
+      const pdfRes = await generateInvoiceBillPdf({
+        invoiceId: data.invoiceId || data.id,
+        companyId: data.companyId,
+      });
+      if (pdfRes?.buffer) {
+        data.attachments = [
+          {
+            filename: pdfRes.filename,
+            content: pdfRes.buffer,
+            contentType: "application/pdf",
+          },
+        ];
+      }
+    } catch (pdfErr) {
+      console.warn(
+        `[billSubmission] Bill PDF generation warning for invoice #${data.invoiceId || data.id}:`,
+        pdfErr?.message || pdfErr,
+      );
+    }
+  }
+
+  return sendNotification(
     NOTIFICATION_TYPES.BILL_SUBMITTED,
     TEMPLATE_TYPES.BILL_SUBMITTED,
     data,
   );
+};
 
 export const dueReminder = (data) =>
   sendNotification(
@@ -216,6 +285,41 @@ export async function processNotification(
   data,
 ) {
   // ------------------------------------------
+  // Ensure companyId is resolved
+  // ------------------------------------------
+  let companyId = data.companyId;
+  if (!companyId && data.clientId) {
+    try {
+      const [c] = await db
+        .select({ companyId: clients.companyId })
+        .from(clients)
+        .where(eq(clients.id, data.clientId))
+        .limit(1);
+      if (c?.companyId) companyId = c.companyId;
+    } catch {}
+  }
+  if (!companyId && data.invoiceId) {
+    try {
+      const [inv] = await db
+        .select({ companyId: invoices.companyId })
+        .from(invoices)
+        .where(eq(invoices.id, data.invoiceId))
+        .limit(1);
+      if (inv?.companyId) companyId = inv.companyId;
+    } catch {}
+  }
+  if (!companyId) {
+    try {
+      const [comp] = await db
+        .select({ id: companies.id })
+        .from(companies)
+        .limit(1);
+      if (comp?.id) companyId = comp.id;
+    } catch {}
+  }
+  data.companyId = companyId;
+
+  // ------------------------------------------
   // Build Notification Payload
   // ------------------------------------------
 
@@ -311,6 +415,39 @@ export async function processNotification(
     variables: notification.templateVariables,
     actionUrl: notification.actionUrl,
   });
+
+  // ------------------------------------------
+  // Attachments (Bill PDF for BILL_SUBMITTED)
+  // ------------------------------------------
+  if (
+    (notificationType === NOTIFICATION_TYPES.BILL_SUBMITTED ||
+      templateType === TEMPLATE_TYPES.BILL_SUBMITTED) &&
+    (!data.attachments || data.attachments.length === 0) &&
+    (data.invoiceId || data.id)
+  ) {
+    try {
+      const { generateInvoiceBillPdf } =
+        await import("@/lib/pdf/generateBillPdf");
+      const pdfRes = await generateInvoiceBillPdf({
+        invoiceId: data.invoiceId || data.id,
+        companyId: data.companyId,
+      });
+      if (pdfRes?.buffer) {
+        data.attachments = [
+          {
+            filename: pdfRes.filename,
+            content: pdfRes.buffer,
+            contentType: "application/pdf",
+          },
+        ];
+      }
+    } catch (pdfErr) {
+      console.warn(
+        `[processNotification] Bill PDF generation warning for invoice #${data.invoiceId || data.id}:`,
+        pdfErr?.message || pdfErr,
+      );
+    }
+  }
 
   try {
     result = await sendEmail({

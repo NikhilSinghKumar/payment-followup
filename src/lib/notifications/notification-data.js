@@ -43,6 +43,12 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
       dueDate: invoices.dueDate,
       invoiceAmount: invoices.invoiceAmount,
       netPayableAmount: invoices.netPayableAmount,
+      paidAmount: invoices.paidAmount,
+      tdsDeducted: invoices.tdsDeducted,
+      outstandingAmount: invoices.outstandingAmount,
+      basicAmount: invoices.basicAmount,
+      tdsApplicableUsed: invoices.tdsApplicableUsed,
+      tdsRateUsed: invoices.tdsRateUsed,
       status: invoices.status,
     })
     .from(invoices)
@@ -59,9 +65,15 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
 
   const allocationResult = await db
     .select({
-      totalPaid: sql`
+      totalCash: sql`
       COALESCE(
-        SUM(${paymentAllocations.allocatedAmount}),
+        SUM(CAST(${paymentAllocations.allocatedAmount} AS numeric)),
+        0
+      )
+    `,
+      totalTds: sql`
+      COALESCE(
+        SUM(CAST(${paymentAllocations.allocatedTds} AS numeric)),
         0
       )
     `,
@@ -74,13 +86,19 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
       ),
     );
 
-  const totalPaid = Number(allocationResult[0]?.totalPaid || 0);
+  const totalCash = Number(allocationResult[0]?.totalCash || 0);
+  const totalTds = Number(allocationResult[0]?.totalTds || 0);
+  const totalSettled = Number((totalCash + totalTds).toFixed(2));
 
   const paymentResult = paymentId
     ? await db
         .select({
           amount: payments.amount,
+          tdsAmount: payments.tdsAmount,
           paymentDate: payments.paymentDate,
+          receiptNumber: payments.receiptNumber,
+          reference: payments.reference,
+          method: payments.method,
         })
         .from(payments)
         .where(eq(payments.id, paymentId))
@@ -92,7 +110,7 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
   // Payment Summary
   const paymentSummary = calculateInvoiceStatus({
     netPayable: invoice.netPayableAmount,
-    paid: totalPaid,
+    paid: totalSettled,
     dueDate: invoice.dueDate,
   });
 
@@ -161,6 +179,8 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
     dueDate: invoice.dueDate,
 
     invoiceAmount: Number(invoice.invoiceAmount),
+    tdsAmount: Number(payment?.tdsAmount || totalTds || 0),
+    tdsDeducted: Number(invoice.tdsDeducted || totalTds || 0),
     netPayableAmount: Number(invoice.netPayableAmount),
 
     status: paymentSummary.status,
@@ -171,8 +191,13 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
     dueDays: paymentSummary.dueDays,
     // Payment
     paymentAmount: payment ? Number(payment.amount) : 0,
+    cashAmount: payment ? Number(payment.amount) : 0,
+    totalPaymentAmount: payment
+      ? Number(payment.amount) + Number(payment.tdsAmount || 0)
+      : 0,
     paymentDate: payment?.paymentDate,
     totalPaid: paymentSummary.paid,
+    settledAmount: paymentSummary.paid,
     outstandingAmount: paymentSummary.due,
 
     // Sender company
@@ -227,11 +252,17 @@ export async function getClientPaymentReminderData(clientId = null) {
       netPayableAmount: invoices.netPayableAmount,
 
       // --------------------------------------------------
-      // Total paid
+      // Total paid & TDS deducted
       // --------------------------------------------------
       paidAmount: sql`
         COALESCE(
-          SUM(${paymentAllocations.allocatedAmount}),
+          SUM(CAST(${paymentAllocations.allocatedAmount} AS numeric)),
+          0
+        )
+      `,
+      tdsDeducted: sql`
+        COALESCE(
+          SUM(CAST(${paymentAllocations.allocatedTds} AS numeric)),
           0
         )
       `,
@@ -344,15 +375,17 @@ export async function getClientPaymentReminderData(clientId = null) {
 
   for (const row of rows) {
     const paidAmount = Number(row.paidAmount || 0);
+    const tdsDeducted = Number(row.tdsDeducted || 0);
+    const totalSettled = paidAmount + tdsDeducted;
     const netPayableAmount = Number(row.netPayableAmount || 0);
 
-    const outstandingAmount = Math.max(netPayableAmount - paidAmount, 0);
+    const outstandingAmount = Math.max(netPayableAmount - totalSettled, 0);
 
     // -----------------------------------------------
-    // Ignore fully paid invoices
+    // Ignore fully paid / settled invoices
     // -----------------------------------------------
 
-    if (outstandingAmount <= 0) {
+    if (outstandingAmount <= 0.001) {
       continue;
     }
 
@@ -458,6 +491,8 @@ export async function getClientPaymentReminderData(clientId = null) {
 
       invoiceAmount: Number(row.invoiceAmount || 0),
       paidAmount,
+      tdsDeducted,
+      totalSettled,
       outstandingAmount,
 
       creditDays,
@@ -638,8 +673,14 @@ export async function getClientPaymentReceivedData({
               inv?.netPayableAmount ??
               (grossInvoiceAmount > 0 ? grossInvoiceAmount : 0),
           );
+          const cashSettled = Number(
+            item.allocatedAmount ?? item.cashSettled ?? item.amount ?? 0,
+          );
+          const tdsSettled = Number(
+            item.allocatedTds ?? item.tdsSettled ?? item.tdsAmount ?? 0,
+          );
           const settledAmount = Number(
-            item.settledAmount ?? item.amount ?? item.allocatedAmount ?? 0,
+            item.settledAmount ?? cashSettled + tdsSettled,
           );
           // Rest Due Amount should be calculated (Net Payable - Payment Received), exclude Unallocated Amount
           const remainingBalance =
@@ -659,6 +700,8 @@ export async function getClientPaymentReceivedData({
             invoiceAmount:
               grossInvoiceAmount > 0 ? grossInvoiceAmount : netPayable,
             netPayableAmount: netPayable,
+            cashSettled,
+            tdsSettled,
             settledAmount,
             remainingBalance,
             status: remainingBalance <= 0 ? "paid" : "partial",
@@ -699,7 +742,9 @@ export async function getClientPaymentReceivedData({
       .select({
         paymentId: payments.id,
         amount: payments.amount,
-        allocated: sql`COALESCE(SUM(${paymentAllocations.allocatedAmount}), 0)`,
+        tdsAmount: payments.tdsAmount,
+        allocatedCash: sql`COALESCE(SUM(CAST(${paymentAllocations.allocatedAmount} AS numeric)), 0)`,
+        allocatedTds: sql`COALESCE(SUM(CAST(${paymentAllocations.allocatedTds} AS numeric)), 0)`,
       })
       .from(payments)
       .leftJoin(
@@ -716,12 +761,12 @@ export async function getClientPaymentReceivedData({
           eq(payments.isVoided, false),
         ),
       )
-      .groupBy(payments.id, payments.amount);
+      .groupBy(payments.id, payments.amount, payments.tdsAmount);
 
     for (const p of unallocatedRows) {
       const pAmt = Number(p.amount || 0);
-      const alloc = Number(p.allocated || 0);
-      clientUnallocatedBalance += Math.max(0, pAmt - alloc);
+      const allocCash = Number(p.allocatedCash || 0);
+      clientUnallocatedBalance += Math.max(0, pAmt - allocCash);
     }
   } catch (uErr) {
     console.warn("[getClientPaymentReceivedData - unallocated]", uErr?.message);
@@ -741,22 +786,27 @@ export async function getClientPaymentReceivedData({
   );
 
   // Payment Received = Settled against invoice(s) + unallocated amount (OR On Account)
+  const cashAmount =
+    paymentDetails.cashAmount !== undefined
+      ? Number(paymentDetails.cashAmount)
+      : paymentDetails.amount !== undefined
+        ? Number(paymentDetails.amount)
+        : totalSettledAmount;
+  const tdsAmount = Number(paymentDetails.tdsAmount || 0);
+  const totalPaidAndTds = cashAmount + tdsAmount;
+
   const rawUnallocated =
     paymentDetails.unallocatedAmount !== undefined
       ? Number(paymentDetails.unallocatedAmount)
-      : paymentDetails.amount !== undefined &&
-          Number(paymentDetails.amount) > totalSettledAmount
-        ? Number(paymentDetails.amount) - totalSettledAmount
+      : cashAmount > totalSettledAmount
+        ? cashAmount - totalSettledAmount
         : 0;
   const unallocatedAmount = Math.max(0, rawUnallocated);
 
-  const totalPaymentAmount =
-    paymentDetails.amount !== undefined
-      ? Math.max(
-          Number(paymentDetails.amount),
-          totalSettledAmount + unallocatedAmount,
-        )
-      : totalSettledAmount + unallocatedAmount;
+  const totalPaymentAmount = Math.max(
+    totalPaidAndTds,
+    totalSettledAmount + unallocatedAmount,
+  );
 
   // "Net Payable Amount" for a client should be totalNetPayable that is used on clients/[id]/page.js file
   const finalTotalNetPayable =
@@ -778,6 +828,8 @@ export async function getClientPaymentReceivedData({
     clientName: client.clientName,
 
     paymentAmount: totalPaymentAmount,
+    cashAmount,
+    tdsAmount,
     settledAmount: totalSettledAmount,
     unallocatedAmount,
     clientUnallocatedBalance,

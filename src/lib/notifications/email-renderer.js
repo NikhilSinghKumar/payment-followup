@@ -80,6 +80,9 @@ export function SingleInvoiceEmailTemplate({
     urgency || reminderType || type || "OVERDUE",
   ).toUpperCase();
 
+  const isBillSubmitted =
+    normalizedType === "BILL_SUBMITTED" || normalizedType === "SUBMITTED";
+
   let title = "Payment Reminder";
   let banner = "Payment Reminder";
   let color = "#2563EB";
@@ -139,10 +142,16 @@ export function SingleInvoiceEmailTemplate({
   const rawNet = Number(invoice.netPayableAmount || 0);
   const invoiceAmountVal = rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
   const netPayableVal = rawNet > 0 ? rawNet : invoiceAmountVal;
+  const tdsDeductedVal = Number(invoice.tdsDeducted || 0);
   const paidVal = Number(
-    invoice.paymentDeduction !== undefined && invoice.paymentDeduction !== null
-      ? invoice.paymentDeduction
-      : (invoice.paidAmount ?? invoice.paid ?? 0),
+    invoice.settledAmount !== undefined && invoice.settledAmount !== null
+      ? invoice.settledAmount
+      : invoice.totalSettled !== undefined && invoice.totalSettled !== null
+        ? invoice.totalSettled
+        : invoice.paymentDeduction !== undefined &&
+            invoice.paymentDeduction !== null
+          ? invoice.paymentDeduction
+          : Number(invoice.paidAmount ?? invoice.paid ?? 0) + tdsDeductedVal,
   );
   const dueAmt =
     invoice.due !== undefined && invoice.due !== null
@@ -204,42 +213,44 @@ export function SingleInvoiceEmailTemplate({
 
       {customNote && <CustomNote note={customNote} color={color} />}
 
-      <AccountFinancialSummary
-        overallDue={
-          clientSummary?.totalNetPayable ??
-          totalNetPayable ??
-          clientSummary?.netPayableAmount ??
-          invoiceAmountVal
-        }
-        paymentDeduction={
-          clientSummary?.paymentsReceived ??
-          paymentsReceived ??
-          clientSummary?.totalPaidAmount ??
-          paidVal
-        }
-        restDueAmount={
-          clientSummary?.netOutstanding ??
-          netOutstanding ??
-          clientSummary?.restDueAmount ??
-          dueAmt
-        }
-        totalNetPayable={
-          clientSummary?.totalNetPayable ??
-          totalNetPayable ??
-          clientSummary?.netPayableAmount ??
-          null
-        }
-        paymentsReceived={
-          clientSummary?.paymentsReceived ?? paymentsReceived ?? null
-        }
-        netOutstanding={
-          clientSummary?.netOutstanding ??
-          netOutstanding ??
-          clientSummary?.restDueAmount ??
-          null
-        }
-        isOverdue={Boolean(invoice.isOverdue)}
-      />
+      {!isBillSubmitted && (
+        <AccountFinancialSummary
+          overallDue={
+            clientSummary?.totalNetPayable ??
+            totalNetPayable ??
+            clientSummary?.netPayableAmount ??
+            invoiceAmountVal
+          }
+          paymentDeduction={
+            clientSummary?.paymentsReceived ??
+            paymentsReceived ??
+            clientSummary?.totalPaidAmount ??
+            paidVal
+          }
+          restDueAmount={
+            clientSummary?.netOutstanding ??
+            netOutstanding ??
+            clientSummary?.restDueAmount ??
+            dueAmt
+          }
+          totalNetPayable={
+            clientSummary?.totalNetPayable ??
+            totalNetPayable ??
+            clientSummary?.netPayableAmount ??
+            null
+          }
+          paymentsReceived={
+            clientSummary?.paymentsReceived ?? paymentsReceived ?? null
+          }
+          netOutstanding={
+            clientSummary?.netOutstanding ??
+            netOutstanding ??
+            clientSummary?.restDueAmount ??
+            null
+          }
+          isOverdue={Boolean(invoice.isOverdue)}
+        />
+      )}
 
       <SingleInvoiceDataTable
         invoice={invoice}
@@ -249,6 +260,7 @@ export function SingleInvoiceEmailTemplate({
         awbs={invoice.awbs || []}
         isOverdue={Boolean(invoice.isOverdue)}
         dueDaysText={invoice.dueDaysText}
+        isBillSubmitted={isBillSubmitted}
       />
 
       {invoice.isOverdue && invoice.dueDays >= 1 && (
@@ -256,6 +268,8 @@ export function SingleInvoiceEmailTemplate({
           message={`This invoice is past due by <strong>${invoice.dueDays} day(s)</strong>. If you have already done payment, please contact PAFEX accounts team for swift reconciliation.`}
         />
       )}
+
+      {actionUrl && <EmailButton text="View Invoice Online" url={actionUrl} />}
 
       {!isPaidOrCleared && <BankDetails company={company} />}
 
@@ -326,10 +340,20 @@ export function ClientStatementEmailTemplate({
     const rawNet = Number(inv.netPayableAmount || 0);
     const invoiceAmount = rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
     const netPayableAmount = rawNet > 0 ? rawNet : invoiceAmount;
+    const tdsDeducted = Number(
+      inv.tdsDeducted ?? inv.tdsSettled ?? inv.allocatedTds ?? 0,
+    );
+    const cashSettled = Number(
+      inv.cashSettled ?? inv.allocatedAmount ?? inv.paidAmount ?? inv.paid ?? 0,
+    );
     const paidAmount = Number(
       inv.paymentDeduction !== undefined && inv.paymentDeduction !== null
         ? inv.paymentDeduction
-        : (inv.paidAmount ?? inv.paid ?? 0),
+        : inv.settledAmount !== undefined && inv.settledAmount !== null
+          ? inv.settledAmount
+          : inv.totalSettled !== undefined && inv.totalSettled !== null
+            ? inv.totalSettled
+            : cashSettled + tdsDeducted,
     );
     const outstandingAmount =
       inv.due !== undefined && inv.due !== null
@@ -351,12 +375,17 @@ export function ClientStatementEmailTemplate({
     const dueDays = inv.dueDays || inv.agingDays || 0;
 
     return {
+      ...inv,
       invoiceNumber: inv.invoiceNumber,
       invoiceDate: inv.invoiceDate,
       dueDate: inv.dueDate,
       creditDays,
       invoiceAmount,
       paidAmount,
+      cashSettled,
+      tdsDeducted,
+      settledAmount: paidAmount,
+      totalSettled: paidAmount,
       outstandingAmount,
       isOverdue,
       dueDays,
@@ -412,6 +441,16 @@ export function ClientStatementEmailTemplate({
           ? Number(clientSummary.totalPaidAmount)
           : mappedInvoices.reduce((s, i) => s + (Number(i.paidAmount) || 0), 0);
 
+  const resolvedTdsDeducted = Number(
+    clientSummary?.tdsReceived !== undefined &&
+      clientSummary?.tdsReceived !== null
+      ? clientSummary.tdsReceived
+      : clientSummary?.totalTdsDeducted !== undefined &&
+          clientSummary?.totalTdsDeducted !== null
+        ? clientSummary.totalTdsDeducted
+        : mappedInvoices.reduce((s, i) => s + (Number(i.tdsDeducted) || 0), 0),
+  );
+
   const resolvedNetOutstanding =
     clientSummary?.netOutstanding !== undefined &&
     clientSummary?.netOutstanding !== null
@@ -426,7 +465,11 @@ export function ClientStatementEmailTemplate({
             : clientSummary?.outstandingAmount !== undefined &&
                 clientSummary?.outstandingAmount !== null
               ? Number(clientSummary.outstandingAmount)
-              : Math.max(0, resolvedTotalNetPayable - resolvedPaymentsReceived);
+              : Math.max(
+                  0,
+                  resolvedTotalNetPayable -
+                    (resolvedPaymentsReceived + resolvedTdsDeducted),
+                );
 
   // Calculate summaries dynamically if not explicitly provided
   const totalOutstanding = resolvedNetOutstanding;
@@ -529,8 +572,15 @@ export function ClientStatementEmailTemplate({
     client.companyName || client.name || "Finance & Accounts Team";
   const companyDisplayName = company.companyName || "PAFEX Logistics";
 
+  const settlementCash = Number(
+    paymentInfo?.cashAmount || paymentInfo?.amount || 0,
+  );
+  const settlementTds = Number(paymentInfo?.tdsAmount || 0);
   const settlementPaymentAmount = Number(
-    paymentInfo?.amount ||
+    paymentInfo?.totalPaymentAmount ||
+      (settlementCash + settlementTds > 0
+        ? settlementCash + settlementTds
+        : 0) ||
       (Array.isArray(settledInvoices)
         ? settledInvoices.reduce(
             (s, i) => s + Number(i.settledAmount || i.paidAmount || 0),
@@ -545,6 +595,17 @@ export function ClientStatementEmailTemplate({
       minimumFractionDigits: 2,
     },
   );
+  const formattedSettlementCash = settlementCash.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+  });
+  const formattedSettlementTds = settlementTds.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+  });
+
+  const settlementPaymentText =
+    settlementTds > 0.001
+      ? `₹${formattedSettlementPayment} (Cash: ₹${formattedSettlementCash}, TDS: ₹${formattedSettlementTds})`
+      : `₹${formattedSettlementPayment}`;
 
   const isAllOverdue =
     overdueInvoicesCount >= mappedInvoices.length ||
@@ -552,7 +613,7 @@ export function ClientStatementEmailTemplate({
 
   const defaultBody = isSettlement
     ? settlementPaymentAmount > 0
-      ? `We have received and credited your payment of ₹${formattedSettlementPayment} towards the outstanding invoices detailed below.`
+      ? `We have received and credited your payment of ${settlementPaymentText} towards the outstanding invoices detailed below.`
       : `We have received and credited your payment towards the outstanding invoices detailed below.`
     : normalizedType === "SUSPENSION_WARNING" ||
         normalizedType === "SERVICE_SUSPENSION_NOTICE"
@@ -616,6 +677,7 @@ export function ClientStatementEmailTemplate({
           showSummaryCards={true}
           overallDue={resolvedTotalNetPayable}
           paymentDeduction={resolvedPaymentsReceived}
+          tdsDeducted={resolvedTdsDeducted}
           restDueAmount={resolvedNetOutstanding}
           totalNetPayable={resolvedTotalNetPayable}
           paymentsReceived={resolvedPaymentsReceived}
@@ -1249,7 +1311,9 @@ export function renderEmail(props = {}) {
       invoiceDate: vars.invoiceDate || "",
       dueDate: vars.dueDate || "",
       invoiceAmount: Number(vars.invoiceAmount || 0),
+      tdsAmount: Number(vars.tdsAmount ?? props.invoice?.tdsAmount ?? 0),
       netPayableAmount: Number(vars.netPayableAmount || 0),
+      status: vars.status || props.invoice?.status || "Active / Due",
       paidAmount: Number(vars.paidAmount ?? vars.totalPaid ?? vars.paid ?? 0),
       outstandingAmount: Number(
         vars.outstandingAmount ?? vars.due ?? vars.restDueAmount ?? 0,
