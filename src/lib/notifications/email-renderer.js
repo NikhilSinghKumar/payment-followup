@@ -257,8 +257,6 @@ export function SingleInvoiceEmailTemplate({
         />
       )}
 
-      {actionUrl && <EmailButton text="View Invoice Online" url={actionUrl} />}
-
       {!isPaidOrCleared && <BankDetails company={company} />}
 
       <Signature
