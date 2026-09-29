@@ -101,9 +101,9 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                   Payment
                 </th>
 
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                {/* <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   On Account
-                </th>
+                </th> */}
 
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Invoices
@@ -148,7 +148,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     {/* On Account (Unallocated) */}
 
-                    <td className="whitespace-nowrap px-5 py-4 text-right">
+                    {/* <td className="whitespace-nowrap px-5 py-4 text-right">
                       <span
                         className={`text-sm font-medium ${
                           Number(payment.unallocatedAmount || 0) > 0
@@ -163,7 +163,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                       >
                         {formatCurrency(payment.unallocatedAmount)}
                       </span>
-                    </td>
+                    </td> */}
 
                     {/* Related Invoices */}
 
