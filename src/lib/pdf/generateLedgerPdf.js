@@ -178,17 +178,33 @@ export async function generateClientLedgerPdf({
     return a.sortDate - b.sortDate;
   });
 
-  // Calculate Running Debits, Credits, and Closing Balance
+  // Calculate Running Debits, Credits, Running Balance, and Closing Balance
   let totalDebits = 0;
   let totalCredits = 0;
+  let runningBalance = 0;
   const tableRows = [];
 
   if (transactions.length === 0) {
-    tableRows.push([formatLedgerDate(statementDate), "-", "-", "0.00", "0.00"]);
+    tableRows.push([
+      formatLedgerDate(statementDate),
+      "-",
+      "-",
+      "0.00",
+      "0.00",
+      "0.00",
+    ]);
   } else {
     for (const tx of transactions) {
       totalDebits += tx.debit;
       totalCredits += tx.credit;
+      runningBalance += tx.debit - tx.credit;
+
+      const balanceText =
+        runningBalance > 0.001
+          ? `${runningBalance.toFixed(2)} Dr`
+          : runningBalance < -0.001
+            ? `${Math.abs(runningBalance).toFixed(2)} Cr`
+            : "0.00";
 
       tableRows.push([
         tx.dateStr || "",
@@ -196,6 +212,7 @@ export async function generateClientLedgerPdf({
         tx.receiptNo || "",
         tx.debit > 0 ? tx.debit.toFixed(2) : "",
         tx.credit > 0 ? tx.credit.toFixed(2) : "",
+        balanceText,
       ]);
     }
   }
@@ -216,6 +233,10 @@ export async function generateClientLedgerPdf({
         styles: { fontStyle: "bold", halign: "right" },
       },
       "",
+      {
+        content: `${closingBalance.toFixed(2)} Dr`,
+        styles: { fontStyle: "bold", halign: "right" },
+      },
     ]);
   } else {
     tableRows.push([
@@ -228,6 +249,10 @@ export async function generateClientLedgerPdf({
       "",
       {
         content: Math.abs(closingBalance).toFixed(2),
+        styles: { fontStyle: "bold", halign: "right" },
+      },
+      {
+        content: `${Math.abs(closingBalance).toFixed(2)} Cr`,
         styles: { fontStyle: "bold", halign: "right" },
       },
     ]);
@@ -320,13 +345,21 @@ export async function generateClientLedgerPdf({
       lineWidth: 0.4,
     },
     columnStyles: {
-      0: { cellWidth: 28, halign: "left" },
-      1: { cellWidth: 44, halign: "left" },
-      2: { cellWidth: 40, halign: "left" },
-      3: { cellWidth: 35, halign: "right" },
-      4: { cellWidth: 35, halign: "right" },
+      0: { cellWidth: 26, halign: "left" },
+      1: { cellWidth: 34, halign: "left" },
+      2: { cellWidth: 32, halign: "left" },
+      3: { cellWidth: 30, halign: "right" },
+      4: { cellWidth: 30, halign: "right" },
+      5: { cellWidth: 30, halign: "right" },
     },
-    head: [["Date", "Invoice No.", "Receipt No.", "Debit", "Credit"]],
+    didParseCell: function (data) {
+      if (data.section === "head" && data.column.index >= 3) {
+        data.cell.styles.halign = "right";
+      }
+    },
+    head: [
+      ["Date", "Invoice No.", "Receipt No.", "Debit", "Credit", "Balance"],
+    ],
     body: tableRows,
   });
 

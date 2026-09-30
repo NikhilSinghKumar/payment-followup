@@ -99,7 +99,14 @@ export async function GET(req) {
       companyId: client?.companyId || null,
       email: targetEmail,
       clientName,
+      amount: totalSettled.toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+      }),
       paymentAmount: totalSettled,
+      formattedPaymentAmount: totalSettled.toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+      }),
+      count: String(settledInvoices.length),
       paymentDate: new Date().toISOString(),
       paymentMethod: "NEFT / Bank Transfer",
       referenceNumber: "UTR98320481239X",

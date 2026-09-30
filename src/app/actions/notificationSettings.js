@@ -577,7 +577,14 @@ export async function previewPaymentReceivedEmailAction(clientId = null) {
       companyId: activeCompanyId,
       email: "client@example.com",
       clientName,
+      amount: totalSettled.toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+      }),
       paymentAmount: totalSettled,
+      formattedPaymentAmount: totalSettled.toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+      }),
+      count: String(settledInvoices.length),
       paymentDate: new Date().toISOString(),
       paymentMethod: "NEFT / Bank Transfer",
       referenceNumber: "UTR98320481239X",

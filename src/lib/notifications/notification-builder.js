@@ -190,9 +190,9 @@ function buildPaymentReceived(data) {
       ? `₹${formattedAmount} (Cash: ₹${formattedCash}, TDS: ₹${formattedTds})`
       : `₹${formattedAmount}`;
 
-  const description = isMultiInvoice
-    ? `We are thankful for receiving your payment of ${paymentBreakdownText}, which has been successfully settled against ${data.settledInvoices.length} invoice(s). Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`
-    : `We are thankful for receiving your payment of ${paymentBreakdownText} against invoice ${data.invoiceNumber || ""}. Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`;
+  const invoiceCount = isMultiInvoice ? data.settledInvoices?.length || 1 : 1;
+
+  const description = `We are thankful for receiving your payment of ${paymentBreakdownText}, which has been successfully settled against ${invoiceCount} invoice(s). Remaining outstanding balance: ₹${formattedRemainingOutstanding}.`;
 
   const invoiceSummary = isMultiInvoice
     ? data.settledInvoices.length === 1
@@ -230,6 +230,7 @@ function buildPaymentReceived(data) {
       }
     : {
         ...buildInvoiceVariables(data),
+        invoiceNumber: data.invoiceNumber || "",
         amount: formattedAmount,
         paymentAmount,
         cashAmount,
@@ -247,6 +248,10 @@ function buildPaymentReceived(data) {
         remainingOutstanding,
         formattedRemainingOutstanding,
         totalAccountOutstanding: remainingOutstanding,
+        count: "1",
+        paymentDate: data.paymentDate || new Date().toISOString(),
+        paymentMethod: data.paymentMethod || data.method || "Bank Transfer",
+        referenceNumber: data.referenceNumber || data.reference || "N/A",
       };
 
   return buildBaseNotification(

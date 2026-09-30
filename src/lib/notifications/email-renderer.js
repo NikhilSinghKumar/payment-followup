@@ -187,13 +187,39 @@ export function SingleInvoiceEmailTemplate({
           : normalizedType === "BILL_SUBMITTED" ||
               normalizedType === "SUBMITTED"
             ? `Please find attached your invoice #${invoice.invoiceNumber} dated ${formattedInvoiceDate} for ₹${formattedTotal}. Kindly arrange for settlement on or before ${formattedDueDate}.`
-            : normalizedType === "PAID" || normalizedType === "PAYMENT_CLEARED"
-              ? `Thank you for your payment. Invoice #${invoice.invoiceNumber} has been fully settled and recorded in our accounts.`
+            : normalizedType === "PAID" ||
+                normalizedType === "PAYMENT_CLEARED" ||
+                normalizedType === "PAYMENT_RECEIVED"
+              ? `We are thankful for receiving your payment of ₹${formattedPaid && formattedPaid !== "0.00" ? formattedPaid : formattedTotal}, which has been successfully settled against 1 invoice(s).`
               : `This is a reminder regarding the outstanding balance of ₹${formattedDue} for invoice #${invoice.invoiceNumber} which is currently overdue. Kindly process the payment at your earliest convenience.`;
 
-  const paragraphText = body || defaultBody;
+  let paragraphText = body || defaultBody;
+  if (
+    (normalizedType === "PAYMENT_RECEIVED" ||
+      normalizedType === "PAID" ||
+      normalizedType === "PAYMENT_CLEARED") &&
+    (paragraphText.includes("We have received and credited your payment") ||
+      paragraphText.includes("We have received payment"))
+  ) {
+    paragraphText = defaultBody;
+  }
+  if (paragraphText) {
+    paragraphText = paragraphText
+      .replace(
+        /\{\{amount\}\}/g,
+        formattedPaid && formattedPaid !== "0.00"
+          ? formattedPaid
+          : formattedTotal,
+      )
+      .replace(/\{\{count\}\}/g, "1")
+      .replace(/\{\{clientName\}\}/g, clientDisplayName)
+      .replace(/\{\{companyName\}\}/g, companyDisplayName)
+      .replace(/\{\{senderCompany\}\}/g, companyDisplayName);
+  }
   const isPaidOrCleared =
-    normalizedType === "PAID" || normalizedType === "PAYMENT_CLEARED";
+    normalizedType === "PAID" ||
+    normalizedType === "PAYMENT_CLEARED" ||
+    normalizedType === "PAYMENT_RECEIVED";
 
   return (
     <EmailLayout
@@ -538,7 +564,7 @@ export function ClientStatementEmailTemplate({
   ) {
     title = `URGENT: Outstanding Dues & Credit Terms Warning - ${client.companyName || client.name || ""}`;
     banner = "Credit Terms Warning / Final Demand";
-    color = "#DC2626";
+    color = "#2654b6";
     background = "#FEE2E2";
   } else if (
     normalizedType === "OVERDUE_NOTICE" ||
@@ -548,13 +574,13 @@ export function ClientStatementEmailTemplate({
   ) {
     title = `Overdue Statement of Account: ${overdueInvoicesCount} Overdue Invoices - ${client.companyName || client.name || ""}`;
     banner = "Overdue Statement";
-    color = "#EA580C";
+    color = "#2654b6";
     background = "#FFEDD5";
   } else {
     // STATEMENT / DUE_REMINDER
     title = `Statement of Outstanding Invoices (${mappedInvoices.length} Invoices) - ${client.companyName || client.name || ""}`;
     banner = "Statement of Outstanding Invoices";
-    color = "#2563EB";
+    color = "#2654b6";
     background = "#DBEAFE";
   }
 
@@ -611,20 +637,40 @@ export function ClientStatementEmailTemplate({
     overdueInvoicesCount >= mappedInvoices.length ||
     (totalOutstanding > 0 && overdueAmount >= totalOutstanding);
 
+  const settlementInvoiceCount =
+    mappedInvoices && mappedInvoices.length > 0 ? mappedInvoices.length : 1;
+
   const defaultBody = isSettlement
     ? settlementPaymentAmount > 0
-      ? `We have received and credited your payment of ${settlementPaymentText} towards the outstanding invoices detailed below.`
-      : `We have received and credited your payment towards the outstanding invoices detailed below.`
+      ? mappedInvoices.length > 0
+        ? `We are thankful for receiving your payment of ${settlementPaymentText}, which has been successfully settled against ${mappedInvoices.length} invoice(s).`
+        : `We are thankful for receiving your payment of ${settlementPaymentText}, which has been credited to your account ledger.`
+      : `We are thankful for receiving your payment, which has been credited to your account ledger.`
     : normalizedType === "SUSPENSION_WARNING" ||
         normalizedType === "SERVICE_SUSPENSION_NOTICE"
       ? `Please find below the consolidated statement of your outstanding ledger. There are currently ${mappedInvoices.length} unpaid invoices totaling ₹${formattedTotalOutstanding}, with ${overdueInvoicesCount} invoice(s) critically overdue${resolvedOnAccount > 0 ? ` (after adjusting ₹${formattedOnAccount} on-account credit)` : ""}. Please settle these outstanding balances immediately to avoid interruption to dispatch and credit services.`
       : overdueInvoicesCount > 0
         ? isAllOverdue
-          ? `Please find below your statement of outstanding invoices. There are currently ${overdueInvoicesCount} overdue invoice(s) totaling ₹${formattedTotalOutstanding}${resolvedOnAccount > 0 ? ` (after adjusting ₹${formattedOnAccount} on-account payment)` : ""}. Kindly prioritize clearance of these pending bills.`
-          : `Please find below your statement of outstanding invoices. There are currently ${overdueInvoicesCount} overdue invoice(s) totaling ₹${formattedOverdueAmount}${resolvedOnAccount > 0 ? ` (after adjusting on-account credit)` : ""} out of total outstanding ₹${formattedTotalOutstanding}. Kindly prioritize clearance of these pending bills.`
-        : `Please find below the consolidated statement of your open invoices with ${companyDisplayName}. There are currently ${mappedInvoices.length} outstanding invoices with a total pending balance of ₹${formattedTotalOutstanding}.`;
+          ? `Please find below your statement of outstanding invoices. Kindly prioritize clearance of these pending bills.`
+          : `Please find below your statement of outstanding invoices. Kindly prioritize clearance of these pending bills.`
+        : `Please find below the consolidated statement of your open invoices.`;
 
-  const paragraphText = body || defaultBody;
+  let paragraphText = body || defaultBody;
+  if (
+    isSettlement &&
+    (paragraphText.includes("We have received and credited your payment") ||
+      paragraphText.includes("We have received payment"))
+  ) {
+    paragraphText = defaultBody;
+  }
+  if (paragraphText) {
+    paragraphText = paragraphText
+      .replace(/\{\{amount\}\}/g, formattedSettlementPayment)
+      .replace(/\{\{count\}\}/g, String(settlementInvoiceCount))
+      .replace(/\{\{clientName\}\}/g, clientDisplayName)
+      .replace(/\{\{companyName\}\}/g, companyDisplayName)
+      .replace(/\{\{senderCompany\}\}/g, companyDisplayName);
+  }
 
   return (
     <EmailLayout
@@ -697,7 +743,7 @@ export function ClientStatementEmailTemplate({
       <p style={{ fontSize: "13px", color: "#64748B", margin: "16px 0 0 0" }}>
         {isSettlement
           ? "Please review the settlement details and notify our Accounts Team within 2 days if there are any discrepancies."
-          : "Kindly share payment receipts / UTR details with our accounts team for swift ledger reconciliation."}
+          : "For any discrepancy, please contact our accounts team for swift ledger reconciliation."}
       </p>
 
       <Signature

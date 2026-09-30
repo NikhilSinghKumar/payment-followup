@@ -311,23 +311,23 @@ export async function sendInvoiceReminder({
       case "DUE_SOON":
         subject = `Upcoming Payment Reminder: Invoice #${invoice.invoiceNumber} | ${company.companyName || "PAFEX"}`;
         headerTitle = "Payment Due Soon";
-        headerColor = "#2563eb";
+        headerColor = "#2654b6";
         break;
       case "DUE_TODAY":
         subject = `Payment Due Today: Invoice #${invoice.invoiceNumber} | ${company.companyName || "PAFEX"}`;
         headerTitle = "Invoice Due Today";
-        headerColor = "#d97706"; // Amber
+        headerColor = "#2654b6"; // Amber
         break;
       case "FINAL_NOTICE":
         subject = `FINAL NOTICE: Overdue Payment for Invoice #${invoice.invoiceNumber} | Immediate Action Required`;
         headerTitle = "Final Notice / Credit Warning";
-        headerColor = "#dc2626"; // Red
+        headerColor = "#2654b6"; // Red
         break;
       case "OVERDUE":
       default:
         subject = `Overdue Payment Reminder"})`;
         headerTitle = "Overdue Payment Reminder";
-        headerColor = "#ea580c"; // Orange
+        headerColor = "#2654b6"; // Orange
         break;
     }
 

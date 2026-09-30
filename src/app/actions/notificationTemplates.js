@@ -356,6 +356,7 @@ export async function renderTemplatePreview({ type, subject, body }) {
         paidAmount: isCleared ? "45,250.00" : "0.00",
         outstandingAmount: isCleared ? "0.00" : "45,250.00",
         amount: isCleared ? "45,250.00" : "0.00",
+        count: "1",
         isDueToday: isDueToday,
         isOverdue: false,
         dueDays: 0,

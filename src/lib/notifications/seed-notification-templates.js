@@ -73,12 +73,8 @@ Thank you for your prompt attention and continued partnership.`,
     companyId: null,
     type: "PAYMENT_CLEARED",
     name: "Payment Cleared",
-    subject: "Invoice {{invoiceNumber}} Paid Successfully",
-    body: `We are pleased to inform you that the invoice below has been fully settled.
-
-Thank you for completing the payment.
-
-We look forward to continuing to serve you and appreciate your valued business.`,
+    subject: "Payment Received - PAFEX",
+    body: `We are thankful for receiving your payment of ₹{{amount}}, which has been successfully settled against {{count}} invoice(s).`,
     isDefault: true,
     isActive: true,
   },

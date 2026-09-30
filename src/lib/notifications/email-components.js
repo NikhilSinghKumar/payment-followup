@@ -867,7 +867,7 @@ export function ClientOutstandingInvoices({
                   whiteSpace: "nowrap",
                 }}
               >
-                Invoice Amount (₹)
+                Net Payable (₹)
               </th>
               <th
                 align="right"
@@ -1024,7 +1024,7 @@ export function ClientOutstandingInvoices({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(invOverall)}
+                    {formatCurrency(rawNet > 0 ? rawNet : invOverall)}
                   </td>
                   <td
                     style={{
@@ -1117,7 +1117,7 @@ export function ClientOutstandingInvoices({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(totals.invoiceAmount)}
+                    {formatCurrency(totals.netPayableAmount)}
                   </td>
                   <td
                     style={{
@@ -1157,7 +1157,7 @@ export function ClientOutstandingInvoices({
                 </tr>
 
                 {/* 2. Unallocated / On-Account credit adjustment row */}
-                <tr
+                {/* <tr
                   style={{
                     background: "#F0FDF4",
                     borderTop: "1px dashed #86EFAC",
@@ -1221,7 +1221,7 @@ export function ClientOutstandingInvoices({
                   >
                     Credit Held on Ledger
                   </td>
-                </tr>
+                </tr> */}
 
                 {/* 3. Reconciled Net Rest Due Row */}
                 <tr
@@ -1240,7 +1240,7 @@ export function ClientOutstandingInvoices({
                       textAlign: "right",
                     }}
                   >
-                    Total Net Rest Due:
+                    Total Due:
                   </td>
                   <td
                     style={{
@@ -1252,7 +1252,7 @@ export function ClientOutstandingInvoices({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(totals.invoiceAmount)}
+                    {formatCurrency(totals.netPayableAmount)}
                   </td>
                   <td
                     style={{
@@ -1277,17 +1277,6 @@ export function ClientOutstandingInvoices({
                     }}
                   >
                     {formatCurrency(displayRestDue)}
-                  </td>
-                  <td
-                    colSpan={2}
-                    style={{
-                      padding: "11px 8px",
-                      color: hasAnyOverdue ? "#DC2626" : "#0F172A",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {hasAnyOverdue ? "Net Overdue" : "Net Due"}
                   </td>
                 </tr>
               </>
@@ -1321,7 +1310,7 @@ export function ClientOutstandingInvoices({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {formatCurrency(totals.invoiceAmount)}
+                  {formatCurrency(totals.netPayableAmount)}
                 </td>
                 <td
                   style={{
@@ -1363,27 +1352,6 @@ export function ClientOutstandingInvoices({
           </tbody>
         </table>
       </div>
-
-      {resolvedUnallocated > 0 && (
-        <div
-          style={{
-            background: "#F0FDF4",
-            border: "1px solid #BBF7D0",
-            borderLeft: "4px solid #16A34A",
-            borderRadius: "6px",
-            padding: "10px 14px",
-            marginTop: "12px",
-            fontSize: "12px",
-            color: "#166534",
-            lineHeight: 1.5,
-          }}
-        >
-          <strong>On-Account Credit Applied:</strong> An unallocated payment of{" "}
-          <strong>{formatCurrency(resolvedUnallocated)}</strong> is credited on
-          your ledger and adjusted against your pending dues, reducing net rest
-          due to <strong>{formatCurrency(displayRestDue)}</strong>.
-        </div>
-      )}
     </div>
   );
 }
@@ -1557,7 +1525,7 @@ export function AccountFinancialSummary({
             >
               {parsedDeduction > 0
                 ? parsedOnAccount > 0
-                  ? `✓ ${deductionSubtext} (incl. ${formatCurrency(parsedOnAccount)} on-account)`
+                  ? `✓ ${deductionSubtext}`
                   : `✓ ${deductionSubtext}`
                 : "Nil / Unpaid"}
             </div>
@@ -1625,7 +1593,7 @@ export function AccountFinancialSummary({
               {isZeroRest
                 ? "All Dues Cleared 🎉"
                 : isOverdue
-                  ? "⚠️ Overdue for Payment"
+                  ? "⚠️ Due for Payment"
                   : restSubtext}
             </div>
           </td>
@@ -2335,7 +2303,7 @@ export function ClientPaymentSettlementTable({
   const card2Label = "Payment Received";
   const card2Subtext =
     unallocatedAmount > 0
-      ? `Settled: ${formatCurrency(settledAgainstInvoices)} + On Account: ${formatCurrency(unallocatedAmount)}`
+      ? `Settled: ${formatCurrency(settledAgainstInvoices)}`
       : "Settled against invoice(s)";
 
   const card3Value = parsedRemaining;
@@ -2719,28 +2687,7 @@ export function ClientPaymentSettlementTable({
         </>
       )}
 
-      {/* 4. On-Account / Unallocated Credit Note if present */}
-      {unallocatedAmount > 0 && (
-        <div
-          style={{
-            background: "#F0FDF4",
-            border: "1px solid #BBF7D0",
-            borderLeft: "4px solid #16A34A",
-            borderRadius: "6px",
-            padding: "12px 14px",
-            marginTop: "16px",
-            fontSize: "13px",
-            color: "#166534",
-            lineHeight: 1.5,
-          }}
-        >
-          💰 <strong>On Account / Unallocated Amount:</strong>{" "}
-          <strong>{formatCurrency(unallocatedAmount)}</strong> has been credited
-          to your account and will be adjusted against future invoices.
-        </div>
-      )}
-
-      {/* 5. Dynamic Ledger Position Note */}
+      {/* 4. Dynamic Ledger Position Note */}
       {parsedRemaining > 0 ? (
         <div
           style={{
@@ -2755,11 +2702,8 @@ export function ClientPaymentSettlementTable({
             lineHeight: 1.5,
           }}
         >
-          ℹ️ <strong>Updated Ledger Balance:</strong> After allocating this
-          payment of <strong>{formatCurrency(parsedPayment)}</strong>, your
-          total remaining account balance is{" "}
-          <strong>{formatCurrency(parsedRemaining)}</strong>. Kindly ensure
-          timely settlement of the remaining dues as per agreed credit terms.
+          ℹ️ Kindly ensure timely settlement of the remaining dues as per agreed
+          credit terms.
         </div>
       ) : (
         <div
@@ -2775,10 +2719,8 @@ export function ClientPaymentSettlementTable({
             lineHeight: 1.5,
           }}
         >
-          ✅ <strong>Account Fully Cleared:</strong> All outstanding invoices
-          have been settled in full. Your account currently has{" "}
-          <strong>₹0.00</strong> outstanding dues. Thank you for your prompt
-          partnership!
+          ✅ All outstanding invoices have been settled in full. Thank you for
+          your prompt partnership!
         </div>
       )}
     </div>
