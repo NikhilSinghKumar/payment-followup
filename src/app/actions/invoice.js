@@ -39,6 +39,13 @@ export async function createInvoice(formData) {
   const invoiceNumber = formData.get("invoiceNumber")?.trim();
   const notes = formData.get("notes")?.trim();
 
+  const sendEmailRaw = formData.get("sendEmail");
+  let sendEmail = undefined;
+  if (sendEmailRaw !== null && sendEmailRaw !== undefined) {
+    sendEmail =
+      sendEmailRaw === "true" || sendEmailRaw === "on" || sendEmailRaw === "1";
+  }
+
   const invoiceAmount = parseFloat(formData.get("invoiceAmount"));
 
   const deductionAmount = parseFloat(formData.get("deductionAmount") || 0);
@@ -302,7 +309,9 @@ export async function createInvoice(formData) {
   // =====================================
 
   try {
-    await processInvoiceEvents(invoice.id);
+    await processInvoiceEvents(invoice.id, {
+      sendEmail,
+    });
   } catch (notificationErr) {
     console.warn(
       `[createInvoice] Notification event failed for invoice #${invoice.id}:`,

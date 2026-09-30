@@ -6,6 +6,7 @@ import { getInvoiceById, updateInvoice } from "@/app/actions/invoice";
 
 import { getClientById, getClients } from "@/app/actions/client";
 import { getSubClients } from "@/app/actions/sub-client";
+import { getNotificationSettings } from "@/app/actions/notificationSettings";
 
 export default async function EditInvoicePage({ params }) {
   const { id } = await params;
@@ -16,10 +17,11 @@ export default async function EditInvoicePage({ params }) {
     notFound();
   }
 
-  const [client, clients, subClients] = await Promise.all([
+  const [client, clients, subClients, settingsData] = await Promise.all([
     getClientById(invoice.clientId),
     getClients(),
     getSubClients(),
+    getNotificationSettings(),
   ]);
 
   if (!client) {
@@ -50,6 +52,7 @@ export default async function EditInvoicePage({ params }) {
             invoice={invoice}
             action={updateInvoice.bind(null, id)}
             submitLabel="Update Invoice"
+            notificationSettings={settingsData?.settings || null}
           />
         </div>
       </div>

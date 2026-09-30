@@ -348,64 +348,98 @@ export default function NotificationSettingsForm({
             </div>
           </div>
 
-          {/* Rule 4: Bill Submission Acknowledgement */}
+          {/* Rule 4: Bill Submission Trigger Control (Invoice Form Insert) */}
           <div className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-xl">
-              <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                Bill Submission Confirmation
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                  Bill Submission Email (Invoice Form Insert)
+                </span>
+                {form.sendBillSubmission ? (
+                  <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    Automated Trigger Active
+                  </span>
+                ) : (
+                  <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                    Manual Trigger Only
+                  </span>
+                )}
+              </div>
               <p className="mt-0.5 text-xs text-zinc-500">
-                Sends initial submission email to client contact upon creating a
-                new invoice.
+                {form.sendBillSubmission
+                  ? "Automated: Automatically sends bill submission email to the client contact upon inserting a new invoice from the invoice form (form checkbox defaults to checked)."
+                  : "Manual: Does not send automatically upon inserting an invoice. User must explicitly check 'Send bill submission email' on the invoice form."}
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => handleToggle("sendBillSubmission")}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                form.sendBillSubmission
-                  ? "bg-blue-600"
-                  : "bg-zinc-300 dark:bg-zinc-700"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                  form.sendBillSubmission ? "translate-x-5" : "translate-x-0"
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                {form.sendBillSubmission ? "Automated" : "Manual"}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleToggle("sendBillSubmission")}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                  form.sendBillSubmission
+                    ? "bg-blue-600"
+                    : "bg-zinc-300 dark:bg-zinc-700"
                 }`}
-              />
-            </button>
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    form.sendBillSubmission ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
-          {/* Rule 5: Payment Receipt Acknowledgement */}
+          {/* Rule 5: Payment Receipt Trigger Control (Payment Form Insert) */}
           <div className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-xl">
-              <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                Payment Receipt Acknowledgement
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                  Payment Receipt & Settlement Email (Payment Form Insert)
+                </span>
+                {form.sendPaymentConfirmation ? (
+                  <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    Automated Trigger Active
+                  </span>
+                ) : (
+                  <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                    Manual Trigger Only
+                  </span>
+                )}
+              </div>
               <p className="mt-0.5 text-xs text-zinc-500">
-                Sends an instant thank-you receipt and ledger balance update
-                when payment is recorded.
+                {form.sendPaymentConfirmation
+                  ? "Automated: Automatically sends payment acknowledgment and multi-invoice settlement receipt upon recording a payment from the payment form (form checkbox defaults to checked)."
+                  : "Manual: Does not send automatically upon recording payment. User must explicitly check 'Send payment receipt email' on the payment form."}
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => handleToggle("sendPaymentConfirmation")}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                form.sendPaymentConfirmation
-                  ? "bg-blue-600"
-                  : "bg-zinc-300 dark:bg-zinc-700"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                {form.sendPaymentConfirmation ? "Automated" : "Manual"}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleToggle("sendPaymentConfirmation")}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                   form.sendPaymentConfirmation
-                    ? "translate-x-5"
-                    : "translate-x-0"
+                    ? "bg-blue-600"
+                    : "bg-zinc-300 dark:bg-zinc-700"
                 }`}
-              />
-            </button>
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    form.sendPaymentConfirmation
+                      ? "translate-x-5"
+                      : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
           {/* Rule 6: Service Suspension Notice */}

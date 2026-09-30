@@ -11,13 +11,17 @@ import {
   CreditCard,
   Hash,
   FileText,
+  Mail,
 } from "lucide-react";
 
 import ClientCombobox from "@/app/components/ui/ClientCombobox";
 import AwbDetailsPopover from "@/app/components/payment/AwbDetailsPopover";
 import { createPayment, getInvoicesForPayment } from "@/app/actions/payment";
 
-export default function PaymentForm({ clients = [] }) {
+export default function PaymentForm({
+  clients = [],
+  notificationSettings = null,
+}) {
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientSummary, setClientSummary] = useState(null);
   const [invoices, setInvoices] = useState([]);
@@ -28,6 +32,12 @@ export default function PaymentForm({ clients = [] }) {
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  const [sendEmail, setSendEmail] = useState(
+    notificationSettings
+      ? Boolean(notificationSettings.sendPaymentConfirmation)
+      : true,
+  );
 
   const [values, setValues] = useState({
     amount: "",
@@ -264,6 +274,11 @@ export default function PaymentForm({ clients = [] }) {
           type="hidden"
           name="subClientId"
           value={selectedSubClientId || ""}
+        />
+        <input
+          type="hidden"
+          name="sendEmail"
+          value={sendEmail ? "true" : "false"}
         />
 
         {/* Hidden Allocation Form Inputs */}
@@ -711,30 +726,64 @@ export default function PaymentForm({ clients = [] }) {
           )}
 
           {/* Bottom Action Bar */}
-          <div className="flex items-center justify-end gap-2 border-t border-zinc-200 bg-zinc-50/90 px-4 py-2 dark:border-zinc-800 dark:bg-zinc-800/60">
-            <Link
-              href="/payments"
-              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3.5 text-xs font-medium text-zinc-700 shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={!canSubmit || isPending}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isPending ? (
-                <>
-                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Check size={14} />
-                  <span>Save Payment</span>
-                </>
-              )}
-            </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50/90 px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-800/60">
+            {/* Manual / Automated Email Trigger Control */}
+            <label className="flex items-center gap-2 cursor-pointer text-xs select-none">
+              <input
+                type="checkbox"
+                checked={sendEmail}
+                onChange={(e) => setSendEmail(e.target.checked)}
+                className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800"
+              />
+              <div className="flex items-center gap-1.5">
+                <Mail
+                  size={14}
+                  className={sendEmail ? "text-blue-600" : "text-zinc-400"}
+                />
+                <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                  Send payment receipt & settlement email to client
+                </span>
+                {notificationSettings && (
+                  <span
+                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                      notificationSettings.sendPaymentConfirmation
+                        ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300"
+                        : "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                    }`}
+                  >
+                    {notificationSettings.sendPaymentConfirmation
+                      ? "Automated Default"
+                      : "Manual Default"}
+                  </span>
+                )}
+              </div>
+            </label>
+
+            <div className="flex items-center justify-end gap-2">
+              <Link
+                href="/payments"
+                className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3.5 text-xs font-medium text-zinc-700 shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                disabled={!canSubmit || isPending}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isPending ? (
+                  <>
+                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={14} />
+                    <span>Save Payment</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </form>

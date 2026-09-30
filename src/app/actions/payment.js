@@ -241,6 +241,13 @@ export async function createPayment(formData) {
 
   const notes = formData.get("notes")?.trim() || null;
 
+  const sendEmailRaw = formData.get("sendEmail");
+  let sendEmail = undefined;
+  if (sendEmailRaw !== null && sendEmailRaw !== undefined) {
+    sendEmail =
+      sendEmailRaw === "true" || sendEmailRaw === "on" || sendEmailRaw === "1";
+  }
+
   const subClientIdRaw = formData.get("subClientId");
   const subClientId =
     subClientIdRaw && subClientIdRaw !== "" && !isNaN(Number(subClientIdRaw))
@@ -516,6 +523,7 @@ export async function createPayment(formData) {
           invoiceId: a.invoiceId,
           settledAmount: a.allocatedAmount,
         })),
+        sendEmail,
       });
     }
   } catch (notifErr) {
