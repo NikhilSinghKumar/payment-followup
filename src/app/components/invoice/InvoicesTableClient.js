@@ -72,7 +72,9 @@ export default function InvoicesTableClient({ invoices = [] }) {
       {/* Quick Selection Toolbar (if overdue exist) */}
       <div className="mb-2 flex items-center justify-between px-1 text-xs text-zinc-500">
         <div className="flex items-center gap-2">
-          <span>{invoices.length} invoices displayed</span>
+          <span>
+            {invoices.length} Invoices: Overdue ({overdueInvoices.length})
+          </span>
           {overdueInvoices.length > 0 && (
             <button
               type="button"
@@ -80,7 +82,7 @@ export default function InvoicesTableClient({ invoices = [] }) {
               className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300"
             >
               <AlertTriangle size={11} />
-              <span>Select All Overdue ({overdueInvoices.length})</span>
+              <span>Select All </span>
             </button>
           )}
         </div>
