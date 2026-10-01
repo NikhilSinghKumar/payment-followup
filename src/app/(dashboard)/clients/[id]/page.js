@@ -189,7 +189,10 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2 className="mt-2 text-md font-semibold text-zinc-800 dark:text-zinc-100">
-              ₹{totalAmount.toLocaleString("en-IN")}
+              ₹
+              {totalAmount.toLocaleString("en-IN", {
+                maximumFractionDigits: 0,
+              })}
             </h2>
           </div>
 
