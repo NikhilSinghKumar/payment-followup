@@ -103,21 +103,58 @@ export async function POST(req) {
       );
     }
 
+    const isBlankRow = (row) => {
+      if (!row || typeof row !== "object") return true;
+      const values = Object.values(row);
+      const allEmpty = values.every(
+        (val) => val === undefined || val === null || String(val).trim() === "",
+      );
+      if (allEmpty) return true;
+
+      const hasClient = Boolean(
+        getRowValue(
+          row,
+          "client_code",
+          "Client Code",
+          "company_code",
+          "Company Code",
+          "client",
+          "company",
+        ),
+      );
+      const hasAmount = Boolean(
+        getRowValue(
+          row,
+          "amount",
+          "Amount",
+          "payment_amount",
+          "Payment Amount",
+        ),
+      );
+      return !hasClient && !hasAmount;
+    };
+
+    const validRecords = [];
+    for (let i = 0; i < records.length; i++) {
+      const row = records[i];
+      if (!isBlankRow(row)) {
+        validRecords.push({ row, csvRow: i + 2 });
+      }
+    }
+
     let inserted = 0;
     let skipped = 0;
     const insertedPaymentIds = [];
 
-    const total = records.length;
+    const total = validRecords.length;
     const errors = [];
+    const batchTracker = new Set();
 
     // =====================================
     // PROCESS ROWS
     // =====================================
 
-    for (let i = 0; i < records.length; i++) {
-      const row = records[i];
-      const csvRow = i + 2;
-
+    for (const { row, csvRow } of validRecords) {
       const clientCode = getRowValue(
         row,
         "client_code",
@@ -496,6 +533,31 @@ export async function POST(req) {
         }
 
         // =====================================
+        // IN-BATCH DUPLICATE CHECK
+        // =====================================
+        const batchFingerprint = reference
+          ? `ref:${clientData.id}:${reference.toLowerCase()}`
+          : receiptNumber
+            ? `rcpt:${receiptNumber.toLowerCase()}`
+            : invoiceNumbers.length > 0
+              ? `inv:${clientData.id}:${[...invoiceNumbers].sort().join(",")}:${paymentDate.toISOString().slice(0, 10)}:${amount.toFixed(2)}`
+              : `onacc:${clientData.id}:${targetSubClientId || "none"}:${paymentDate.toISOString().slice(0, 10)}:${amount.toFixed(2)}`;
+
+        if (batchTracker.has(batchFingerprint)) {
+          skipped++;
+          errors.push({
+            row: csvRow,
+            clientCode: clientData.companyCode || clientCode,
+            subClientCode: matchedSubClientLabel || subClientCode || "",
+            invoices: invoiceNumbers.join(", ") || "",
+            reference: reference || receiptNumber || "",
+            reason: "Duplicate payment row within this import file.",
+          });
+          continue;
+        }
+        batchTracker.add(batchFingerprint);
+
+        // =====================================
         // DUPLICATE RECEIPT CHECK
         // =====================================
 
@@ -563,6 +625,146 @@ export async function POST(req) {
             });
 
             continue;
+          }
+        }
+
+        // =====================================
+        // COMPOUND DUPLICATE CHECK (WHEN REFERENCE & RECEIPT ARE BLANK)
+        // =====================================
+
+        if (!reference && !receiptNumber) {
+          if (invoiceNumbers.length > 0) {
+            // Case A: Explicit invoices specified in CSV.
+            // Check if all specified invoices are already fully settled (outstanding <= 0.001)
+            const totalOutstanding = invoiceRows.reduce(
+              (sum, inv) => sum + Number(inv.outstandingAmount || 0),
+              0,
+            );
+
+            if (totalOutstanding <= 0.001) {
+              // The designated invoice(s) are already completely paid.
+              // Find the existing payment for better reporting
+              const existingPaymentForInv = await db
+                .select({
+                  id: payments.id,
+                  receiptNumber: payments.receiptNumber,
+                  amount: payments.amount,
+                  paymentDate: payments.paymentDate,
+                })
+                .from(payments)
+                .innerJoin(
+                  paymentAllocations,
+                  eq(paymentAllocations.paymentId, payments.id),
+                )
+                .where(
+                  and(
+                    eq(payments.companyId, companyId),
+                    eq(payments.clientId, clientData.id),
+                    inArray(
+                      paymentAllocations.invoiceId,
+                      invoiceRows.map((inv) => inv.id),
+                    ),
+                    isNull(payments.deletedAt),
+                    eq(payments.isVoided, false),
+                  ),
+                )
+                .limit(1);
+
+              skipped++;
+              const receiptInfo = existingPaymentForInv[0]?.receiptNumber
+                ? ` (Receipt: ${existingPaymentForInv[0].receiptNumber})`
+                : "";
+
+              errors.push({
+                row: csvRow,
+                clientCode: clientData.companyCode || clientCode,
+                subClientCode: matchedSubClientLabel || subClientCode || "",
+                invoices: invoiceNumbers.join(", "),
+                reference: "",
+                reason: `Duplicate payment: Invoice(s) '${invoiceNumbers.join(", ")}' are already settled${receiptInfo}.`,
+              });
+
+              continue;
+            }
+
+            // Also check if an identical payment (same client, same invoice, same date within 24h, same amount) already exists
+            const sameInvoicePayment = await db
+              .select({
+                id: payments.id,
+                receiptNumber: payments.receiptNumber,
+              })
+              .from(payments)
+              .innerJoin(
+                paymentAllocations,
+                eq(paymentAllocations.paymentId, payments.id),
+              )
+              .where(
+                and(
+                  eq(payments.companyId, companyId),
+                  eq(payments.clientId, clientData.id),
+                  inArray(
+                    paymentAllocations.invoiceId,
+                    invoiceRows.map((inv) => inv.id),
+                  ),
+                  sql`ABS(EXTRACT(EPOCH FROM (${payments.paymentDate} - ${paymentDate.toISOString()}::timestamptz))) < 86400`,
+                  sql`ABS(CAST(${payments.amount} AS numeric) - ${amount}) < 0.01`,
+                  isNull(payments.deletedAt),
+                  eq(payments.isVoided, false),
+                ),
+              )
+              .limit(1);
+
+            if (sameInvoicePayment.length > 0) {
+              skipped++;
+              errors.push({
+                row: csvRow,
+                clientCode: clientData.companyCode || clientCode,
+                subClientCode: matchedSubClientLabel || subClientCode || "",
+                invoices: invoiceNumbers.join(", "),
+                reference: "",
+                reason: `Duplicate payment: A payment of ₹${amount.toFixed(2)} for invoice(s) '${invoiceNumbers.join(", ")}' on ${rawDate || paymentDate.toLocaleDateString("en-IN")} already exists (Receipt: ${sameInvoicePayment[0].receiptNumber || sameInvoicePayment[0].id}).`,
+              });
+              continue;
+            }
+          } else {
+            // Case B: On-Account payment without invoice numbers.
+            // Check if an identical on-account payment (same client, same date within 24h, same amount, same subclient) already exists
+            const onAccountConditions = [
+              eq(payments.companyId, companyId),
+              eq(payments.clientId, clientData.id),
+              sql`ABS(EXTRACT(EPOCH FROM (${payments.paymentDate} - ${paymentDate.toISOString()}::timestamptz))) < 86400`,
+              sql`ABS(CAST(${payments.amount} AS numeric) - ${amount}) < 0.01`,
+              isNull(payments.deletedAt),
+              eq(payments.isVoided, false),
+            ];
+
+            if (targetSubClientId) {
+              onAccountConditions.push(
+                eq(payments.subClientId, targetSubClientId),
+              );
+            }
+
+            const existingOnAccount = await db
+              .select({
+                id: payments.id,
+                receiptNumber: payments.receiptNumber,
+              })
+              .from(payments)
+              .where(and(...onAccountConditions))
+              .limit(1);
+
+            if (existingOnAccount.length > 0) {
+              skipped++;
+              errors.push({
+                row: csvRow,
+                clientCode: clientData.companyCode || clientCode,
+                subClientCode: matchedSubClientLabel || subClientCode || "",
+                invoices: "",
+                reference: "",
+                reason: `Duplicate payment: An on-account payment of ₹${amount.toFixed(2)} for '${clientData.companyName}' on ${rawDate || paymentDate.toLocaleDateString("en-IN")} already exists (Receipt: ${existingOnAccount[0].receiptNumber || existingOnAccount[0].id}).`,
+              });
+              continue;
+            }
           }
         }
 

@@ -43,17 +43,41 @@ export async function POST(req) {
       trim: true,
     });
 
+    // Helper to identify completely blank / ghost rows (e.g. trailing comma lines ",,,,,,,,,," from Excel)
+    const isBlankRow = (row) => {
+      if (!row || typeof row !== "object") return true;
+      const values = Object.values(row);
+      const allEmpty = values.every(
+        (val) => val === undefined || val === null || String(val).trim() === "",
+      );
+      if (allEmpty) return true;
+
+      // Also treat as empty if none of the critical fields are present
+      const hasAnyCriticalField = Boolean(
+        row.company_code?.trim() ||
+        row.invoice_number?.trim() ||
+        row.invoice_date?.trim() ||
+        row.invoice_amount?.trim(),
+      );
+      return !hasAnyCriticalField;
+    };
+
+    const validRecords = [];
+    for (let i = 0; i < records.length; i++) {
+      const row = records[i];
+      if (!isBlankRow(row)) {
+        validRecords.push({ row, csvRow: i + 2 });
+      }
+    }
+
     let inserted = 0;
     let skipped = 0;
 
-    const total = records.length;
+    const total = validRecords.length;
 
     const errors = [];
 
-    for (let i = 0; i < records.length; i++) {
-      const row = records[i];
-      const csvRow = i + 2;
-
+    for (const { row, csvRow } of validRecords) {
       try {
         //------------------------------------------
         // Read CSV

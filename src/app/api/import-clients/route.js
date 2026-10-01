@@ -80,6 +80,24 @@ export async function POST(req) {
       }
     }
 
+    const isBlankRow = (row) => {
+      if (!row || typeof row !== "object") return true;
+      const values = Object.values(row);
+      const allEmpty = values.every(
+        (val) => val === undefined || val === null || String(val).trim() === "",
+      );
+      if (allEmpty) return true;
+      return !row.company_name?.trim() && !row.company_code?.trim();
+    };
+
+    const validRecords = [];
+    for (let i = 0; i < records.length; i++) {
+      const row = records[i];
+      if (!isBlankRow(row)) {
+        validRecords.push({ row, rowNum: i + 2 });
+      }
+    }
+
     // ✅ Prepare stats
     let inserted = 0;
     let updated = 0;
@@ -87,7 +105,9 @@ export async function POST(req) {
     const errors = [];
 
     // ✅ Normalize + collect company codes
-    const codes = records.map((r) => r.company_code?.trim()).filter(Boolean);
+    const codes = validRecords
+      .map(({ row }) => row.company_code?.trim())
+      .filter(Boolean);
 
     // ✅ Fetch existing clients in this company
     const existingClients = codes.length
@@ -120,10 +140,7 @@ export async function POST(req) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     // ✅ Process each row (Insert or Update)
-    for (let i = 0; i < records.length; i++) {
-      const row = records[i];
-      const rowNum = i + 2; // header is row 1
-
+    for (const { row, rowNum } of validRecords) {
       const companyName = row.company_name?.trim();
       const companyCode = row.company_code?.trim();
       const email = row.email?.trim() || null;

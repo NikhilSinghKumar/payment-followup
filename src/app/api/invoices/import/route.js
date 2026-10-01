@@ -65,6 +65,30 @@ export async function POST(req) {
       trim: true,
     });
 
+    const isBlankRow = (row) => {
+      if (!row || typeof row !== "object") return true;
+      const values = Object.values(row);
+      const allEmpty = values.every(
+        (val) => val === undefined || val === null || String(val).trim() === "",
+      );
+      if (allEmpty) return true;
+
+      const hasAnyCriticalField = Boolean(
+        row["Invoice Number"]?.trim() ||
+        row["Invoice Date"]?.trim() ||
+        row["Invoice Amount"]?.trim(),
+      );
+      return !hasAnyCriticalField;
+    };
+
+    const validRows = [];
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
+      if (!isBlankRow(row)) {
+        validRows.push({ row, rowIndex: index });
+      }
+    }
+
     const taxSettings = await getClientTaxSettings(clientId);
 
     let imported = 0;
@@ -85,9 +109,7 @@ export async function POST(req) {
       existingInvoices.map((i) => i.invoiceNumber),
     );
 
-    for (let index = 0; index < rows.length; index++) {
-      const row = rows[index];
-
+    for (const { row, rowIndex } of validRows) {
       try {
         const invoiceNumber = row["Invoice Number"]?.trim();
         const invoiceDate = new Date(row["Invoice Date"]);
@@ -165,7 +187,7 @@ export async function POST(req) {
         });
       } catch (err) {
         errors.push({
-          row: index + 2,
+          row: rowIndex + 2,
           error: err.message,
         });
       }

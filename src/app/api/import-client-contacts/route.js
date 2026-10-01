@@ -58,6 +58,24 @@ export async function POST(request) {
       skip_empty_lines: true,
     });
 
+    const isBlankRow = (row) => {
+      if (!row || typeof row !== "object") return true;
+      const values = Object.values(row);
+      const allEmpty = values.every(
+        (val) => val === undefined || val === null || String(val).trim() === "",
+      );
+      if (allEmpty) return true;
+      return !row.name?.trim() && !row.email?.trim() && !row.number?.trim();
+    };
+
+    const validRows = [];
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
+      if (!isBlankRow(row)) {
+        validRows.push({ row, rowIndex: index });
+      }
+    }
+
     let successCount = 0;
 
     const errors = [];
@@ -66,9 +84,7 @@ export async function POST(request) {
     // IMPORT ROWS
     // =====================================
 
-    for (let index = 0; index < rows.length; index++) {
-      const row = rows[index];
-
+    for (const { row, rowIndex } of validRows) {
       try {
         const emails =
           row.email
@@ -115,13 +131,13 @@ export async function POST(request) {
           successCount++;
         } else {
           errors.push({
-            row: index + 1,
+            row: rowIndex + 2,
             error: response.error,
           });
         }
       } catch (error) {
         errors.push({
-          row: index + 1,
+          row: rowIndex + 2,
           error: error.message,
         });
       }
