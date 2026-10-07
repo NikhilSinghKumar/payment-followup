@@ -15,14 +15,31 @@ export function getFinancialYear(date, startMonth = 4) {
     throw new Error("Invoice date is required.");
   }
 
-  const invoiceDate = new Date(date);
+  let year, month;
 
-  if (isNaN(invoiceDate.getTime())) {
-    throw new Error("Invalid invoice date.");
+  // Handle direct string YYYY-MM-DD
+  if (typeof date === "string" && /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(date)) {
+    const parts = date.split(/[-/.]/);
+    year = Number(parts[0]);
+    month = Number(parts[1]);
+  } else {
+    const invoiceDate = date instanceof Date ? date : new Date(date);
+    if (isNaN(invoiceDate.getTime())) {
+      throw new Error("Invalid invoice date.");
+    }
+
+    try {
+      const localStr = invoiceDate.toLocaleDateString("en-CA", {
+        timeZone: "Asia/Kolkata",
+      });
+      const parts = localStr.split("-");
+      year = Number(parts[0]);
+      month = Number(parts[1]);
+    } catch {
+      year = invoiceDate.getUTCFullYear();
+      month = invoiceDate.getUTCMonth() + 1;
+    }
   }
-
-  const year = invoiceDate.getFullYear();
-  const month = invoiceDate.getMonth() + 1;
 
   if (month >= startMonth) {
     return `${year}-${String(year + 1).slice(-2)}`;

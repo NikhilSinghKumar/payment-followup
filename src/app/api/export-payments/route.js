@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth/auth";
 import { getPayments } from "@/app/actions/payment";
+import { formatDateForInput } from "@/lib/date-parser";
 
 export const dynamic = "force-dynamic";
 
@@ -60,17 +61,7 @@ export async function GET(req) {
       const subClientName = payment.subClient?.companyName ?? "";
       const subClientCode = payment.subClient?.companyCode ?? "";
 
-      let formattedDate = "";
-      if (payment.paymentDate) {
-        try {
-          const d = new Date(payment.paymentDate);
-          if (!isNaN(d.getTime())) {
-            formattedDate = d.toISOString().slice(0, 10);
-          }
-        } catch {
-          formattedDate = String(payment.paymentDate);
-        }
-      }
+      const formattedDate = formatDateForInput(payment.paymentDate);
 
       const receiptNumber = payment.receiptNumber ?? "";
       const amount = Number(payment.amount || 0).toFixed(2);

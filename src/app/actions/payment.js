@@ -23,6 +23,7 @@ import {
 } from "@/lib/notifications/event-services";
 
 import { revalidatePath } from "next/cache";
+import { parseImportDate } from "@/lib/date-parser";
 import { redirect } from "next/navigation";
 
 /**
@@ -267,7 +268,7 @@ export async function createPayment(formData) {
   }
 
   const paymentDate = paymentDateValue
-    ? new Date(paymentDateValue)
+    ? parseImportDate(paymentDateValue)
     : new Date();
 
   if (Number.isNaN(paymentDate.getTime())) {
@@ -1251,7 +1252,9 @@ export async function editPayment(paymentId, data) {
       return { error: "Payment amount must be greater than zero." };
     }
 
-    const paymentDate = data.paymentDate ? new Date(data.paymentDate) : null;
+    const paymentDate = data.paymentDate
+      ? parseImportDate(data.paymentDate)
+      : null;
     if (!paymentDate || Number.isNaN(paymentDate.getTime())) {
       return { error: "Valid payment date is required." };
     }

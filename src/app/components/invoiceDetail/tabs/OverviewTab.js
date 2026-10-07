@@ -1,3 +1,5 @@
+import { formatDateDisplay } from "@/lib/date-parser";
+
 export default function OverviewTab({ invoice }) {
   const money = (value) =>
     `₹${Number(value || 0).toLocaleString("en-IN", {
@@ -154,7 +156,5 @@ function AmountRow({ label, value, positive, negative, total }) {
 }
 
 function formatDate(date) {
-  if (!date) return "-";
-
-  return new Date(date).toLocaleDateString("en-IN");
+  return formatDateDisplay(date);
 }

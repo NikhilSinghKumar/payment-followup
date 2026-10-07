@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { invoices, clients } from "@/db/schema";
 
 import { and, asc, eq, isNull } from "drizzle-orm";
+import { formatDateForInput } from "@/lib/date-parser";
 
 export async function GET(req) {
   try {
@@ -88,11 +89,9 @@ export async function GET(req) {
 
         item.financialYear,
 
-        item.invoiceDate
-          ? new Date(item.invoiceDate).toISOString().split("T")[0]
-          : "",
+        formatDateForInput(item.invoiceDate),
 
-        item.dueDate ? new Date(item.dueDate).toISOString().split("T")[0] : "",
+        formatDateForInput(item.dueDate),
 
         item.invoiceAmount,
 

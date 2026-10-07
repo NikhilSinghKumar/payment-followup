@@ -22,7 +22,7 @@ import {
 } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth/auth";
-import { parseImportDate } from "@/lib/date-parser";
+import { parseImportDate, formatDateForInput } from "@/lib/date-parser";
 import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
 
 const VALID_METHODS = ["cash", "bank", "upi", "cheque", "adjustment"];
@@ -540,8 +540,8 @@ export async function POST(req) {
           : receiptNumber
             ? `rcpt:${receiptNumber.toLowerCase()}`
             : invoiceNumbers.length > 0
-              ? `inv:${clientData.id}:${[...invoiceNumbers].sort().join(",")}:${paymentDate.toISOString().slice(0, 10)}:${amount.toFixed(2)}`
-              : `onacc:${clientData.id}:${targetSubClientId || "none"}:${paymentDate.toISOString().slice(0, 10)}:${amount.toFixed(2)}`;
+              ? `inv:${clientData.id}:${[...invoiceNumbers].sort().join(",")}:${formatDateForInput(paymentDate)}:${amount.toFixed(2)}`
+              : `onacc:${clientData.id}:${targetSubClientId || "none"}:${formatDateForInput(paymentDate)}:${amount.toFixed(2)}`;
 
         if (batchTracker.has(batchFingerprint)) {
           skipped++;

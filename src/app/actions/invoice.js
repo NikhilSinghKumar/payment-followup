@@ -21,6 +21,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/auth";
 import { processInvoiceEvents } from "@/lib/notifications/event-services";
 import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
+import { parseImportDate, formatDateForInput } from "@/lib/date-parser";
 
 export async function createInvoice(formData) {
   // =====================================
@@ -53,13 +54,13 @@ export async function createInvoice(formData) {
   const otherCharges = parseFloat(formData.get("otherCharges") || 0);
 
   const invoiceDate = formData.get("invoiceDate")
-    ? new Date(formData.get("invoiceDate"))
+    ? parseImportDate(formData.get("invoiceDate"))
     : null;
 
   const financialYear = invoiceDate ? getFinancialYear(invoiceDate) : null;
 
   const dueDate = formData.get("dueDate")
-    ? new Date(formData.get("dueDate"))
+    ? parseImportDate(formData.get("dueDate"))
     : null;
 
   // =====================================
@@ -261,8 +262,8 @@ export async function createInvoice(formData) {
       financialYear,
 
       invoiceNumber,
-      invoiceDate,
-      dueDate,
+      invoiceDate: formatDateForInput(invoiceDate),
+      dueDate: formatDateForInput(dueDate),
 
       invoiceAmount: calculatedInvoice.invoiceAmount,
 
@@ -508,11 +509,11 @@ export async function updateInvoice(id, formData) {
   const notes = formData.get("notes");
 
   const invoiceDate = formData.get("invoiceDate")
-    ? new Date(formData.get("invoiceDate"))
+    ? parseImportDate(formData.get("invoiceDate"))
     : null;
 
   const dueDate = formData.get("dueDate")
-    ? new Date(formData.get("dueDate"))
+    ? parseImportDate(formData.get("dueDate"))
     : null;
 
   // =====================================
@@ -665,8 +666,8 @@ export async function updateInvoice(id, formData) {
       subClientId: selectedSubClient ? selectedSubClient.id : null,
       financialYear,
       invoiceNumber,
-      invoiceDate,
-      dueDate,
+      invoiceDate: formatDateForInput(invoiceDate),
+      dueDate: formatDateForInput(dueDate),
       invoiceAmount: calculatedInvoice.invoiceAmount,
       basicAmount: calculatedInvoice.basicAmount,
       cgstAmount: calculatedInvoice.cgstAmount,

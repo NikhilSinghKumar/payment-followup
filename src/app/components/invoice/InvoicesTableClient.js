@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Mail, CheckSquare, Square, X, AlertTriangle } from "lucide-react";
 import SortDropdown from "./SortDropdown";
 import BulkReminderModal from "../reminder/BulkReminderModal";
+import { formatDateDisplay } from "@/lib/date-parser";
 
 export default function InvoicesTableClient({ invoices = [] }) {
   const [selectedIds, setSelectedIds] = useState([]);
@@ -72,9 +73,7 @@ export default function InvoicesTableClient({ invoices = [] }) {
       {/* Quick Selection Toolbar (if overdue exist) */}
       <div className="mb-2 flex items-center justify-between px-1 text-xs text-zinc-500">
         <div className="flex items-center gap-2">
-          <span>
-            {invoices.length} Invoices: Overdue ({overdueInvoices.length})
-          </span>
+          <span>{invoices.length} invoices displayed</span>
           {overdueInvoices.length > 0 && (
             <button
               type="button"
@@ -82,7 +81,7 @@ export default function InvoicesTableClient({ invoices = [] }) {
               className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300"
             >
               <AlertTriangle size={11} />
-              <span>Select All </span>
+              <span>Select All Overdue ({overdueInvoices.length})</span>
             </button>
           )}
         </div>
@@ -135,7 +134,7 @@ export default function InvoicesTableClient({ invoices = [] }) {
                   const due = new Date(inv.dueDate);
                   due.setHours(0, 0, 0, 0);
                   isOverdue = due < today;
-                  formattedDate = due.toLocaleDateString("en-IN");
+                  formattedDate = formatDateDisplay(inv.dueDate);
                 }
 
                 const isSelected = selectedIds.includes(inv.id);

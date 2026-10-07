@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { clients, invoices, payments } from "@/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
+import { formatDateForInput } from "@/lib/date-parser";
 
 export async function GET() {
   const currentUser = await getCurrentUser();
@@ -71,14 +72,7 @@ export async function GET() {
   }
 
   function formatDate(d) {
-    if (!d) return "";
-    try {
-      const dt = new Date(d);
-      if (isNaN(dt.getTime())) return "";
-      return dt.toISOString().split("T")[0];
-    } catch {
-      return "";
-    }
+    return formatDateForInput(d);
   }
 
   // Header row - exactly matches import-clients specification

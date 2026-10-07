@@ -14,6 +14,7 @@ import {
 import BulkPaymentNotificationModal from "./BulkPaymentNotificationModal";
 import AllocatePaymentModal from "./AllocatePaymentModal";
 import EditPaymentModal from "./EditPaymentModal";
+import { formatDateDisplay } from "@/lib/date-parser";
 
 export default function PaymentTable({ payments = [], hasFilter = false }) {
   const router = useRouter();
@@ -479,13 +480,7 @@ function formatCurrency(value) {
 }
 
 function formatDate(date) {
-  if (!date) return "—";
-
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDateDisplay(date);
 }
 
 function formatMethod(method) {

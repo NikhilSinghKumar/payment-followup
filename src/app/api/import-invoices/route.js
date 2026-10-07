@@ -6,7 +6,7 @@ import { getFinancialYear } from "@/lib/financial-year";
 import { parse } from "csv-parse/sync";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
-import { parseImportDate } from "@/lib/date-parser";
+import { parseImportDate, formatDateForInput } from "@/lib/date-parser";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
 
 export async function POST(req) {
@@ -291,9 +291,9 @@ export async function POST(req) {
 
           invoiceNumber,
 
-          invoiceDate,
+          invoiceDate: formatDateForInput(invoiceDate),
 
-          dueDate,
+          dueDate: formatDateForInput(dueDate),
 
           paymentTerms,
 
