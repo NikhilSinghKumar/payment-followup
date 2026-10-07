@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formatDateDisplay } from "@/lib/date-parser";
 
 export default function ClientFollowupsTab({ clientId, followups = [] }) {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
@@ -265,11 +266,5 @@ function InvoiceLinks({ invoices = [], onViewAll }) {
 }
 
 function formatDate(date) {
-  if (!date) return "—";
-
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDateDisplay(date);
 }

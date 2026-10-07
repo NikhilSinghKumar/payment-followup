@@ -17,6 +17,7 @@ import {
 import ClientCombobox from "@/app/components/ui/ClientCombobox";
 import AwbDetailsPopover from "@/app/components/payment/AwbDetailsPopover";
 import { createPayment, getInvoicesForPayment } from "@/app/actions/payment";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 export default function PaymentForm({
   clients = [],
@@ -447,21 +448,15 @@ export default function PaymentForm({
               <div className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
                 <span>Total Due:</span>
                 <span className="font-semibold">
-                  ₹
-                  {Number(clientSummary.outstandingAmount || 0).toLocaleString(
-                    "en-IN",
-                  )}
+                  {formatCurrency(clientSummary.outstandingAmount)}
                 </span>
               </div>
               {Number(clientSummary.overdueAmount || 0) > 0 && (
                 <div className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
                   <span>Overdue:</span>
                   <span className="font-semibold">
-                    ₹
-                    {Number(clientSummary.overdueAmount || 0).toLocaleString(
-                      "en-IN",
-                    )}{" "}
-                    ({clientSummary.overdueInvoices})
+                    {formatCurrency(clientSummary.overdueAmount)} (
+                    {clientSummary.overdueInvoices})
                   </span>
                 </div>
               )}
@@ -471,14 +466,14 @@ export default function PaymentForm({
                   <div className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                     <Check size={12} />
                     <span>
-                      Allocated: ₹{totalAllocated.toLocaleString("en-IN")} (
+                      Allocated: {formatCurrency(totalAllocated)} (
                       {Object.keys(allocations).length} inv)
                     </span>
                   </div>
                   {unallocatedAmount > 0 && (
                     <div className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
                       <span>
-                        On Account: ₹{unallocatedAmount.toLocaleString("en-IN")}
+                        On Account: {formatCurrency(unallocatedAmount)}
                       </span>
                     </div>
                   )}
@@ -696,13 +691,10 @@ export default function PaymentForm({
                     {/* Financial Values */}
                     <div className="w-[120px] shrink-0 text-right">
                       <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                        ₹{Number(invoice.due || 0).toLocaleString("en-IN")}
+                        {formatCurrency(invoice.due || 0)}
                       </div>
                       <div className="text-[10px] text-zinc-400">
-                        Total: ₹
-                        {Number(invoice.invoiceAmount || 0).toLocaleString(
-                          "en-IN",
-                        )}
+                        Total: {formatCurrency(invoice.invoiceAmount || 0)}
                       </div>
                     </div>
 
@@ -711,7 +703,7 @@ export default function PaymentForm({
                       {isSelected ? (
                         <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                           <Check size={11} />
-                          Settling: ₹{currentAllocation.toLocaleString("en-IN")}
+                          Settling: {formatCurrency(currentAllocation)}
                         </span>
                       ) : (
                         <span className="text-[11px] text-zinc-400 font-normal">

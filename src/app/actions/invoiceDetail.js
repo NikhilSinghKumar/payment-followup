@@ -18,6 +18,7 @@ import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
 import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
 import { processPaymentEvents } from "@/lib/notifications/event-services";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 // =====================================
 // SUMMARY
@@ -229,7 +230,7 @@ export async function getInvoiceActivities(invoiceId) {
   return [
     ...paymentActivities.map((item) => ({
       type: "payment",
-      message: `Payment received: ₹${Number(item.amount).toLocaleString("en-IN")}`,
+      message: `Payment received: ${formatCurrency(item.amount)}`,
       createdAt: item.paymentDate,
     })),
 

@@ -1047,10 +1047,10 @@ export async function allocatePaymentToInvoices(paymentId, allocations) {
       return {
         error: `Total allocated amount (₹${totalNewAllocation.toLocaleString(
           "en-IN",
-          { minimumFractionDigits: 2 },
+          { minimumFractionDigits: 2, maximumFractionDigits: 2 },
         )}) exceeds the available on-account balance (₹${unallocatedBalance.toLocaleString(
           "en-IN",
-          { minimumFractionDigits: 2 },
+          { minimumFractionDigits: 2, maximumFractionDigits: 2 },
         )}).`,
       };
     }
@@ -1093,10 +1093,12 @@ export async function allocatePaymentToInvoices(paymentId, allocations) {
         return {
           error: `Allocated amount ₹${item.amount.toLocaleString("en-IN", {
             minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
           })} exceeds the outstanding amount of invoice ${
             inv.invoiceNumber
           } (₹${currentOutstanding.toLocaleString("en-IN", {
             minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
           })}).`,
         };
       }

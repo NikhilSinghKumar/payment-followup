@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { formatCurrency } from "@/lib/formatCurrency";
+import { formatDateDisplay } from "@/lib/date-parser";
 
 export default function ClientOverviewTab({ client, invoices = [] }) {
   // =====================================
@@ -93,7 +95,7 @@ export default function ClientOverviewTab({ client, invoices = [] }) {
 
                 <div>
                   <div className="font-semibold text-zinc-800">
-                    ₹{Number(invoice.netPayableAmount).toLocaleString("en-IN")}
+                    {formatCurrency(invoice.netPayableAmount)}
                   </div>
                 </div>
 
@@ -103,7 +105,7 @@ export default function ClientOverviewTab({ client, invoices = [] }) {
 
                 <div>
                   <div className="font-semibold text-emerald-600">
-                    ₹{Number(invoice.paid).toLocaleString("en-IN")}
+                    {formatCurrency(invoice.paid || 0)}
                   </div>
                 </div>
 
@@ -117,7 +119,7 @@ export default function ClientOverviewTab({ client, invoices = [] }) {
                       invoice.due > 0 ? "text-orange-600" : "text-emerald-600"
                     }`}
                   >
-                    ₹{Number(invoice.due).toLocaleString("en-IN")}
+                    {formatCurrency(invoice.due || 0)}
                   </div>
                 </div>
 
@@ -127,9 +129,7 @@ export default function ClientOverviewTab({ client, invoices = [] }) {
 
                 <div>
                   <div className="font-medium text-zinc-800">
-                    {invoice.dueDate
-                      ? new Date(invoice.dueDate).toLocaleDateString("en-IN")
-                      : "-"}
+                    {formatDateDisplay(invoice.dueDate)}
                   </div>
 
                   {invoice.dueDaysText && (

@@ -2,6 +2,8 @@ import Link from "next/link";
 import DownloadInvoiceSample from "../../invoice/DownloadInvoiceSample";
 import ImportInvoices from "../../invoice/ImportInvoices";
 import ExportInvoices from "../../invoice/ExportInvoices";
+import { formatCurrency } from "@/lib/formatCurrency";
+import { formatDateDisplay } from "@/lib/date-parser";
 
 export default function ClientInvoicesTab({ clientId, invoices = [] }) {
   return (
@@ -94,10 +96,7 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                           href={`/invoices/${invoice.id}`}
                           className="block"
                         >
-                          ₹
-                          {Number(invoice.invoiceAmount).toLocaleString(
-                            "en-IN",
-                          )}
+                          {formatCurrency(invoice.invoiceAmount)}
                         </Link>
                       </td>
 
@@ -107,10 +106,7 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                           href={`/invoices/${invoice.id}`}
                           className="block"
                         >
-                          ₹
-                          {Number(invoice.netPayableAmount).toLocaleString(
-                            "en-IN",
-                          )}
+                          {formatCurrency(invoice.netPayableAmount)}
                         </Link>
                       </td>
 
@@ -120,10 +116,7 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                           href={`/invoices/${invoice.id}`}
                           className="block"
                         >
-                          ₹
-                          {Number(invoice.paidAmount || 0).toLocaleString(
-                            "en-IN",
-                          )}
+                          {formatCurrency(invoice.paidAmount || 0)}
                         </Link>
                       </td>
 
@@ -139,7 +132,7 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                           href={`/invoices/${invoice.id}`}
                           className="block"
                         >
-                          ₹{outstanding.toLocaleString("en-IN")}
+                          {formatCurrency(outstanding)}
                         </Link>
                       </td>
 
@@ -149,13 +142,7 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                           href={`/invoices/${invoice.id}`}
                           className="block"
                         >
-                          <div>
-                            {invoice.dueDate
-                              ? new Date(invoice.dueDate).toLocaleDateString(
-                                  "en-IN",
-                                )
-                              : "-"}
-                          </div>
+                          <div>{formatDateDisplay(invoice.dueDate)}</div>
 
                           {invoice.dueDaysText && (
                             <div

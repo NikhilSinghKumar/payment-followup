@@ -324,6 +324,7 @@ export default function AwbDetailsPopover({ awbs = [], invoiceNumber }) {
                       Total: ₹
                       {totalAmount.toLocaleString("en-IN", {
                         minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
                       })}
                     </span>
                   )}

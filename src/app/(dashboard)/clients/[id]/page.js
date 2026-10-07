@@ -23,6 +23,7 @@ import ClientFollowupsTab from "@/app/components/client/tabs/clientFollowupsTab"
 import SendClientReminderModal from "@/app/components/reminder/SendClientReminderModal";
 import OpeningBalanceModal from "@/app/components/client/OpeningBalanceModal";
 import { getOpeningBalanceByClientId } from "@/app/actions/openingBalance";
+import { formatCurrency } from "@/lib/formatCurrency";
 import { getClientLocationsByClientId } from "@/app/actions/clientLocations";
 import { getClientContactsByClientId } from "@/app/actions/clientContacts";
 import { getSubClientsByClientId } from "@/app/actions/sub-client";
@@ -189,10 +190,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2 className="mt-2 text-md font-semibold text-zinc-800 dark:text-zinc-100">
-              ₹
-              {totalAmount.toLocaleString("en-IN", {
-                maximumFractionDigits: 0,
-              })}
+              {formatCurrency(totalAmount)}
             </h2>
           </div>
 
@@ -203,10 +201,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2 className="mt-2 text-md font-semibold text-blue-600 dark:text-blue-400">
-              ₹
-              {totalNetPayable.toLocaleString("en-IN", {
-                maximumFractionDigits: 0,
-              })}
+              {formatCurrency(totalNetPayable)}
             </h2>
           </div>
 
@@ -217,10 +212,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </p>
 
             <h2 className="mt-2 text-md font-semibold text-emerald-600 dark:text-emerald-400">
-              ₹
-              {paymentsReceived.toLocaleString("en-IN", {
-                maximumFractionDigits: 0,
-              })}
+              {formatCurrency(paymentsReceived)}
             </h2>
           </div>
 
@@ -237,10 +229,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
                   : "text-emerald-600 dark:text-emerald-400"
               }`}
             >
-              ₹
-              {netOutstanding.toLocaleString("en-IN", {
-                maximumFractionDigits: 0,
-              })}
+              {formatCurrency(netOutstanding)}
             </h2>
           </div>
 
@@ -257,11 +246,8 @@ export default async function ClientDetailPage({ params, searchParams }) {
                   : "text-zinc-500 dark:text-zinc-400"
               }`}
             >
-              ₹{creditBalance.toLocaleString("en-IN")}
+              {formatCurrency(creditBalance)}
             </h2>
-            {/* <p className="mt-1 text-[10px] text-zinc-400">
-              {creditBalance > 0 ? "Advance surplus" : "Overpayment only"}
-            </p> */}
           </div>
 
           {/* Overdue */}

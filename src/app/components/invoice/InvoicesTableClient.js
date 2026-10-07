@@ -6,6 +6,7 @@ import { Mail, CheckSquare, Square, X, AlertTriangle } from "lucide-react";
 import SortDropdown from "./SortDropdown";
 import BulkReminderModal from "../reminder/BulkReminderModal";
 import { formatDateDisplay } from "@/lib/date-parser";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 export default function InvoicesTableClient({ invoices = [] }) {
   const [selectedIds, setSelectedIds] = useState([]);
@@ -193,17 +194,17 @@ export default function InvoicesTableClient({ invoices = [] }) {
 
                     {/* Amount */}
                     <div className="font-medium text-center text-zinc-800 whitespace-nowrap dark:text-zinc-200">
-                      ₹{Number(inv.invoiceAmount).toLocaleString("en-IN")}
+                      {formatCurrency(inv.invoiceAmount)}
                     </div>
 
                     {/* Paid */}
                     <div className="font-medium text-center text-emerald-600 whitespace-nowrap dark:text-emerald-400">
-                      ₹{Number(inv.paidAmount).toLocaleString("en-IN")}
+                      {formatCurrency(inv.paidAmount || 0)}
                     </div>
 
                     {/* Due */}
                     <div className="font-medium text-center text-red-600 whitespace-nowrap dark:text-red-400">
-                      ₹{Number(inv.outstandingAmount).toLocaleString("en-IN")}
+                      {formatCurrency(inv.outstandingAmount || 0)}
                     </div>
 
                     {/* Due Date */}
@@ -280,7 +281,7 @@ export default function InvoicesTableClient({ invoices = [] }) {
               <div className="text-[10px] text-zinc-400">
                 <strong>{selectedClientsCount}</strong> client
                 {selectedClientsCount > 1 ? "s" : ""} • Total:{" "}
-                <strong>₹{selectedTotalDue.toLocaleString("en-IN")}</strong>
+                <strong>{formatCurrency(selectedTotalDue)}</strong>
               </div>
             </div>
           </div>

@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { Coins, X, Check, Loader2, Calendar, FileText } from "lucide-react";
 import { saveClientOpeningBalance } from "@/app/actions/openingBalance";
+import { formatDateForInput } from "@/lib/date-parser";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 export default function OpeningBalanceModal({
   clientId,
@@ -23,8 +25,8 @@ export default function OpeningBalanceModal({
       )
     : "";
   const initialDate = existingOpeningBalance?.invoiceDate
-    ? new Date(existingOpeningBalance.invoiceDate).toISOString().split("T")[0]
-    : new Date().toISOString().split("T")[0];
+    ? formatDateForInput(existingOpeningBalance.invoiceDate)
+    : formatDateForInput(new Date());
   const initialNotes =
     existingOpeningBalance?.notes ||
     (initialType === "CREDIT"
@@ -112,7 +114,7 @@ export default function OpeningBalanceModal({
         <Coins className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
         <span>
           {hasExisting
-            ? `Edit Opening (${existingOpeningBalance.type === "CREDIT" ? "Cr" : "Dr"}: ₹${Number(existingOpeningBalance.amount || existingOpeningBalance.invoiceAmount).toLocaleString("en-IN")})`
+            ? `Edit Opening (${existingOpeningBalance.type === "CREDIT" ? "Cr" : "Dr"}: ${formatCurrency(existingOpeningBalance.amount || existingOpeningBalance.invoiceAmount)})`
             : "Set Opening Balance"}
         </span>
       </button>
@@ -160,8 +162,8 @@ export default function OpeningBalanceModal({
             {paidAmount > 0 && (
               <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
                 {balanceType === "CREDIT"
-                  ? `Allocations of ₹${paidAmount.toLocaleString("en-IN")} have already been applied from this opening credit. Minimum allowed balance is ₹${paidAmount.toLocaleString("en-IN")}.`
-                  : `Payments of ₹${paidAmount.toLocaleString("en-IN")} have already been allocated towards this opening balance. Minimum allowed balance is ₹${paidAmount.toLocaleString("en-IN")}.`}
+                  ? `Allocations of ${formatCurrency(paidAmount)} have already been applied from this opening credit. Minimum allowed balance is ${formatCurrency(paidAmount)}.`
+                  : `Payments of ${formatCurrency(paidAmount)} have already been allocated towards this opening balance. Minimum allowed balance is ${formatCurrency(paidAmount)}.`}
               </div>
             )}
 

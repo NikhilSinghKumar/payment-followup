@@ -3,6 +3,8 @@ import { useState } from "react";
 
 import AddPaymentForm from "../forms/AddPaymentForm";
 import EditPaymentForm from "../forms/EditPaymentForm";
+import { formatCurrency } from "@/lib/formatCurrency";
+import { formatDateDisplay } from "@/lib/date-parser";
 
 export default function PaymentsTab({ invoiceId, payments }) {
   const [showForm, setShowForm] = useState(false);
@@ -56,15 +58,13 @@ export default function PaymentsTab({ invoiceId, payments }) {
               >
                 <div>{payment.receiptNumber || "-"}</div>
 
-                <div>
-                  {new Date(payment.paymentDate).toLocaleDateString("en-IN")}
-                </div>
+                <div>{formatDateDisplay(payment.paymentDate)}</div>
 
                 <div>{payment.method || "-"}</div>
 
                 <div>{payment.reference || "-"}</div>
 
-                <div>₹{Number(payment.amount).toLocaleString("en-IN")}</div>
+                <div>{formatCurrency(payment.amount)}</div>
 
                 <div>{payment.notes || "-"}</div>
 

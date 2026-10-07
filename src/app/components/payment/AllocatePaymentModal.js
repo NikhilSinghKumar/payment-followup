@@ -13,6 +13,7 @@ import {
   allocatePaymentToInvoices,
 } from "@/app/actions/payment";
 import AwbDetailsPopover from "./AwbDetailsPopover";
+import { formatCurrency } from "@/lib/formatCurrency";
 import {
   Sparkles,
   RotateCcw,
@@ -633,10 +634,10 @@ export default function AllocatePaymentModal({
                             •
                           </span>
                           <span>
-                            Total: ₹
-                            {Number(
+                            Total:{" "}
+                            {formatCurrency(
                               inv.invoiceAmount || inv.netPayableAmount || 0,
-                            ).toLocaleString("en-IN")}
+                            )}
                           </span>
                         </div>
 
@@ -735,7 +736,7 @@ export default function AllocatePaymentModal({
                           </span>
                         ) : (
                           <span className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                            Leaves ₹{remainingAfter.toLocaleString("en-IN")}
+                            Leaves {formatCurrency(remainingAfter)}
                           </span>
                         )
                       ) : (

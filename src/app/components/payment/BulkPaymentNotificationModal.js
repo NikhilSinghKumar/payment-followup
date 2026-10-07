@@ -29,6 +29,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 export default function BulkPaymentNotificationModal({
   isOpen,
@@ -391,7 +392,7 @@ export default function BulkPaymentNotificationModal({
                 Selected Value
               </span>
               <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                ₹{selectedPaymentsTotal.toLocaleString("en-IN")}
+                {formatCurrency(selectedPaymentsTotal)}
               </p>
             </div>
           </div>
@@ -531,7 +532,7 @@ export default function BulkPaymentNotificationModal({
                           <p className="text-xs text-zinc-500">
                             {group.payments.length} payment receipt(s) totalling{" "}
                             <span className="font-bold text-emerald-600">
-                              ₹{group.totalPaidAmount.toLocaleString("en-IN")}
+                              {formatCurrency(group.totalPaidAmount)}
                             </span>
                           </p>
                         </div>
@@ -665,7 +666,7 @@ export default function BulkPaymentNotificationModal({
                                   )}
                                 </td>
                                 <td className="py-1.5 text-right font-bold text-emerald-600">
-                                  ₹{p.amount.toLocaleString("en-IN")}
+                                  {formatCurrency(p.amount)}
                                 </td>
                               </tr>
                             ))}
@@ -689,7 +690,7 @@ export default function BulkPaymentNotificationModal({
             </span>{" "}
             client(s) with a total of{" "}
             <span className="font-bold text-emerald-600">
-              ₹{selectedPaymentsTotal.toLocaleString("en-IN")}
+              {formatCurrency(selectedPaymentsTotal)}
             </span>
           </div>
 
