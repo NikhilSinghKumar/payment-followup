@@ -880,7 +880,7 @@ export function ClientOutstandingInvoices({
                   whiteSpace: "nowrap",
                 }}
               >
-                Payment Received (₹)
+                Payment Settled (₹)
               </th>
               <th
                 align="right"
@@ -1257,15 +1257,9 @@ export function ClientOutstandingInvoices({
                   <td
                     style={{
                       padding: "11px 10px",
-                      color: "#16A34A",
-                      fontSize: "13px",
-                      fontWeight: 700,
                       textAlign: "right",
-                      whiteSpace: "nowrap",
                     }}
-                  >
-                    {formatCurrency(displayDeduction)}
-                  </td>
+                  />
                   <td
                     style={{
                       padding: "11px 10px",
@@ -1315,15 +1309,9 @@ export function ClientOutstandingInvoices({
                 <td
                   style={{
                     padding: "11px 10px",
-                    color: "#16A34A",
-                    fontSize: "13px",
-                    fontWeight: 700,
                     textAlign: "right",
-                    whiteSpace: "nowrap",
                   }}
-                >
-                  {formatCurrency(displayDeduction)}
-                </td>
+                />
                 <td
                   style={{
                     padding: "11px 10px",
@@ -1788,7 +1776,7 @@ export function SingleInvoiceDataTable({
                   whiteSpace: "nowrap",
                 }}
               >
-                Payment Received (₹)
+                Payment Settled (₹)
               </th>
               <th
                 align="right"
@@ -2482,7 +2470,7 @@ export function ClientPaymentSettlementTable({
                       color: "#16A34A",
                     }}
                   >
-                    Payment Received (₹)
+                    Payment Settled (₹)
                   </th>
                   <th
                     style={{
