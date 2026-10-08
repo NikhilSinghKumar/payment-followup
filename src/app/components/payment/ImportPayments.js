@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Mail } from "lucide-react";
+import { Mail, Upload, FileSpreadsheet, X } from "lucide-react";
 import ImportResultDialog from "@/app/components/import/ImportResultDialog";
 import BulkPaymentNotificationModal from "./BulkPaymentNotificationModal";
 
@@ -41,8 +41,17 @@ export default function ImportPayments() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [notifyModalOpen, setNotifyModalOpen] = useState(false);
   const [importedPaymentIds, setImportedPaymentIds] = useState([]);
+  const fileInputRef = useRef(null);
 
   const router = useRouter();
+
+  const handleClearFile = (e) => {
+    if (e) e.preventDefault();
+    setFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   // =====================================
   // IMPORT
@@ -125,6 +134,9 @@ export default function ImportPayments() {
 
       // Reset selected file
       setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (err) {
       console.error("Payment import error:", err);
 
@@ -167,12 +179,23 @@ export default function ImportPayments() {
 
   return (
     <>
-      <div className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white/80 px-2 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-2 shadow-xs dark:border-zinc-700 dark:bg-zinc-900 transition shrink-0">
         {/* File Picker */}
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600 transition hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-100">
-          <span>{file ? truncateFileName(file.name, 14) : "Choose file"}</span>
+        <label className="flex cursor-pointer items-center gap-1 text-xs text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100">
+          {file ? (
+            <FileSpreadsheet className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+          ) : (
+            <Upload className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+          )}
+          <span
+            className="w-[68px] truncate font-medium text-xs"
+            title={file?.name || "Choose file"}
+          >
+            {file ? truncateFileName(file.name, 9) : "Choose file"}
+          </span>
 
           <input
+            ref={fileInputRef}
             type="file"
             accept=".csv,text/csv"
             onChange={(e) => {
@@ -182,33 +205,38 @@ export default function ImportPayments() {
           />
         </label>
 
+        {file && (
+          <button
+            type="button"
+            onClick={handleClearFile}
+            className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            title="Remove selected file"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+
         {/* Divider */}
-        <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
+        <div className="mx-1.5 h-3.5 w-px bg-zinc-200 dark:bg-zinc-700" />
 
         {/* Import Button */}
         <button
           type="button"
           onClick={handleUpload}
           disabled={loading || !file}
-          className="
-            flex items-center rounded-lg
-            px-4 py-2
-            text-sm font-medium text-zinc-600
-            transition
-            hover:text-zinc-900
-            disabled:cursor-not-allowed
-            disabled:opacity-50
-            dark:text-zinc-300
-            dark:hover:text-zinc-100
-          "
+          className={`inline-flex items-center text-xs font-semibold transition ${
+            file
+              ? "text-blue-600 hover:text-blue-700 dark:text-blue-400 cursor-pointer"
+              : "text-zinc-400 cursor-not-allowed dark:text-zinc-500"
+          }`}
         >
           {loading ? (
-            <span className="flex items-center gap-2">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-blue-600" />
-              Importing...
+            <span className="flex items-center gap-1">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-zinc-300 border-t-blue-600" />
+              <span>Importing...</span>
             </span>
           ) : (
-            "Import Payments"
+            <span>Import</span>
           )}
         </button>
       </div>

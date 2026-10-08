@@ -61,7 +61,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
   if (payments.length === 0) {
     return (
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex min-h-[320px] items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="px-6 py-14 text-center">
           <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
             {hasFilter ? "No matching payments found" : "No payments found"}
@@ -83,34 +83,34 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
       {/* PAYMENT TABLE */}
       {/* ===================================== */}
 
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
         <div className="overflow-x-auto [scrollbar-width:thin]">
           <table className="w-full min-w-[850px]">
             {/* Header */}
 
             <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/60">
               <tr>
-                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-zinc-600 dark:text-zinc-300">
                   Client
                 </th>
 
-                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-zinc-600 dark:text-zinc-300">
                   Date
                 </th>
 
-                <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-zinc-600 dark:text-zinc-300">
                   Payment
                 </th>
 
-                <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-zinc-600 dark:text-zinc-300">
                   Advance / Credit
                 </th>
 
-                <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-zinc-600 dark:text-zinc-300">
                   Invoices
                 </th>
 
-                <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-zinc-600 dark:text-zinc-300">
                   Actions
                 </th>
               </tr>
@@ -118,63 +118,63 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
             {/* Body */}
 
-            <tbody className="divide-y divide-zinc-100 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
+            <tbody className="divide-y divide-zinc-100 bg-white dark:divide-zinc-800/60 dark:bg-zinc-900">
               {payments.map((payment) => {
                 const allocations = payment.allocations || [];
 
                 return (
                   <tr
                     key={payment.id}
-                    className="transition hover:bg-zinc-50/70 dark:hover:bg-zinc-800/50"
+                    className="transition-colors hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
                   >
                     {/* Client */}
 
-                    <td className="px-2 py-4">
+                    <td className="px-4 py-1.5 text-xs">
                       {payment.client?.id ? (
                         <Link
                           href={`/clients/${payment.client.id}`}
-                          className="group"
+                          className="group inline-flex items-center gap-1.5 max-w-[220px] truncate"
+                          title={payment.client.companyName || ""}
                         >
-                          <p className="whitespace-nowrap truncate w-[160px] text-sm font-medium truncate text-zinc-800 transition group-hover:text-blue-600 dark:text-zinc-200 dark:group-hover:text-blue-400">
+                          <span className="font-medium text-zinc-800 truncate transition group-hover:text-blue-600 dark:text-zinc-200 dark:group-hover:text-blue-400">
                             {payment.client.companyName || "—"}
-                          </p>
+                          </span>
 
-                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                            {payment.client.companyCode && (
-                              <span className="text-xs text-zinc-400">
-                                {payment.client.companyCode}
-                              </span>
-                            )}
-                            {payment.subClient?.companyName && (
-                              <span
-                                className="inline-block max-w-[160px] truncate rounded bg-purple-50 px-1.5 py-0.2 text-[10px] font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300"
-                                title={`Paid by subclient: ${payment.subClient.companyName}`}
-                              >
-                                {payment.subClient.companyName}
-                              </span>
-                            )}
-                          </div>
+                          {payment.client.companyCode && (
+                            <span className="text-[10px] text-zinc-400 shrink-0">
+                              ({payment.client.companyCode})
+                            </span>
+                          )}
+
+                          {payment.subClient?.companyName && (
+                            <span
+                              className="rounded bg-purple-50 px-1 py-0.2 text-[9px] font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 shrink-0"
+                              title={`Paid by subclient: ${payment.subClient.companyName}`}
+                            >
+                              {payment.subClient.companyName}
+                            </span>
+                          )}
                         </Link>
                       ) : (
-                        <span className="text-sm text-zinc-400">—</span>
+                        <span className="text-zinc-400">—</span>
                       )}
                     </td>
 
                     {/* Payment Date */}
 
-                    <td className="whitespace-nowrap px-2 py-4 text-sm text-zinc-700 dark:text-zinc-300">
+                    <td className="whitespace-nowrap px-4 py-1.5 text-xs text-zinc-700 dark:text-zinc-300">
                       {formatDate(payment.paymentDate)}
                     </td>
 
                     {/* Payment Amount */}
 
-                    <td className="whitespace-nowrap px-2 py-4 text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    <td className="whitespace-nowrap px-4 py-1.5 text-right text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                       {formatCurrency(payment.amount)}
                     </td>
 
                     {/* On Account / Credit */}
 
-                    <td className="whitespace-nowrap px-2 py-4 text-right">
+                    <td className="whitespace-nowrap px-4 py-1.5 text-right text-xs">
                       {(() => {
                         const unallocatedNum = Number(
                           payment.unallocatedAmount || 0,
@@ -186,27 +186,25 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                         if (unallocatedNum > 0.001) {
                           return (
-                            <div className="inline-flex flex-col items-end">
-                              <span
-                                className={`text-sm font-semibold ${
-                                  isCredit
-                                    ? "text-violet-600 dark:text-violet-400"
-                                    : "text-orange-600 dark:text-orange-400"
-                                }`}
-                                title={
-                                  isCredit
-                                    ? `₹${unallocatedNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })} credit / advance surplus (payment exceeded outstanding)`
-                                    : `₹${unallocatedNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })} on account`
-                                }
-                              >
-                                {formatCurrency(unallocatedNum)}
-                              </span>
-                            </div>
+                            <span
+                              className={`font-semibold ${
+                                isCredit
+                                  ? "text-violet-600 dark:text-violet-400"
+                                  : "text-orange-600 dark:text-orange-400"
+                              }`}
+                              title={
+                                isCredit
+                                  ? `₹${unallocatedNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })} credit / advance surplus (payment exceeded outstanding)`
+                                  : `₹${unallocatedNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })} on account`
+                              }
+                            >
+                              {formatCurrency(unallocatedNum)}
+                            </span>
                           );
                         }
 
                         return (
-                          <span className="text-sm font-medium text-zinc-400 dark:text-zinc-500">
+                          <span className="font-medium text-zinc-400 dark:text-zinc-500">
                             {formatCurrency(0)}
                           </span>
                         );
@@ -215,7 +213,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     {/* Related Invoices */}
 
-                    <td className="px-2 py-4">
+                    <td className="px-4 py-1.5 text-xs">
                       <InvoiceAllocations
                         allocations={allocations}
                         onViewAll={() => handleViewInvoices(payment)}
@@ -223,35 +221,35 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                     </td>
 
                     {/* Action */}
-                    <td className="whitespace-nowrap px-2 py-4 text-right">
+                    <td className="whitespace-nowrap px-4 py-1.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleOpenEditModal(payment)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 shadow-2xs transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-750"
+                          className="h-7 px-2.5 inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white text-[11px] font-medium text-zinc-700 shadow-2xs transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-750"
                           title="Edit payment details"
                         >
-                          <Pencil className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                          <Pencil className="h-3 w-3 text-amber-600 dark:text-amber-400" />
                           <span>Edit</span>
                         </button>
                         {Number(payment.unallocatedAmount || 0) > 0 && (
                           <button
                             type="button"
                             onClick={() => handleOpenAllocateModal(payment)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-2xs transition hover:border-blue-300 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900"
+                            className="h-7 px-2.5 inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 text-[11px] font-semibold text-blue-700 shadow-2xs transition hover:border-blue-300 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900"
                             title="Allocate on-account funds to client invoices"
                           >
-                            <Layers className="h-3.5 w-3.5" />
+                            <Layers className="h-3 w-3" />
                             <span>Allocate</span>
                           </button>
                         )}
                         <button
                           type="button"
                           onClick={() => handleNotifyPayment(payment.id)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 shadow-2xs transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-750"
+                          className="h-7 px-2.5 inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white text-[11px] font-medium text-zinc-700 shadow-2xs transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-750"
                           title="Send payment receipt email to client"
                         >
-                          <Mail className="h-3.5 w-3.5 text-emerald-600" />
+                          <Mail className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                           <span>Send Email</span>
                         </button>
                       </div>
@@ -421,7 +419,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 function InvoiceAllocations({ allocations = [], onViewAll }) {
   if (allocations.length === 0) {
     return (
-      <span className="whitespace-nowrap text-sm text-orange-600 dark:text-orange-400">
+      <span className="whitespace-nowrap text-xs text-orange-500/80 dark:text-orange-400">
         N/A
       </span>
     );
@@ -431,10 +429,10 @@ function InvoiceAllocations({ allocations = [], onViewAll }) {
   const remaining = allocations.length - 1;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <Link
         href={`/invoices/${first.invoice?.id}`}
-        className="inline-flex whitespace-nowrap rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300"
+        className="inline-flex whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition dark:bg-blue-950/50 dark:text-blue-300"
       >
         {first.invoice?.invoiceNumber || "Invoice"}
       </Link>
@@ -443,7 +441,7 @@ function InvoiceAllocations({ allocations = [], onViewAll }) {
         <button
           type="button"
           onClick={onViewAll}
-          className="whitespace-nowrap text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
+          className="whitespace-nowrap text-[11px] font-medium text-blue-600 hover:underline dark:text-blue-400"
         >
           +{remaining} more
         </button>
