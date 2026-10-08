@@ -336,6 +336,9 @@ export async function getInvoices(
   minAmount = "",
   maxAmount = "",
   alphabet = "",
+  date = "",
+  startDate = "",
+  endDate = "",
 ) {
   const currentUser = await getCurrentUser();
   const conditions = [isNull(invoices.deletedAt)];
@@ -446,11 +449,40 @@ export async function getInvoices(
       return true;
     })
     .filter((inv) => {
-      if (!month) return true;
+      // Month filter (handles both 1-12 numbers or strings, matching invoiceDate calendar month)
+      if (month) {
+        if (!inv.invoiceDate) return false;
+        const invDateStr =
+          typeof inv.invoiceDate === "string"
+            ? inv.invoiceDate.trim().slice(0, 10)
+            : new Date(inv.invoiceDate).toISOString().slice(0, 10);
+        const match = invDateStr.match(/^\d{4}-(\d{2})/);
+        const invMonth = match
+          ? parseInt(match[1], 10)
+          : new Date(inv.invoiceDate).getUTCMonth() + 1;
+        if (invMonth !== Number(month)) return false;
+      }
 
-      if (!inv.dueDate) return false;
+      // Specific Date filter
+      if (date) {
+        if (!inv.invoiceDate) return false;
+        const invDateStr =
+          typeof inv.invoiceDate === "string"
+            ? inv.invoiceDate.trim().slice(0, 10)
+            : new Date(inv.invoiceDate).toISOString().slice(0, 10);
+        if (invDateStr !== date) return false;
+      } else if (startDate || endDate) {
+        // Date range filter
+        if (!inv.invoiceDate) return false;
+        const invDateStr =
+          typeof inv.invoiceDate === "string"
+            ? inv.invoiceDate.trim().slice(0, 10)
+            : new Date(inv.invoiceDate).toISOString().slice(0, 10);
+        if (startDate && invDateStr < startDate) return false;
+        if (endDate && invDateStr > endDate) return false;
+      }
 
-      return new Date(inv.invoiceDate).getMonth() + 1 === Number(month);
+      return true;
     })
     .sort((a, b) => {
       // If aging filter is selected, sort by overdue days (highest → lowest)

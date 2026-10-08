@@ -14,6 +14,9 @@ export async function GET(request) {
   const minAmount = searchParams.get("minAmount") || "";
   const maxAmount = searchParams.get("maxAmount") || "";
   const alphabet = searchParams.get("alphabet") || "";
+  const date = searchParams.get("date") || "";
+  const startDate = searchParams.get("startDate") || "";
+  const endDate = searchParams.get("endDate") || "";
 
   const invoices = await getInvoices(
     query,
@@ -25,6 +28,9 @@ export async function GET(request) {
     minAmount,
     maxAmount,
     alphabet,
+    date,
+    startDate,
+    endDate,
   );
 
   // =========================

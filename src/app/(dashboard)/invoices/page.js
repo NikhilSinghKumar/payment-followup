@@ -1,15 +1,10 @@
-import {
-  getInvoices,
-  getFinancialYears,
-  getMaxOutstandingAmount,
-} from "../../actions/invoice";
+import { getInvoices, getMaxOutstandingAmount } from "../../actions/invoice";
 import Link from "next/link";
 import ImportInvoices from "../../components/ImportInvoices";
 import SearchBox from "../../components/SearchBox";
 import FilterDropdown from "../../components/FilterDropdown";
 import AgingFilterDropdown from "../../components/invoice/AgingFilterDropdown";
-import FinancialYearFilterDropdown from "../../components/invoice/FinancialYearFilterDropdown";
-import MonthFilterDropdown from "../../components/invoice/MonthFilterDropdown";
+import InvoiceDateFilter from "../../components/invoice/InvoiceDateFilter";
 import AmountRangeFilter from "../../components/invoice/AmountRangeFilter";
 import AlphabetDropdown from "../../components/invoice/AlphabetDropdown";
 import ExportInvoicesButton from "../../components/invoice/ExportInvoicesButton";
@@ -24,6 +19,9 @@ export default async function InvoicePage({ searchParams }) {
   const financialYear = resolvedParams?.financialYear || "";
   const month = resolvedParams?.month || "";
   const alphabet = resolvedParams?.alphabet || "";
+  const date = resolvedParams?.date || "";
+  const startDate = resolvedParams?.startDate || "";
+  const endDate = resolvedParams?.endDate || "";
 
   const minAmount = resolvedParams?.minAmount || "";
   const maxAmount = resolvedParams?.maxAmount || "";
@@ -39,9 +37,10 @@ export default async function InvoicePage({ searchParams }) {
     minAmount,
     maxAmount,
     alphabet,
+    date,
+    startDate,
+    endDate,
   );
-
-  const years = await getFinancialYears();
 
   return (
     <div className="space-y-4">
@@ -82,8 +81,7 @@ export default async function InvoicePage({ searchParams }) {
         <FilterDropdown />
         <AmountRangeFilter maxAmount={maxOutstanding} />
         <AgingFilterDropdown />
-        <MonthFilterDropdown />
-        <FinancialYearFilterDropdown years={years} />
+        <InvoiceDateFilter />
       </div>
 
       {/* Invoices Interactive Table with Multi-Select & Bulk Reminders */}
