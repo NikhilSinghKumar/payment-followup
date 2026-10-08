@@ -94,10 +94,6 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                   Date
                 </th>
 
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Receipt
-                </th>
-
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Payment
                 </th>
@@ -131,14 +127,6 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
 
                     <td className="whitespace-nowrap px-5 py-4 text-sm text-zinc-700 dark:text-zinc-300">
                       {formatDate(payment.paymentDate)}
-                    </td>
-
-                    {/* Receipt */}
-
-                    <td className="whitespace-nowrap px-5 py-4">
-                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                        {payment.receiptNumber || "—"}
-                      </span>
                     </td>
 
                     {/* Payment Amount */}
