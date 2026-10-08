@@ -14,12 +14,14 @@ export default function OverviewTab({ invoice }) {
         {/* Left : Invoice Information */}
         {/* ============================== */}
 
-        <section className="lg:col-span-2 rounded-xl border border-zinc-200 bg-white">
-          <div className="border-b border-zinc-200 bg-zinc-50 px-4 py-2">
-            <h3 className="font-semibold text-zinc-800">Invoice Information</h3>
+        <section className="lg:col-span-2 rounded-xl border border-zinc-200 bg-white shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="border-b border-zinc-200 bg-zinc-50/80 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/50">
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
+              Invoice Information
+            </h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 p-4 sm:p-5">
             <InfoItem label="Invoice Number" value={invoice.invoiceNumber} />
 
             <InfoItem label="Financial Year" value={invoice.financialYear} />
@@ -51,12 +53,14 @@ export default function OverviewTab({ invoice }) {
         {/* Right : Amount Summary */}
         {/* ============================== */}
 
-        <section className="rounded-xl border border-zinc-200 bg-zinc-50 h-fit">
-          <div className="border-b border-zinc-200 bg-zinc-100 px-4 py-3">
-            <h3 className="font-semibold text-zinc-800">Invoice Amount</h3>
+        <section className="rounded-xl border border-zinc-200 bg-zinc-50/70 h-fit shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/60">
+          <div className="border-b border-zinc-200 bg-zinc-100/80 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/60">
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
+              Invoice Amount Breakdown
+            </h3>
           </div>
 
-          <div className="p-3 space-y-1">
+          <div className="p-4 space-y-1.5">
             <AmountRow
               label="Invoice Amount"
               value={money(invoice.invoiceAmount)}
@@ -115,12 +119,12 @@ export default function OverviewTab({ invoice }) {
 
 function InfoItem({ label, value }) {
   return (
-    <div>
-      <div className="text-xs uppercase tracking-wide text-zinc-500 font-medium">
+    <div className="rounded-lg border border-zinc-100 bg-zinc-50/60 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/30">
+      <div className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-medium">
         {label}
       </div>
 
-      <div className="mt-1 text-sm font-medium text-zinc-800">
+      <div className="mt-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
         {value || "-"}
       </div>
     </div>

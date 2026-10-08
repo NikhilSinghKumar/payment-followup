@@ -32,7 +32,7 @@ export default async function InvoiceDetailPage({ params }) {
   }
 
   return (
-    <div className="bg-zinc-50 p-2">
+    <div className="min-h-screen bg-zinc-50/50 p-3 sm:p-5 lg:p-6">
       <div className="mx-auto space-y-4">
         {/* SUMMARY */}
         <InvoiceSummary data={summary} />
