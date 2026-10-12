@@ -11,9 +11,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "PAFEX",
-  description: "Next Payment Follow-up App",
+  description:
+    "Payment follow-up and accounts receivables management platform.",
+  openGraph: {
+    title: "PAFEX",
+    description:
+      "Payment follow-up and accounts receivables management platform.",
+  },
 };
 
 export default function RootLayout({ children }) {

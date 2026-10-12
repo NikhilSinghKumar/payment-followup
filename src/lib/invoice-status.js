@@ -26,10 +26,11 @@ export function calculateInvoiceStatus({
   const numVerifiedTds = Number(verifiedTds || 0);
 
   // Prevent negative due because of over-payment
-  const due = Math.max(
-    0,
-    Number((netPayable - paid - numVerifiedTds).toFixed(2)),
-  );
+  const rawDue = Number((netPayable - paid - numVerifiedTds).toFixed(2));
+  // In business accounting, if paid + verified TDS covers invoice within round-off tolerance (< ₹1.00), invoice is paid
+  const isSettledWithRoundoff =
+    (paid > 0 || numVerifiedTds > 0) && rawDue <= 0.99 && rawDue >= -0.99;
+  const due = isSettledWithRoundoff ? 0 : Math.max(0, rawDue);
 
   // =====================================
   // PAYMENT STATE

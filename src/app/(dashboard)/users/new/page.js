@@ -4,6 +4,8 @@ import { getRoles } from "@/app/actions/role";
 import { getDepartments } from "@/app/actions/department";
 import { createUser } from "@/app/actions/user";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Create User | PAFEX",
   description:

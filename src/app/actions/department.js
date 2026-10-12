@@ -68,6 +68,12 @@ export async function ensureDefaultDepartments(companyId) {
     const inserted = await db.insert(departments).values(toInsert).returning();
     return inserted;
   } catch (error) {
+    if (
+      error?.digest === "DYNAMIC_SERVER_USAGE" ||
+      error?.message?.includes("Dynamic server usage")
+    ) {
+      throw error;
+    }
     console.error("ensureDefaultDepartments error:", error);
     return [];
   }
@@ -132,6 +138,12 @@ export async function getDepartments({ activeOnly = false } = {}) {
       userCount: countMap.get(d.id) || 0,
     }));
   } catch (error) {
+    if (
+      error?.digest === "DYNAMIC_SERVER_USAGE" ||
+      error?.message?.includes("Dynamic server usage")
+    ) {
+      throw error;
+    }
     console.error("getDepartments error:", error);
     return [];
   }

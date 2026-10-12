@@ -107,6 +107,9 @@ export async function getTdsManagementData({
     const totalReconciled = actualPaymentReceived + tdsDeducted;
     const difference = grossInvoiceAmount - totalReconciled;
     const isFullyMatched = Math.abs(difference) < 1;
+    const isFullySettled = isFullyMatched && isVerified;
+    const isTdsPendingSettlement = isFullyMatched && !isVerified;
+    const roundOffDifference = Number(difference.toFixed(2));
 
     return {
       ...inv,
@@ -119,7 +122,10 @@ export async function getTdsManagementData({
       pendingTds,
       totalReconciled,
       difference,
+      roundOffDifference,
       isFullyMatched,
+      isFullySettled,
+      isTdsPendingSettlement,
       outstandingAmount: Number(inv.outstandingAmount || 0),
     };
   });

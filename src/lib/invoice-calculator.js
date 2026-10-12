@@ -64,9 +64,10 @@ export function calculateInvoice({
   }
 
   // -----------------------------
-  // TDS (Dynamic Rate)
+  // TDS (Dynamic Rate) - Rounded to nearest rupee per Section 288B of Income Tax Act
   // -----------------------------
-  const tdsAmount = tdsApplicable ? round(basicAmount * (numTdsRate / 100)) : 0;
+  const rawTds = basicAmount * (numTdsRate / 100);
+  const tdsAmount = tdsApplicable ? Math.round(rawTds) : 0;
 
   // -----------------------------
   // Net Payable

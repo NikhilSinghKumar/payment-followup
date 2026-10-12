@@ -110,19 +110,30 @@ export default function TdsManagementClient({
     setInvoices((prev) =>
       prev.map((inv) => {
         if (inv.id === invoiceId) {
+          const rawRemaining =
+            inv.grossInvoiceAmount -
+            inv.actualPaymentReceived -
+            inv.tdsDeducted;
+          const isSettledWithTolerance =
+            nextVerified && Math.abs(rawRemaining) < 1;
+
           return {
             ...inv,
             isVerified: nextVerified,
             verifiedTds: nextVerified ? inv.tdsDeducted : 0,
             pendingTds: !nextVerified ? inv.tdsDeducted : 0,
             outstandingAmount: nextVerified
-              ? Math.max(
+              ? isSettledWithTolerance
+                ? 0
+                : Math.max(0, Number(rawRemaining.toFixed(2)))
+              : Math.max(
                   0,
-                  inv.grossInvoiceAmount -
-                    inv.actualPaymentReceived -
-                    inv.tdsDeducted,
-                )
-              : Math.max(0, inv.grossInvoiceAmount - inv.actualPaymentReceived),
+                  Number(
+                    (
+                      inv.grossInvoiceAmount - inv.actualPaymentReceived
+                    ).toFixed(2),
+                  ),
+                ),
           };
         }
         return inv;
@@ -513,12 +524,17 @@ export default function TdsManagementClient({
               ) : (
                 filteredInvoices.map((inv) => {
                   const isChecked = selectedIds.includes(inv.id);
-                  const isFullyReconciled =
-                    Math.abs(
-                      inv.actualPaymentReceived +
-                        inv.tdsDeducted -
-                        inv.grossInvoiceAmount,
-                    ) < 1;
+                  const totalAccounted =
+                    Number(inv.actualPaymentReceived || 0) +
+                    Number(inv.tdsDeducted || 0);
+                  const diff = Number(
+                    (inv.grossInvoiceAmount - totalAccounted).toFixed(2),
+                  );
+                  const isEquationMatched = Math.abs(diff) < 1;
+                  const isFullySettled =
+                    isEquationMatched && Boolean(inv.isVerified);
+                  const isTdsPendingVerification =
+                    isEquationMatched && !inv.isVerified;
 
                   return (
                     <tr
@@ -624,28 +640,129 @@ export default function TdsManagementClient({
 
                       {/* Outstanding */}
                       <td className="px-3 py-3 text-right">
-                        <span
-                          className={`font-semibold ${
-                            inv.outstandingAmount > 0
-                              ? "text-rose-600 dark:text-rose-400"
-                              : "text-emerald-600 dark:text-emerald-400"
-                          }`}
-                        >
-                          {formatCurrency(inv.outstandingAmount)}
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span
+                            className={`font-semibold ${
+                              inv.outstandingAmount > 0
+                                ? inv.isVerified
+                                  ? "text-rose-600 dark:text-rose-400"
+                                  : "text-amber-600 dark:text-amber-400"
+                                : "text-emerald-600 dark:text-emerald-400"
+                            }`}
+                          >
+                            {formatCurrency(inv.outstandingAmount)}
+                          </span>
+                          {inv.outstandingAmount > 0 &&
+                            !inv.isVerified &&
+                            isEquationMatched && (
+                              <span
+                                className="text-[10px] text-zinc-500 dark:text-zinc-400"
+                                title={`Pending TDS: ${formatCurrency(inv.tdsDeducted)}${
+                                  Math.abs(
+                                    inv.outstandingAmount - inv.tdsDeducted,
+                                  ) >= 0.01
+                                    ? ` | Round-off Diff: ${formatCurrency(
+                                        Math.abs(
+                                          inv.outstandingAmount -
+                                            inv.tdsDeducted,
+                                        ),
+                                      )}`
+                                    : ""
+                                }\nCash Due from Client: ₹0.00`}
+                              >
+                                TDS Pending
+                                {Math.abs(
+                                  inv.outstandingAmount - inv.tdsDeducted,
+                                ) >= 0.01 && (
+                                  <span className="ml-0.5 text-zinc-400 font-normal">
+                                    (
+                                    {inv.outstandingAmount > inv.tdsDeducted
+                                      ? "+"
+                                      : ""}
+                                    {(
+                                      inv.outstandingAmount - inv.tdsDeducted
+                                    ).toFixed(2)}
+                                    )
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                        </div>
                       </td>
 
-                      {/* Accounting Equation Check */}
+                      {/* Accounting Equation Check & Reconciliation Status */}
                       <td className="px-3 py-3 text-center">
-                        {isFullyReconciled ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                            <Check size={11} />
-                            Paid + TDS = Invoice Total
-                          </span>
+                        {isFullySettled ? (
+                          <div
+                            className="inline-flex flex-col items-center gap-0.5"
+                            title={`Reconciliation Status: 100% Settled & Closed\nPayment Received: ${formatCurrency(inv.actualPaymentReceived)}\n+ Verified TDS (26AS): ${formatCurrency(inv.tdsDeducted)}\n= Invoice Total: ${formatCurrency(inv.grossInvoiceAmount)}\nStatus: 100% Balanced & Verified in Form 26AS`}
+                          >
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 shadow-2xs dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-300">
+                              <CheckCircle2
+                                size={12}
+                                className="text-emerald-600 dark:text-emerald-400"
+                              />
+                              Fully Reconciled
+                            </span>
+                            <span className="text-[10px] font-medium text-emerald-600/90 dark:text-emerald-400/90">
+                              100% Settled &bull; Verified in 26AS
+                            </span>
+                          </div>
+                        ) : isTdsPendingVerification ? (
+                          <div
+                            className="inline-flex flex-col items-center gap-0.5"
+                            title={`Reconciliation Status: Payment Accounted, TDS Pending Settlement\nPayment Received: ${formatCurrency(inv.actualPaymentReceived)}\n+ TDS Deducted: ${formatCurrency(inv.tdsDeducted)} (Pending Form 26AS Verification)\n= Accounted Total: ${formatCurrency(totalAccounted)}\nInvoice Gross: ${formatCurrency(inv.grossInvoiceAmount)}${
+                              Math.abs(diff) >= 0.01
+                                ? `\nRound-off Diff: ${formatCurrency(Math.abs(diff))}`
+                                : ""
+                            }\nStatus: Cash payment received matches invoice minus client TDS deduction. Awaiting Form 26AS verification.`}
+                          >
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/80 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800 shadow-2xs dark:border-amber-800/80 dark:bg-amber-950/40 dark:text-amber-300">
+                              <Clock
+                                size={12}
+                                className="text-amber-600 dark:text-amber-400"
+                              />
+                              TDS Pending (26AS)
+                            </span>
+                            <span className="text-[10px] font-medium text-amber-700/90 dark:text-amber-400/90">
+                              Cash Recvd &bull; TDS Unverified
+                              {Math.abs(diff) >= 0.01
+                                ? ` (±${formatCurrency(Math.abs(diff))})`
+                                : ""}
+                            </span>
+                          </div>
+                        ) : diff < -0.01 ? (
+                          <div
+                            className="inline-flex flex-col items-center gap-0.5"
+                            title={`Equation Breakdown:\nPayment Received: ${formatCurrency(inv.actualPaymentReceived)}\n+ TDS Deducted: ${formatCurrency(inv.tdsDeducted)}\n= Total Settled: ${formatCurrency(totalAccounted)}\nExceeds Invoice Total (${formatCurrency(inv.grossInvoiceAmount)}) by ${formatCurrency(Math.abs(diff))}`}
+                          >
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200/80 bg-purple-50 px-2.5 py-0.5 text-[11px] font-semibold text-purple-700 shadow-2xs dark:border-purple-800/80 dark:bg-purple-950/40 dark:text-purple-300">
+                              <AlertCircle
+                                size={12}
+                                className="text-purple-600 dark:text-purple-400"
+                              />
+                              Excess Settled
+                            </span>
+                            <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400">
+                              +{formatCurrency(Math.abs(diff))} over total
+                            </span>
+                          </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                            Difference: {formatCurrency(inv.difference)}
-                          </span>
+                          <div
+                            className="inline-flex flex-col items-center gap-0.5"
+                            title={`Equation Breakdown:\nPayment Received: ${formatCurrency(inv.actualPaymentReceived)}\n+ TDS Deducted: ${formatCurrency(inv.tdsDeducted)}\n= Accounted: ${formatCurrency(totalAccounted)}\nPending Balance: ${formatCurrency(diff)} of ${formatCurrency(inv.grossInvoiceAmount)}`}
+                          >
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-800 shadow-2xs dark:border-amber-800/80 dark:bg-amber-950/40 dark:text-amber-300">
+                              <Clock
+                                size={12}
+                                className="text-amber-600 dark:text-amber-400"
+                              />
+                              Pending Balance
+                            </span>
+                            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                              {formatCurrency(diff)} remaining
+                            </span>
+                          </div>
                         )}
                       </td>
 
@@ -692,12 +809,39 @@ export default function TdsManagementClient({
 
             <div className="mt-4 space-y-3.5 text-xs">
               <div>
-                <label className="mb-1 block font-semibold text-zinc-700 dark:text-zinc-300">
-                  TDS Deducted Amount (₹){" "}
-                  <span className="text-zinc-400 font-normal">
-                    (Manual Override)
-                  </span>
-                </label>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className="block font-semibold text-zinc-700 dark:text-zinc-300">
+                    TDS Deducted Amount (₹){" "}
+                    <span className="font-normal text-zinc-400">
+                      (Manual Override)
+                    </span>
+                  </label>
+                  {(() => {
+                    const remainingBalance = Math.max(
+                      0,
+                      editingInvoice.grossInvoiceAmount -
+                        editingInvoice.actualPaymentReceived,
+                    );
+                    const currentVal = parseFloat(editTdsAmount) || 0;
+                    const diffWithBalance = Math.abs(
+                      remainingBalance - currentVal,
+                    );
+                    if (diffWithBalance > 0.001 && diffWithBalance <= 5) {
+                      return (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditTdsAmount(remainingBalance.toFixed(2))
+                          }
+                          className="text-[11px] font-semibold text-blue-600 underline hover:text-blue-800 dark:text-blue-400"
+                        >
+                          Match Remaining ({formatCurrency(remainingBalance)})
+                        </button>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
                 <input
                   type="number"
                   step="0.01"
@@ -706,6 +850,30 @@ export default function TdsManagementClient({
                   onChange={(e) => setEditTdsAmount(e.target.value)}
                   className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                 />
+                {(() => {
+                  const remainingBalance = Math.max(
+                    0,
+                    editingInvoice.grossInvoiceAmount -
+                      editingInvoice.actualPaymentReceived,
+                  );
+                  const currentVal = parseFloat(editTdsAmount) || 0;
+                  const diffWithBalance = Number(
+                    Math.abs(remainingBalance - currentVal).toFixed(2),
+                  );
+                  if (diffWithBalance > 0.001 && diffWithBalance <= 5) {
+                    return (
+                      <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                        💡 Unpaid invoice balance is{" "}
+                        {formatCurrency(remainingBalance)} while calculated 2%
+                        TDS is {formatCurrency(currentVal)} (difference of{" "}
+                        {formatCurrency(diffWithBalance)} due to decimal points
+                        / rounding). Click &ldquo;Match Remaining&rdquo; if
+                        client rounded their deduction.
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               <div className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
@@ -741,17 +909,70 @@ export default function TdsManagementClient({
               </div>
 
               {/* Equation preview */}
-              <div className="rounded-lg bg-blue-50 p-2.5 text-[11px] text-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
-                Payment Received:{" "}
-                <b>{formatCurrency(editingInvoice.actualPaymentReceived)}</b> +
-                TDS: <b>{formatCurrency(parseFloat(editTdsAmount) || 0)}</b> ={" "}
-                <b>
-                  {formatCurrency(
-                    editingInvoice.actualPaymentReceived +
-                      (parseFloat(editTdsAmount) || 0),
-                  )}
-                </b>
-              </div>
+              {(() => {
+                const parsedTds = parseFloat(editTdsAmount) || 0;
+                const totalSettled =
+                  editingInvoice.actualPaymentReceived + parsedTds;
+                const diff = editingInvoice.grossInvoiceAmount - totalSettled;
+                const isMatch = Math.abs(diff) < 1;
+
+                return (
+                  <div className="space-y-1.5 rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-800/80">
+                    <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
+                      <span>Payment + TDS:</span>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        {formatCurrency(editingInvoice.actualPaymentReceived)} +{" "}
+                        {formatCurrency(parsedTds)} ={" "}
+                        {formatCurrency(totalSettled)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
+                      <span>Invoice Total:</span>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        {formatCurrency(editingInvoice.grossInvoiceAmount)}
+                      </span>
+                    </div>
+                    <div className="border-t border-zinc-200 pt-1.5 dark:border-zinc-700">
+                      {isMatch ? (
+                        editVerified ? (
+                          <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 size={13} />
+                            <span>
+                              Fully Settled & Reconciled: Cash payment + TDS
+                              matches invoice total (Verified in Form 26AS).
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-400">
+                            <Clock size={13} />
+                            <span>
+                              Payment Accounted (TDS Pending 26AS): Cash
+                              received + TDS accounts for invoice, but Form 26AS
+                              verification is pending.
+                            </span>
+                          </div>
+                        )
+                      ) : diff < -0.01 ? (
+                        <div className="flex items-center gap-1.5 font-semibold text-purple-600 dark:text-purple-400">
+                          <AlertCircle size={13} />
+                          <span>
+                            Excess Settled: Payment + TDS exceeds invoice total
+                            by {formatCurrency(Math.abs(diff))}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 font-medium text-amber-600 dark:text-amber-400">
+                          <Clock size={13} />
+                          <span>
+                            Pending Balance: {formatCurrency(diff)} remaining to
+                            settle
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="mt-5 flex justify-end gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">

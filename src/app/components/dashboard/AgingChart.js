@@ -72,7 +72,7 @@ export default function AgingChart({ data = [] }) {
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <div>
           <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Receivable Aging
+            Bill Aging
           </h2>
         </div>
 
@@ -133,13 +133,13 @@ export default function AgingChart({ data = [] }) {
                 fontSize: "12px",
                 padding: "6px 10px",
               }}
-              formatter={(value) => [formatCurrency(value), "Amount"]}
+              formatter={(value) => [formatCurrency(value), "Invoice Amount"]}
               labelFormatter={(label) => `Bucket: ${label}`}
             />
 
             <Bar
               dataKey="amount"
-              name="Amount"
+              name="Invoice Amount"
               radius={[0, 4, 4, 0]}
               barSize={18}
             >

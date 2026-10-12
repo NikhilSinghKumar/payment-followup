@@ -2,6 +2,8 @@ import PaymentForm from "@/app/components/payment/PaymentForm";
 import { getClients } from "@/app/actions/client";
 import { getNotificationSettings } from "@/app/actions/notificationSettings";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewPaymentPage() {
   const [clients, settingsData] = await Promise.all([
     getClients(),

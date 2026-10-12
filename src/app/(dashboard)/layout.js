@@ -1,6 +1,8 @@
 import AppLayout from "@/app/components/layout/AppLayout";
 import { getCurrentUser } from "@/lib/auth/auth";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({ children }) {
   const auth = await getCurrentUser();
 

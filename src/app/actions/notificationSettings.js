@@ -73,6 +73,12 @@ export async function getNotificationSettings() {
 
     return { settings, company };
   } catch (error) {
+    if (
+      error?.digest === "DYNAMIC_SERVER_USAGE" ||
+      error?.message?.includes("Dynamic server usage")
+    ) {
+      throw error;
+    }
     console.error("getNotificationSettings error:", error);
     return { error: error?.message || "Failed to fetch notification settings" };
   }
