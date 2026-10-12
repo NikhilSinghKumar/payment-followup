@@ -394,6 +394,11 @@ export async function getInvoices(
 
       paidAmount: invoices.paidAmount,
       outstandingAmount: invoices.outstandingAmount,
+      tdsAmount: invoices.tdsAmount,
+      tdsDeductedAmount: invoices.tdsDeductedAmount,
+      isTdsVerified: invoices.isTdsVerified,
+      tdsApplicableUsed: invoices.tdsApplicableUsed,
+      tdsRateUsed: invoices.tdsRateUsed,
       status: invoices.status,
       isOpeningBalance: invoices.isOpeningBalance,
     })

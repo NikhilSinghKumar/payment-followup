@@ -33,6 +33,7 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                   Net Payable
                 </th>
                 <th className="whitespace-nowrap px-3 py-3 text-right">Paid</th>
+                <th className="whitespace-nowrap px-3 py-3 text-right">TDS</th>
                 <th className="whitespace-nowrap px-3 py-3 text-right">
                   Outstanding
                 </th>
@@ -50,7 +51,7 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
               {invoices.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="p-10 text-center text-sm text-zinc-500"
                   >
                     No invoices found.
@@ -59,6 +60,13 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
               ) : (
                 invoices.map((invoice) => {
                   const outstanding = Number(invoice.outstandingAmount || 0);
+                  const tdsVal = Number(
+                    invoice.tdsDeducted ||
+                      invoice.tdsDeductedAmount ||
+                      invoice.tdsAmount ||
+                      0,
+                  );
+                  const isVerified = Boolean(invoice.isTdsVerified);
 
                   return (
                     <tr
@@ -117,6 +125,33 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                           className="block"
                         >
                           {formatCurrency(invoice.paidAmount || 0)}
+                        </Link>
+                      </td>
+
+                      {/* TDS */}
+                      <td className="whitespace-nowrap px-3 py-3 text-right">
+                        <Link
+                          href={`/invoices/${invoice.id}`}
+                          className="block"
+                        >
+                          {tdsVal > 0 ? (
+                            <div className="flex flex-col items-end">
+                              <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                                {formatCurrency(tdsVal)}
+                              </span>
+                              <span
+                                className={`inline-block rounded px-1.5 py-0.2 text-[9px] font-bold ${
+                                  isVerified
+                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                                    : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                                }`}
+                              >
+                                {isVerified ? "Verified" : "Pending"}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-zinc-400 text-xs">—</span>
+                          )}
                         </Link>
                       </td>
 

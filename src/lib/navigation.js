@@ -12,6 +12,7 @@ import {
   Settings,
   ShieldAlert,
   Network,
+  ShieldCheck,
 } from "lucide-react";
 
 export const SIDEBAR_NAVIGATION = [
@@ -39,6 +40,12 @@ export const SIDEBAR_NAVIGATION = [
         title: "Payments",
         href: "/payments",
         icon: IndianRupee,
+      },
+
+      {
+        title: "TDS Management",
+        href: "/tds",
+        icon: ShieldCheck,
       },
 
       {

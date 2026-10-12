@@ -186,12 +186,19 @@ const mockStore: Record<string, any[]> = {
       companyId: 1,
       clientId: 1,
       invoiceNumber: "INV-2026-001",
+      financialYear: "2025-26",
       invoiceDate: "2026-02-15",
       dueDate: "2026-03-15",
+      invoiceAmount: "125000.00",
+      basicAmount: "105932.20",
       totalAmount: "125000.00",
+      netPayableAmount: "122881.36",
       paidAmount: "25000.00",
-      outstandingAmount: "100000.00",
-      status: "PARTIALLY_PAID",
+      tdsAmount: "2118.64",
+      tdsDeductedAmount: "2118.64",
+      isTdsVerified: false,
+      outstandingAmount: "97881.36",
+      status: "partial",
       isOpeningBalance: false,
       tdsApplicableUsed: true,
       tdsRateUsed: "2.00",
@@ -204,13 +211,23 @@ const mockStore: Record<string, any[]> = {
       companyId: 1,
       clientId: 2,
       invoiceNumber: "INV-2026-002",
+      financialYear: "2025-26",
       invoiceDate: "2026-02-20",
       dueDate: "2026-03-20",
+      invoiceAmount: "85000.00",
+      basicAmount: "72033.90",
       totalAmount: "85000.00",
-      paidAmount: "85000.00",
+      netPayableAmount: "83559.32",
+      paidAmount: "83559.32",
+      tdsAmount: "1440.68",
+      tdsDeductedAmount: "1440.68",
+      isTdsVerified: true,
+      tdsVerifiedAt: new Date(),
       outstandingAmount: "0.00",
-      status: "PAID",
+      status: "paid",
       isOpeningBalance: false,
+      tdsApplicableUsed: true,
+      tdsRateUsed: "2.00",
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,
@@ -220,13 +237,22 @@ const mockStore: Record<string, any[]> = {
       companyId: 1,
       clientId: 3,
       invoiceNumber: "INV-2026-003",
+      financialYear: "2025-26",
       invoiceDate: "2026-01-10",
       dueDate: "2026-02-10",
+      invoiceAmount: "45000.00",
+      basicAmount: "38135.59",
       totalAmount: "45000.00",
+      netPayableAmount: "45000.00",
       paidAmount: "0.00",
+      tdsAmount: "0.00",
+      tdsDeductedAmount: "0.00",
+      isTdsVerified: false,
       outstandingAmount: "45000.00",
-      status: "OVERDUE",
+      status: "overdue",
       isOpeningBalance: false,
+      tdsApplicableUsed: false,
+      tdsRateUsed: "0.00",
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,
@@ -420,14 +446,33 @@ function createMockDb() {
       const tableName = resolveTableName(table);
       return {
         set: (data: any) => ({
-          where: () => {
+          where: (condition?: any) => {
             const list = mockStore[tableName] || [];
-            if (list.length > 0) {
-              Object.assign(list[0], data, { updatedAt: new Date() });
+            let targetId: any = condition?.val ?? condition?.value;
+            if (
+              targetId === undefined &&
+              condition?.right?.value !== undefined
+            ) {
+              targetId = condition.right.value;
             }
+            if (targetId === undefined && condition?.queryChunks) {
+              const numChunk = condition.queryChunks.find(
+                (c: any) => typeof c?.value === "number",
+              );
+              if (numChunk) targetId = numChunk.value;
+            }
+            const targets = targetId
+              ? list.filter((item) => item.id === targetId)
+              : list.slice(0, 1);
+            if (targets.length === 0 && list.length > 0) {
+              targets.push(list[0]);
+            }
+            targets.forEach((item) =>
+              Object.assign(item, data, { updatedAt: new Date() }),
+            );
             const chainable = {
-              returning: () => Promise.resolve(list),
-              then: (resolve: any) => resolve(list),
+              returning: () => Promise.resolve(targets),
+              then: (resolve: any) => resolve(targets),
               catch: () => chainable,
               finally: () => chainable,
             };
@@ -455,9 +500,10 @@ if (isDbConfigured) {
   try {
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: 1500,
-      idleTimeoutMillis: 5000,
-      max: 5,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      max: 10,
     });
 
     pool.on("error", (err) => {

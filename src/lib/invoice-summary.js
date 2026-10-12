@@ -19,14 +19,38 @@ export function enrichInvoice(invoice) {
     );
   }
 
+  const tdsDeducted = Number(
+    invoice?.tdsDeductedAmount !== undefined &&
+      invoice?.tdsDeductedAmount !== null &&
+      Number(invoice?.tdsDeductedAmount) > 0
+      ? invoice.tdsDeductedAmount
+      : invoice?.tdsAmount || 0,
+  );
+  const isTdsVerified = Boolean(invoice?.isTdsVerified);
+  const verifiedTds = isTdsVerified ? tdsDeducted : 0;
+  const pendingTds = !isTdsVerified ? tdsDeducted : 0;
+
+  const grossInvoiceAmount = Number(
+    invoice?.invoiceAmount ?? invoice?.netPayableAmount ?? 0,
+  );
+  const deductions =
+    Number(invoice?.deductionAmount || 0) + Number(invoice?.otherCharges || 0);
+  const netBilled = Math.max(0, grossInvoiceAmount - deductions);
+  const paid = Number(invoice?.paidAmount ?? invoice?.paid ?? 0);
+
   return {
     ...invoice,
     creditDays,
+    tdsDeducted,
+    isTdsVerified,
+    verifiedTds,
+    pendingTds,
 
     ...calculateInvoiceStatus({
-      netPayable: invoice.netPayableAmount,
-      paid: invoice.paidAmount ?? invoice.paid ?? 0,
-      dueDate: invoice.dueDate,
+      netPayable: netBilled,
+      paid,
+      verifiedTds,
+      dueDate: invoice?.dueDate,
     }),
   };
 }

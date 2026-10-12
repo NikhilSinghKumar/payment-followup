@@ -52,6 +52,16 @@ export function calculateClientSummary(invoices, paymentsReceived = 0) {
     0,
   );
 
+  const totalVerifiedTds = invoiceList.reduce(
+    (sum, inv) => sum + Number(inv.verifiedTds || 0),
+    0,
+  );
+
+  const totalPendingTds = invoiceList.reduce(
+    (sum, inv) => sum + Number(inv.pendingTds || 0),
+    0,
+  );
+
   return {
     totalInvoices,
     totalAmount,
@@ -60,6 +70,9 @@ export function calculateClientSummary(invoices, paymentsReceived = 0) {
     netPayableAmount: totalNetPayable,
     totalPaidAmount: totalAllocated,
     totalAllocated,
+    totalVerifiedTds,
+    totalPendingTds,
+    totalTds: totalVerifiedTds + totalPendingTds,
     paymentsReceived: payments,
     onAccountAmount: Math.max(payments - totalAllocated, 0),
     netOutstanding,
@@ -133,6 +146,11 @@ export async function fetchClientFinancialSummary(clientId, companyId = null) {
       invoiceAmount: invoices.invoiceAmount,
       netPayableAmount: invoices.netPayableAmount,
       paidAmount: invoices.paidAmount,
+      tdsAmount: invoices.tdsAmount,
+      tdsDeductedAmount: invoices.tdsDeductedAmount,
+      isTdsVerified: invoices.isTdsVerified,
+      tdsApplicableUsed: invoices.tdsApplicableUsed,
+      tdsRateUsed: invoices.tdsRateUsed,
       outstandingAmount: invoices.outstandingAmount,
       status: invoices.status,
       dueDate: invoices.dueDate,
@@ -213,6 +231,16 @@ export async function fetchClientFinancialSummary(clientId, companyId = null) {
   // True Credit Balance = Only when client payments received exceed total net payable
   const creditBalance = Math.max(paymentsReceived - totalNetPayable, 0);
 
+  const totalVerifiedTds = normalizedInvoiceData.reduce(
+    (sum, item) => sum + Number(item.verifiedTds || 0),
+    0,
+  );
+
+  const totalPendingTds = normalizedInvoiceData.reduce(
+    (sum, item) => sum + Number(item.pendingTds || 0),
+    0,
+  );
+
   return {
     totalInvoices,
     totalAmount,
@@ -221,6 +249,9 @@ export async function fetchClientFinancialSummary(clientId, companyId = null) {
     netPayableAmount: totalNetPayable,
     totalPaidAmount: totalAllocated,
     totalAllocated,
+    totalVerifiedTds,
+    totalPendingTds,
+    totalTds: totalVerifiedTds + totalPendingTds,
     paymentsReceived,
     onAccountAmount,
     netOutstanding,

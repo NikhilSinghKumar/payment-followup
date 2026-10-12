@@ -65,6 +65,11 @@ export async function getInvoiceSummary(id) {
 
       gstNumberUsed: invoices.gstNumberUsed,
       tdsApplicableUsed: invoices.tdsApplicableUsed,
+      tdsDeductedAmount: invoices.tdsDeductedAmount,
+      isTdsVerified: invoices.isTdsVerified,
+      tdsVerifiedAt: invoices.tdsVerifiedAt,
+      tdsNotes: invoices.tdsNotes,
+      tdsRateUsed: invoices.tdsRateUsed,
     })
     .from(invoices)
     .leftJoin(clients, eq(clients.id, invoices.clientId))
@@ -114,17 +119,28 @@ export async function getInvoiceSummary(id) {
 
   const totalPaid = Number(paymentResult[0]?.total || 0);
 
+  const tdsDeducted = Number(
+    invoice.tdsDeductedAmount !== null &&
+      invoice.tdsDeductedAmount !== undefined &&
+      Number(invoice.tdsDeductedAmount) > 0
+      ? invoice.tdsDeductedAmount
+      : invoice.tdsAmount || 0,
+  );
+  const isTdsVerified = Boolean(invoice.isTdsVerified);
+  const verifiedTds = isTdsVerified ? tdsDeducted : 0;
+  const pendingTds = !isTdsVerified ? tdsDeducted : 0;
+
+  const grossInvoiceAmount = Number(invoice.invoiceAmount || 0);
+  const deductions =
+    Number(invoice.deductionAmount || 0) + Number(invoice.otherCharges || 0);
+  const netBilled = Math.max(0, grossInvoiceAmount - deductions);
+
   const paymentSummary = calculateInvoiceStatus({
-    netPayable: invoice.netPayableAmount,
+    netPayable: netBilled,
     paid: totalPaid,
+    verifiedTds,
     dueDate: invoice.dueDate,
   });
-
-  // =====================================
-  // OUTSTANDING
-  // =====================================
-
-  const netPayableAmount = Number(invoice.netPayableAmount);
 
   // =====================================
   // RETURN
@@ -133,6 +149,10 @@ export async function getInvoiceSummary(id) {
   return {
     ...invoice,
     awbCount,
+    tdsDeducted,
+    isTdsVerified,
+    verifiedTds,
+    pendingTds,
     ...paymentSummary,
   };
 }

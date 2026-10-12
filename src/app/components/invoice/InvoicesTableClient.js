@@ -100,9 +100,9 @@ export default function InvoicesTableClient({ invoices = [] }) {
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
         <div className="overflow-x-auto [scrollbar-width:thin]">
-          <div className="min-w-[1020px]">
+          <div className="min-w-[1140px]">
             {/* Table Header */}
-            <div className="grid grid-cols-[38px_44px_2.2fr_1fr_1.2fr_1fr_1fr_110px_120px_150px] items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300">
+            <div className="grid grid-cols-[36px_38px_2fr_1fr_1.1fr_1fr_1fr_1fr_100px_100px_130px] items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300">
               <div className="flex items-center justify-center">
                 <input
                   type="checkbox"
@@ -119,6 +119,7 @@ export default function InvoicesTableClient({ invoices = [] }) {
                 <SortDropdown />
               </div>
               <div className="text-center">Paid</div>
+              <div className="text-center">TDS</div>
               <div className="text-center">Outstanding</div>
               <div className="text-center">Due Date</div>
               <div className="text-center">Status</div>
@@ -150,7 +151,7 @@ export default function InvoicesTableClient({ invoices = [] }) {
                       if (e.target.closest("a, button, input")) return;
                       if (isPendingDue) toggleSelectInvoice(inv.id);
                     }}
-                    className={`grid grid-cols-[38px_44px_2.2fr_1fr_1.2fr_1fr_1fr_110px_120px_150px] items-center border-b border-zinc-100 px-4 py-1.5 text-xs transition-colors dark:border-zinc-800/60 ${
+                    className={`grid grid-cols-[36px_38px_2fr_1fr_1.1fr_1fr_1fr_1fr_100px_100px_130px] items-center border-b border-zinc-100 px-4 py-1.5 text-xs transition-colors dark:border-zinc-800/60 ${
                       isSelected
                         ? "bg-blue-50/60 dark:bg-blue-950/30"
                         : "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
@@ -200,6 +201,37 @@ export default function InvoicesTableClient({ invoices = [] }) {
                     {/* Paid */}
                     <div className="font-medium text-center text-emerald-600 whitespace-nowrap dark:text-emerald-400">
                       {formatCurrency(inv.paidAmount || 0)}
+                    </div>
+
+                    {/* TDS */}
+                    <div className="font-medium text-center whitespace-nowrap">
+                      {Number(
+                        inv.tdsDeducted ||
+                          inv.tdsDeductedAmount ||
+                          inv.tdsAmount ||
+                          0,
+                      ) > 0 ? (
+                        <div className="flex flex-col items-center">
+                          <span className="text-zinc-800 dark:text-zinc-200">
+                            {formatCurrency(
+                              inv.tdsDeducted ||
+                                inv.tdsDeductedAmount ||
+                                inv.tdsAmount,
+                            )}
+                          </span>
+                          <span
+                            className={`rounded px-1.5 py-0.2 text-[9px] font-bold ${
+                              inv.isTdsVerified
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                                : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                            }`}
+                          >
+                            {inv.isTdsVerified ? "Verified" : "Pending"}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-zinc-400">—</span>
+                      )}
                     </div>
 
                     {/* Due */}

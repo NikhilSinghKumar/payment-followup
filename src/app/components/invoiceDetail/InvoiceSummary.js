@@ -1,7 +1,8 @@
 import SendInvoiceReminderModal from "@/app/components/reminder/SendInvoiceReminderModal";
 import Link from "next/link";
-import { Edit3, ArrowLeft } from "lucide-react";
+import { Edit3, ArrowLeft, ShieldCheck, Clock } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-parser";
+import TdsVerifyButton from "./TdsVerifyButton";
 
 export default function InvoiceSummary({ data }) {
   const invoiceAmount = Number(data.invoiceAmount || 0);
@@ -70,6 +71,7 @@ export default function InvoiceSummary({ data }) {
 
         {/* Right Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
+          <TdsVerifyButton invoice={data} />
           {due > 0 && <SendInvoiceReminderModal invoiceId={data.id} />}
           <Link
             href={`/invoices/${data.id}/edit`}
@@ -83,7 +85,7 @@ export default function InvoiceSummary({ data }) {
 
       {/* STATS METRIC CARDS: FULL WIDTH, CLEANLY SEPARATED */}
       <div className="mt-5 border-t border-zinc-100 pt-4 dark:border-zinc-800/80">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
           {/* 1. Invoice Amount */}
           <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
@@ -120,7 +122,33 @@ export default function InvoiceSummary({ data }) {
             </div>
           </div>
 
-          {/* 4. Balance Due */}
+          {/* 4. TDS Deducted */}
+          <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                TDS Deducted
+              </span>
+              <span
+                className={`rounded px-1.5 py-0.2 text-[9px] font-bold ${
+                  data.isTdsVerified
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                    : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                }`}
+              >
+                {data.isTdsVerified ? "Verified" : "Pending"}
+              </span>
+            </div>
+            <div className="mt-1.5 text-base sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              {formatMoney(
+                data.tdsDeducted ||
+                  data.tdsDeductedAmount ||
+                  data.tdsAmount ||
+                  0,
+              )}
+            </div>
+          </div>
+
+          {/* 5. Balance Due */}
           <div
             className={`rounded-xl border p-3 sm:p-3.5 ${
               due > 0
@@ -142,7 +170,7 @@ export default function InvoiceSummary({ data }) {
             </div>
           </div>
 
-          {/* 5. Status */}
+          {/* 6. Status */}
           <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40 flex flex-col justify-between">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
               Status
@@ -152,7 +180,7 @@ export default function InvoiceSummary({ data }) {
             </div>
           </div>
 
-          {/* 6. Due Date */}
+          {/* 7. Due Date */}
           <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
               Due Date
@@ -172,6 +200,57 @@ export default function InvoiceSummary({ data }) {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Reconciliation Equation Bar */}
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-2 text-xs text-blue-900 dark:border-blue-950 dark:bg-blue-950/30 dark:text-blue-200">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold">Accounting Reconciliation:</span>
+            <span>
+              Actual Payment Received: <b>{formatMoney(paid)}</b> + TDS (
+              {data.isTdsVerified ? "Verified" : "Pending"}):{" "}
+              <b>
+                {formatMoney(
+                  data.tdsDeducted ||
+                    data.tdsDeductedAmount ||
+                    data.tdsAmount ||
+                    0,
+                )}
+              </b>{" "}
+              ={" "}
+              <b>
+                {formatMoney(
+                  paid +
+                    Number(
+                      data.tdsDeducted ||
+                        data.tdsDeductedAmount ||
+                        data.tdsAmount ||
+                        0,
+                    ),
+                )}
+              </b>{" "}
+              of Total Invoice {formatMoney(invoiceAmount)}
+            </span>
+          </div>
+
+          {Math.abs(
+            paid +
+              Number(
+                data.tdsDeducted ||
+                  data.tdsDeductedAmount ||
+                  data.tdsAmount ||
+                  0,
+              ) -
+              invoiceAmount,
+          ) < 1 ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              ✓ Actual Payment + TDS Totals to Invoice Amount
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+              Outstanding Balance: {formatMoney(due)}
+            </span>
+          )}
         </div>
       </div>
     </div>

@@ -4,6 +4,8 @@ import {
   HandCoins,
   IndianRupee,
   CalendarDays,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 
 import KPICard from "./KPICard";
@@ -17,7 +19,7 @@ const formatCurrency = (amount) =>
 
 export default function DashboardStats({ summary }) {
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5 lg:grid-cols-7">
       {/* OUTSTANDING */}
       <KPICard
         title="Total Outstanding"
@@ -56,6 +58,22 @@ export default function DashboardStats({ summary }) {
         value={formatCurrency(summary.totalCollection)}
         icon={HandCoins}
         iconBg="bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400"
+      />
+
+      {/* VERIFIED TDS */}
+      <KPICard
+        title="Verified TDS"
+        value={formatCurrency(summary.verifiedTds || 0)}
+        icon={CheckCircle2}
+        iconBg="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+      />
+
+      {/* PENDING TDS */}
+      <KPICard
+        title="Pending TDS"
+        value={formatCurrency(summary.pendingTds || 0)}
+        icon={Clock}
+        iconBg="bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
       />
     </div>
   );

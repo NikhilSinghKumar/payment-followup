@@ -90,10 +90,17 @@ export async function getInvoicesForPayment(clientId) {
       dueDate: invoices.dueDate,
 
       invoiceAmount: invoices.invoiceAmount,
+      basicAmount: invoices.basicAmount,
       netPayableAmount: invoices.netPayableAmount,
 
       paidAmount: invoices.paidAmount,
       outstandingAmount: invoices.outstandingAmount,
+
+      tdsAmount: invoices.tdsAmount,
+      tdsDeductedAmount: invoices.tdsDeductedAmount,
+      isTdsVerified: invoices.isTdsVerified,
+      tdsApplicableUsed: invoices.tdsApplicableUsed,
+      tdsRateUsed: invoices.tdsRateUsed,
 
       subClientId: invoices.subClientId,
       subClientName: clientSubClients.companyName,
@@ -344,6 +351,8 @@ export async function createPayment(formData) {
     .map(Number);
 
   const allocationAmounts = formData.getAll("allocationAmount").map(Number);
+  const allocationTdsAmounts = formData.getAll("allocationTdsAmount");
+  const allocationTdsVerified = formData.getAll("allocationTdsVerified");
 
   if (allocationInvoiceIds.length !== allocationAmounts.length) {
     throw new Error("Invalid payment allocation data.");
@@ -354,6 +363,14 @@ export async function createPayment(formData) {
     .map((invoiceId, index) => ({
       invoiceId,
       allocatedAmount: allocationAmounts[index],
+      tdsAmount:
+        allocationTdsAmounts[index] !== undefined &&
+        allocationTdsAmounts[index] !== ""
+          ? Number(allocationTdsAmounts[index])
+          : null,
+      isTdsVerified:
+        allocationTdsVerified[index] === "true" ||
+        allocationTdsVerified[index] === "1",
     }))
     .filter(
       (allocation) =>
@@ -501,6 +518,18 @@ export async function createPayment(formData) {
   // ======================================================
 
   for (const allocation of allocations) {
+    if (allocation.tdsAmount !== null && !isNaN(allocation.tdsAmount)) {
+      await db
+        .update(invoices)
+        .set({
+          tdsDeductedAmount: allocation.tdsAmount.toString(),
+          isTdsVerified: allocation.isTdsVerified,
+          tdsVerifiedAt: allocation.isTdsVerified ? new Date() : null,
+          updatedAt: new Date(),
+        })
+        .where(eq(invoices.id, allocation.invoiceId));
+    }
+
     await updateInvoiceFinancials(allocation.invoiceId);
   }
 

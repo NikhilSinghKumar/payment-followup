@@ -54,7 +54,7 @@ async function getAgingData(companyId) {
           SUM(
             CASE
               WHEN ${invoices.dueDate} >= ${today}::date
-              THEN ${invoices.outstandingAmount}
+              THEN ${invoices.invoiceAmount}
               ELSE 0
             END
           ),
@@ -69,7 +69,7 @@ async function getAgingData(companyId) {
               WHEN ${invoices.dueDate} < ${today}::date
                 AND ${invoices.dueDate} >=
                     (${today}::date - INTERVAL '30 days')
-              THEN ${invoices.outstandingAmount}
+              THEN ${invoices.invoiceAmount}
               ELSE 0
             END
           ),
@@ -85,7 +85,7 @@ async function getAgingData(companyId) {
                     (${today}::date - INTERVAL '30 days')
                 AND ${invoices.dueDate} >=
                     (${today}::date - INTERVAL '60 days')
-              THEN ${invoices.outstandingAmount}
+              THEN ${invoices.invoiceAmount}
               ELSE 0
             END
           ),
@@ -101,7 +101,7 @@ async function getAgingData(companyId) {
                     (${today}::date - INTERVAL '60 days')
                 AND ${invoices.dueDate} >=
                     (${today}::date - INTERVAL '90 days')
-              THEN ${invoices.outstandingAmount}
+              THEN ${invoices.invoiceAmount}
               ELSE 0
             END
           ),
@@ -115,7 +115,7 @@ async function getAgingData(companyId) {
             CASE
               WHEN ${invoices.dueDate} <
                     (${today}::date - INTERVAL '90 days')
-              THEN ${invoices.outstandingAmount}
+              THEN ${invoices.invoiceAmount}
               ELSE 0
             END
           ),
@@ -321,41 +321,18 @@ export async function getDashboardData({
     granularity: trendGranularity,
   });
 
-  // ==========================================
-  // 90 DAYS AGO
-  // ==========================================
-
-  const ninetyDaysAgo = new Date();
-
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const today = getTodayIST();
 
   // ==========================================
-  // 1. TOTAL OUTSTANDING
-  // CURRENT SNAPSHOT
+  // 1. TOTAL OUTSTANDING (INVOICE AMOUNT)
+  // CURRENT SNAPSHOT OF OUTSTANDING INVOICES
   // ==========================================
 
   const [outstandingResult] = await db
     .select({
       total: sql`
         COALESCE(
-          SUM(${invoices.outstandingAmount}),
-          0
-        )
-      `,
-    })
-    .from(invoices)
-    .where(and(eq(invoices.companyId, companyId), isNull(invoices.deletedAt)));
-
-  // ==========================================
-  // 2. 90+ DAYS OUTSTANDING
-  // CURRENT SNAPSHOT
-  // ==========================================
-
-  const [outstanding90Result] = await db
-    .select({
-      total: sql`
-        COALESCE(
-          SUM(${invoices.outstandingAmount}),
+          SUM(${invoices.invoiceAmount}),
           0
         )
       `,
@@ -366,7 +343,30 @@ export async function getDashboardData({
         eq(invoices.companyId, companyId),
         isNull(invoices.deletedAt),
         gt(invoices.outstandingAmount, "0"),
-        sql`${invoices.dueDate} <= ${ninetyDaysAgo}`,
+      ),
+    );
+
+  // ==========================================
+  // 2. 90+ DAYS OUTSTANDING (INVOICE AMOUNT)
+  // CURRENT SNAPSHOT OF 90+ DAYS OVERDUE INVOICES
+  // ==========================================
+
+  const [outstanding90Result] = await db
+    .select({
+      total: sql`
+        COALESCE(
+          SUM(${invoices.invoiceAmount}),
+          0
+        )
+      `,
+    })
+    .from(invoices)
+    .where(
+      and(
+        eq(invoices.companyId, companyId),
+        isNull(invoices.deletedAt),
+        gt(invoices.outstandingAmount, "0"),
+        sql`${invoices.dueDate} < (${today}::date - INTERVAL '90 days')`,
       ),
     );
 
@@ -555,6 +555,47 @@ export async function getDashboardData({
     );
 
   // ==========================================
+  // 7. TDS METRICS (VERIFIED & PENDING)
+  // ==========================================
+
+  const [verifiedTdsResult] = await db
+    .select({
+      total: sql`
+        COALESCE(
+          SUM(
+            CASE
+              WHEN ${invoices.isTdsVerified} = true
+              THEN COALESCE(${invoices.tdsDeductedAmount}, ${invoices.tdsAmount}, 0)
+              ELSE 0
+            END
+          ),
+          0
+        )
+      `,
+    })
+    .from(invoices)
+    .where(and(eq(invoices.companyId, companyId), isNull(invoices.deletedAt)));
+
+  const [pendingTdsResult] = await db
+    .select({
+      total: sql`
+        COALESCE(
+          SUM(
+            CASE
+              WHEN (${invoices.isTdsVerified} = false OR ${invoices.isTdsVerified} IS NULL)
+                AND (${invoices.tdsApplicableUsed} = true OR ${invoices.tdsAmount} > 0 OR ${invoices.tdsDeductedAmount} > 0)
+              THEN COALESCE(${invoices.tdsDeductedAmount}, ${invoices.tdsAmount}, 0)
+              ELSE 0
+            END
+          ),
+          0
+        )
+      `,
+    })
+    .from(invoices)
+    .where(and(eq(invoices.companyId, companyId), isNull(invoices.deletedAt)));
+
+  // ==========================================
   // RETURN
   // ==========================================
 
@@ -579,6 +620,14 @@ export async function getDashboardData({
       totalCollection: Number(totalCollectionResult.total || 0),
 
       unallocatedPayments: Number(unallocatedResult.total || 0),
+
+      verifiedTds: Number(verifiedTdsResult?.total || 0),
+
+      pendingTds: Number(pendingTdsResult?.total || 0),
+
+      totalTds:
+        Number(verifiedTdsResult?.total || 0) +
+        Number(pendingTdsResult?.total || 0),
     },
 
     collectionTrend,

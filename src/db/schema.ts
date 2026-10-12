@@ -940,6 +940,23 @@ export const invoices = pgTable(
       scale: 2,
     }).default("2.00"),
 
+    // TDS Deducted Amount (allows manual entry / override)
+    tdsDeductedAmount: numeric("tds_deducted_amount", {
+      precision: 12,
+      scale: 2,
+    }).default("0"),
+
+    // Checkbox for TDS verified (Form 26AS verification)
+    isTdsVerified: boolean("is_tds_verified").notNull().default(false),
+
+    // Timestamp when TDS was verified
+    tdsVerifiedAt: timestamp("tds_verified_at", {
+      withTimezone: true,
+    }),
+
+    // Optional TDS notes / certificate reference
+    tdsNotes: text("tds_notes"),
+
     // Snapshot of opening balance status
     isOpeningBalance: boolean("is_opening_balance").notNull().default(false),
 

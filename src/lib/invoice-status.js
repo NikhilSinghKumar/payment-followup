@@ -15,12 +15,21 @@
  * }}
  */
 
-export function calculateInvoiceStatus({ netPayable, paid, dueDate }) {
+export function calculateInvoiceStatus({
+  netPayable,
+  paid,
+  dueDate,
+  verifiedTds = 0,
+}) {
   netPayable = Number(netPayable || 0);
   paid = Number(paid || 0);
+  const numVerifiedTds = Number(verifiedTds || 0);
 
   // Prevent negative due because of over-payment
-  const due = Math.max(0, Number((netPayable - paid).toFixed(2)));
+  const due = Math.max(
+    0,
+    Number((netPayable - paid - numVerifiedTds).toFixed(2)),
+  );
 
   // =====================================
   // PAYMENT STATE
