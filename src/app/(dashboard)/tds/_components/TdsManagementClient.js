@@ -606,13 +606,6 @@ export default function TdsManagementClient({
                         <div className="font-semibold text-zinc-900 dark:text-zinc-100">
                           {formatCurrency(inv.tdsDeducted)}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(inv)}
-                          className="text-[10px] text-blue-600 underline hover:text-blue-800 dark:text-blue-400"
-                        >
-                          Edit Amount
-                        </button>
                       </td>
 
                       {/* TDS Verification Checkbox (The core requested checkbox!) */}
@@ -773,7 +766,7 @@ export default function TdsManagementClient({
                             type="button"
                             onClick={() => openEditModal(inv)}
                             className="rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800"
-                            title="Edit TDS Settings"
+                            title="Edit TDS"
                           >
                             <FileText size={14} />
                           </button>
