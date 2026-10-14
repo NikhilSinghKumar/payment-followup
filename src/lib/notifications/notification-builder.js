@@ -221,6 +221,11 @@ function buildPaymentReceived(data) {
         paymentAmount,
         cashAmount,
         tdsAmount,
+        isTdsVerified: Boolean(
+          data.isTdsVerified ||
+          (data.settledInvoices && data.settledInvoices.some((i) => i.isTdsVerified)) ||
+          Number(data.totalVerifiedTds || 0) > 0
+        ),
         formattedPaymentAmount: formattedAmount,
         formattedCash,
         formattedTds,
@@ -248,6 +253,11 @@ function buildPaymentReceived(data) {
         paymentAmount,
         cashAmount,
         tdsAmount,
+        isTdsVerified: Boolean(
+          data.isTdsVerified ||
+          (data.settledInvoices && data.settledInvoices.some((i) => i.isTdsVerified)) ||
+          Number(data.totalVerifiedTds || 0) > 0
+        ),
         formattedPaymentAmount: formattedAmount,
         formattedCash,
         formattedTds,

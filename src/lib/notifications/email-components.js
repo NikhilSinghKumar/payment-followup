@@ -1235,7 +1235,7 @@ export function ClientOutstandingInvoices({
                       textAlign: "right",
                     }}
                   >
-                    Total:
+                    Total Account Due:
                   </td>
                   <td
                     style={{
@@ -1304,7 +1304,7 @@ export function ClientOutstandingInvoices({
                     textAlign: "right",
                   }}
                 >
-                  Total :
+                  Total Due:
                 </td>
                 <td
                   style={{
@@ -1342,6 +1342,17 @@ export function ClientOutstandingInvoices({
                 >
                   {formatCurrency(totals.outstandingAmount)}
                 </td>
+                <td
+                  colSpan={2}
+                  style={{
+                    padding: "11px 8px",
+                    color: hasAnyOverdue ? "#DC2626" : "#475569",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {hasAnyOverdue ? "Overdue" : "Current"}
+                </td>
               </tr>
             )}
           </tbody>
@@ -1360,20 +1371,26 @@ export function ClientOutstandingInvoices({
 export function AccountFinancialSummary({
   overallDue = 0,
   paymentDeduction = 0,
+  tdsAmount = null,
   restDueAmount = 0,
   totalNetPayable = null,
   paymentsReceived = null,
+  totalTdsDeducted = null,
   netOutstanding = null,
   onAccountAmount = null,
   unallocatedAmount = null,
-  overallLabel = "Account Total",
+  overallLabel = "Net Payable Amount",
   deductionLabel = "Payment Received",
+  tdsLabel = "TDS Deducted",
   restLabel = "Rest Due Amount",
-  overallSubtext = " ",
+  overallSubtext = "Total Net Payable",
   deductionSubtext = "Paid / Credited",
+  tdsSubtext = "Tax Deducted (IT Act)",
   restSubtext = "Net Outstanding",
   isOverdue = false,
   isSettlement = false,
+  showTdsCard = false,
+  isTdsVerified = true,
 }) {
   const parsedOverall = Math.max(
     0,
@@ -1391,6 +1408,23 @@ export function AccountFinancialSummary({
         : paymentDeduction || 0,
     ),
   );
+  const hasTdsCard =
+    showTdsCard ||
+    isSettlement ||
+    tdsAmount !== null ||
+    totalTdsDeducted !== null;
+
+  const parsedTds = Math.max(
+    0,
+    Number(
+      totalTdsDeducted !== null && totalTdsDeducted !== undefined
+        ? totalTdsDeducted
+        : tdsAmount !== null && tdsAmount !== undefined
+          ? tdsAmount
+          : 0,
+    ),
+  );
+
   const parsedRest = Math.max(
     0,
     Number(
@@ -1398,7 +1432,10 @@ export function AccountFinancialSummary({
         ? netOutstanding
         : restDueAmount !== undefined && restDueAmount !== null
           ? restDueAmount
-          : parsedOverall - parsedDeduction,
+          : Math.max(
+              0,
+              parsedOverall - parsedDeduction - (hasTdsCard && isTdsVerified ? parsedTds : 0),
+            ),
     ),
   );
   const parsedOnAccount = Math.max(
@@ -1412,6 +1449,7 @@ export function AccountFinancialSummary({
     ),
   );
   const isZeroRest = parsedRest <= 0;
+  const colWidth = hasTdsCard ? "25%" : "33.33%";
 
   return (
     <table
@@ -1428,9 +1466,9 @@ export function AccountFinancialSummary({
     >
       <tbody>
         <tr>
-          {/* Card 1: Invoice Amount */}
+          {/* Card 1: Invoice Amount / Total Outstanding */}
           <td
-            width="33.33%"
+            width={colWidth}
             valign="top"
             style={{
               background: "#F8FAFC",
@@ -1477,7 +1515,7 @@ export function AccountFinancialSummary({
 
           {/* Card 2: Payment Received */}
           <td
-            width="33.33%"
+            width={colWidth}
             valign="top"
             style={{
               background: "#F0FDF4",
@@ -1519,16 +1557,67 @@ export function AccountFinancialSummary({
               }}
             >
               {parsedDeduction > 0
-                ? parsedOnAccount > 0
-                  ? `✓ ${deductionSubtext}`
-                  : `✓ ${deductionSubtext}`
+                ? `✓ ${deductionSubtext || "Paid / Credited"}`
                 : "Nil / Unpaid"}
             </div>
           </td>
 
-          {/* Card 3: Rest Due Amount */}
+          {/* Card 3: TDS Deducted (Shown in settlement / when TDS card requested) */}
+          {hasTdsCard && (
+            <td
+              width={colWidth}
+              valign="top"
+              style={{
+                background: !isTdsVerified && parsedTds > 0 ? "#FFFBEB" : "#F5F3FF",
+                border: `1px solid ${!isTdsVerified && parsedTds > 0 ? "#FDE68A" : "#DDD6FE"}`,
+                borderRadius: "8px",
+                padding: "12px 10px",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  color: !isTdsVerified && parsedTds > 0 ? "#92400E" : "#6D28D9",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.03em",
+                  marginBottom: "4px",
+                }}
+              >
+                {tdsLabel}
+              </div>
+              <div
+                style={{
+                  fontSize: "17px",
+                  fontWeight: 800,
+                  color: !isTdsVerified && parsedTds > 0 ? "#D97706" : "#4F46E5",
+                  lineHeight: 1.25,
+                  marginBottom: "4px",
+                  wordBreak: "break-word",
+                }}
+              >
+                {formatCurrency(parsedTds)}
+              </div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: !isTdsVerified && parsedTds > 0 ? "#B45309" : "#7C3AED",
+                  fontWeight: 600,
+                }}
+              >
+                {parsedTds > 0
+                  ? isTdsVerified
+                    ? `✓ ${tdsSubtext || "Verified via 26AS / Form 16A"}`
+                    : `⏳ ${tdsSubtext || "Pending Verification • In Rest Due"}`
+                  : "Nil / No TDS"}
+              </div>
+            </td>
+          )}
+
+          {/* Card 4: Rest Due Amount */}
           <td
-            width="33.33%"
+            width={colWidth}
             valign="top"
             style={{
               background: isZeroRest
@@ -1608,6 +1697,7 @@ export function SingleInvoiceDataTable({
   invoice = {},
   overallDue = 0,
   paymentDeduction = 0,
+  tdsAmount = null,
   restDueAmount = 0,
   awbs = [],
   isOverdue = false,
@@ -1628,36 +1718,69 @@ export function SingleInvoiceDataTable({
         : (invoice.paidAmount ?? invoice.paid ?? 0),
   );
 
-  const isTdsVerified = Boolean(invoice.isTdsVerified);
-  const verifiedTds = isTdsVerified
-    ? Number(
-        invoice.verifiedTds ??
-          invoice.tdsDeductedAmount ??
-          invoice.tdsAmount ??
-          0,
-      )
-    : 0;
+  const isTdsVerified = Boolean(
+    invoice.isTdsVerified ||
+      invoice.tdsStatus === "verified" ||
+      invoice.isVerified ||
+      Boolean(invoice.tdsVerifiedAt) ||
+      Boolean(Number(invoice.verifiedTds || 0) > 0),
+  );
+  const rawTds = Number(
+    invoice.verifiedTds ??
+      invoice.tdsDeductedAmount ??
+      invoice.tdsAmount ??
+      invoice.tdsSettled ??
+      0,
+  );
+  const resolvedTds = Number(
+    tdsAmount !== null && tdsAmount !== undefined
+      ? tdsAmount
+      : rawTds,
+  );
+  const verifiedTds = isTdsVerified ? resolvedTds : 0;
+  const pendingTds = !isTdsVerified ? resolvedTds : 0;
 
+  // Crucial rule: Only verified TDS reduces the rest due amount.
+  // If TDS deduction is NOT verified, it must be included in rest due and invoice is not settled fully.
   const remainingDue = Number(
     (parsedOverall - parsedDeduction - verifiedTds).toFixed(2),
   );
   const isSlightRoundoff =
     isTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
 
-  const parsedRest = Number(
-    isSlightRoundoff
-      ? 0
-      : restDueAmount !== undefined && restDueAmount !== null
-        ? restDueAmount
-        : invoice.due !== undefined && invoice.due !== null
-          ? invoice.due
-          : invoice.restDueAmount !== undefined && invoice.restDueAmount !== null
-            ? invoice.restDueAmount
-            : invoice.outstandingAmount !== undefined &&
-                invoice.outstandingAmount !== null
-              ? invoice.outstandingAmount
-              : Math.max(0, remainingDue),
-  );
+  let parsedRest;
+  if (isSlightRoundoff) {
+    parsedRest = 0;
+  } else if (restDueAmount !== undefined && restDueAmount !== null) {
+    if (!isTdsVerified && pendingTds > 0 && Number(restDueAmount) === 0) {
+      parsedRest = Math.max(0, remainingDue);
+    } else {
+      parsedRest = Number(restDueAmount);
+    }
+  } else if (invoice.restDueAmount !== undefined && invoice.restDueAmount !== null) {
+    if (!isTdsVerified && pendingTds > 0 && Number(invoice.restDueAmount) === 0) {
+      parsedRest = Math.max(0, remainingDue);
+    } else {
+      parsedRest = Number(invoice.restDueAmount);
+    }
+  } else if (invoice.due !== undefined && invoice.due !== null) {
+    if (!isTdsVerified && pendingTds > 0 && Number(invoice.due) === 0) {
+      parsedRest = Math.max(0, remainingDue);
+    } else {
+      parsedRest = Number(invoice.due);
+    }
+  } else if (invoice.outstandingAmount !== undefined && invoice.outstandingAmount !== null) {
+    if (!isTdsVerified && pendingTds > 0 && Number(invoice.outstandingAmount) === 0) {
+      parsedRest = Math.max(0, remainingDue);
+    } else {
+      parsedRest = Number(invoice.outstandingAmount);
+    }
+  } else {
+    parsedRest = Math.max(0, remainingDue);
+  }
+
+  const isSettledFully = parsedRest <= 0 && (!pendingTds || isTdsVerified);
+  const isTdsPending = !isTdsVerified && pendingTds > 0 && parsedRest <= pendingTds;
 
   const awbText =
     Array.isArray(awbs) && awbs.length > 0
@@ -1674,25 +1797,31 @@ export function SingleInvoiceDataTable({
         (invoice.dueDays ? `${invoice.dueDays}d Overdue` : "Overdue")
       : invoice.isDueToday
         ? "Due Today"
-        : parsedRest <= 0
+        : isSettledFully
           ? "Fully Paid"
-          : "Active / Due");
+          : isTdsPending
+            ? "TDS Pending Verification"
+            : "Active / Due");
 
   const statusColor = isOverdue
     ? "#DC2626"
     : invoice.isDueToday
       ? "#D97706"
-      : parsedRest <= 0
+      : isSettledFully
         ? "#16A34A"
-        : "#2563EB";
+        : isTdsPending
+          ? "#D97706"
+          : "#2563EB";
 
   const statusBg = isOverdue
     ? "#FEE2E2"
     : invoice.isDueToday
       ? "#FEF3C7"
-      : parsedRest <= 0
+      : isSettledFully
         ? "#DCFCE7"
-        : "#DBEAFE";
+        : isTdsPending
+          ? "#FEF3C7"
+          : "#DBEAFE";
 
   return (
     <div style={{ margin: "20px 0" }}>
@@ -1725,7 +1854,7 @@ export function SingleInvoiceDataTable({
           border="0"
           style={{
             width: "100%",
-            minWidth: "600px",
+            minWidth: "660px",
             borderCollapse: "collapse",
             background: "#ffffff",
           }}
@@ -1796,6 +1925,19 @@ export function SingleInvoiceDataTable({
                 }}
               >
                 Payment Settled (₹)
+              </th>
+              <th
+                align="right"
+                style={{
+                  padding: "11px 10px",
+                  borderBottom: "1px solid #CBD5E1",
+                  color: "#4F46E5",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                TDS Deducted (₹)
               </th>
               <th
                 align="right"
@@ -1892,6 +2034,59 @@ export function SingleInvoiceDataTable({
                 style={{
                   padding: "11px 10px",
                   borderBottom: "1px solid #E2E8F0",
+                  textAlign: "right",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {resolvedTds > 0 ? (
+                  <div>
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 700,
+                        color: isTdsVerified ? "#4F46E5" : "#D97706",
+                      }}
+                    >
+                      {formatCurrency(resolvedTds)}
+                    </span>
+                    <div style={{ fontSize: "10px", marginTop: "2px" }}>
+                      {isTdsVerified ? (
+                        <span
+                          style={{
+                            color: "#166534",
+                            background: "#DCFCE7",
+                            padding: "1px 5px",
+                            borderRadius: "3px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          ✓ Verified
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            color: "#92400E",
+                            background: "#FEF3C7",
+                            padding: "1px 5px",
+                            borderRadius: "3px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          ⏳ Pending
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <span style={{ fontSize: "13px", color: "#64748B" }}>
+                    {formatCurrency(0)}
+                  </span>
+                )}
+              </td>
+              <td
+                style={{
+                  padding: "11px 10px",
+                  borderBottom: "1px solid #E2E8F0",
                   color: isOverdue ? "#DC2626" : "#0F172A",
                   fontSize: "13px",
                   fontWeight: 700,
@@ -1971,6 +2166,18 @@ export function SingleInvoiceDataTable({
               <td
                 style={{
                   padding: "11px 10px",
+                  color: "#4F46E5",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  textAlign: "right",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {formatCurrency(resolvedTds)}
+              </td>
+              <td
+                style={{
+                  padding: "11px 10px",
                   color: isOverdue ? "#DC2626" : "#0F172A",
                   fontSize: "13px",
                   fontWeight: 700,
@@ -1987,7 +2194,7 @@ export function SingleInvoiceDataTable({
             {awbText ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   style={{
                     padding: "9px 12px",
                     background: "#F1F5F9",
@@ -2019,26 +2226,35 @@ export function SingleInvoiceDataTable({
 export function PaymentAccountBalanceSummary({
   totalOutstanding = 0,
   paymentAmount = 0,
+  tdsAmount = 0,
   remainingOutstanding = 0,
+  isTdsVerified = true,
   overallLabel = "Invoice Amount",
   deductionLabel = "Payment Received",
+  tdsLabel = "TDS Deducted",
   restLabel = "Rest Due Amount",
   overallSubtext = "",
   deductionSubtext = "",
+  tdsSubtext = "Tax Deducted (IT Act)",
   restSubtext = "",
 }) {
   return (
     <AccountFinancialSummary
       overallDue={totalOutstanding}
       paymentDeduction={paymentAmount}
+      tdsAmount={tdsAmount}
       restDueAmount={remainingOutstanding}
       overallLabel={overallLabel}
       deductionLabel={deductionLabel}
+      tdsLabel={tdsLabel}
       restLabel={restLabel}
       overallSubtext={overallSubtext}
       deductionSubtext={deductionSubtext}
+      tdsSubtext={tdsSubtext}
       restSubtext={restSubtext}
       isSettlement={true}
+      showTdsCard={true}
+      isTdsVerified={isTdsVerified}
     />
   );
 }
@@ -2046,7 +2262,7 @@ export function PaymentAccountBalanceSummary({
 /**
  * ======================================================
  * Client Payment Received Settlement Table Component
- * Multi/single invoice settlement breakdown with 3-card balance summary
+ * Multi/single invoice settlement breakdown with 4-card balance summary (including TDS)
  * ======================================================
  */
 export function ClientPaymentSettlementTable({
@@ -2067,6 +2283,7 @@ export function ClientPaymentSettlementTable({
         inv.amountSettled ??
         inv.allocatedAmount ??
         inv.paidAmount ??
+        inv.cashSettled ??
         0,
     );
     const rem =
@@ -2085,30 +2302,72 @@ export function ClientPaymentSettlementTable({
           ? rawNet
           : Number(inv.totalAmount || 0);
 
-    if (invTotal <= 0 && (settled > 0 || (rem !== null && rem > 0))) {
-      invTotal = settled + (rem || 0);
+    const isInvTdsVerified = Boolean(
+      inv.isTdsVerified ||
+        inv.tdsStatus === "verified" ||
+        inv.isVerified ||
+        Boolean(inv.tdsVerifiedAt) ||
+        Boolean(Number(inv.verifiedTds || 0) > 0) ||
+        paymentInfo?.isTdsVerified ||
+        (Number(paymentInfo?.totalVerifiedTds || 0) > 0) ||
+        (Number(paymentInfo?.clientSummary?.totalVerifiedTds || 0) > 0),
+    );
+    let tdsSettled = Number(
+      inv.tdsSettled ??
+        inv.allocatedTds ??
+        inv.tdsDeductedAmount ??
+        inv.tdsAmount ??
+        inv.verifiedTds ??
+        inv.tds ??
+        0,
+    );
+
+    // If tdsSettled is missing on the row, resolve from paymentInfo (e.g. single invoice settlement or matching diff)
+    const paymentTds = Number(
+      paymentInfo?.tdsAmount ??
+        paymentInfo?.totalVerifiedTds ??
+        paymentInfo?.tdsDeducted ??
+        0,
+    );
+    if (tdsSettled <= 0 && paymentTds > 0) {
+      if ((hasInvoices ? settledInvoices.length : 1) === 1) {
+        tdsSettled = paymentTds;
+      } else if (invTotal > settled) {
+        const diff = Number((invTotal - settled).toFixed(2));
+        if (Math.abs(diff - paymentTds) <= 1.0) {
+          tdsSettled = paymentTds;
+        }
+      }
     }
-    const isInvTdsVerified = Boolean(inv.isTdsVerified);
-    const verifiedTds = isInvTdsVerified
-      ? Number(
-          inv.verifiedTds ??
-            inv.tdsSettled ??
-            inv.allocatedTds ??
-            inv.tdsDeductedAmount ??
-            inv.tdsAmount ??
-            0,
-        )
-      : 0;
+
+    const verifiedTds = isInvTdsVerified ? tdsSettled : 0;
+    const pendingTds = !isInvTdsVerified ? tdsSettled : 0;
+
+    if (invTotal <= 0 && (settled > 0 || (rem !== null && rem > 0) || tdsSettled > 0)) {
+      invTotal = settled + (isInvTdsVerified ? tdsSettled : 0) + (rem || 0);
+    }
+
+    // Crucial rule: Only verified TDS deduction is deducted from Rest Due.
+    // If TDS deduction is NOT verified, TDS amount is included in rest due and invoice is NOT settled fully!
     const remainingDue = Number((invTotal - settled - verifiedTds).toFixed(2));
     const isSlightRoundoff =
       isInvTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
-    const remaining =
-      rem !== null
-        ? Math.max(0, rem)
-        : isSlightRoundoff
-          ? 0
-          : Math.max(0, remainingDue);
-    const isFullySettled = remaining <= 0;
+
+    let remaining;
+    if (isSlightRoundoff) {
+      remaining = 0;
+    } else if (rem !== null) {
+      if (!isInvTdsVerified && pendingTds > 0 && rem === 0) {
+        remaining = Math.max(0, remainingDue);
+      } else {
+        remaining = Math.max(0, rem);
+      }
+    } else {
+      remaining = Math.max(0, remainingDue);
+    }
+
+    const isFullySettled = remaining <= 0 && (!pendingTds || isInvTdsVerified);
+    const isTdsPending = !isInvTdsVerified && pendingTds > 0 && remaining <= pendingTds;
 
     const netPayable =
       rawNet > 0
@@ -2125,8 +2384,13 @@ export function ClientPaymentSettlementTable({
       invTotal,
       netPayable,
       settled,
+      tds: tdsSettled,
+      verifiedTds,
+      pendingTds,
+      isTdsVerified: isInvTdsVerified,
       remaining,
       isFullySettled,
+      isTdsPending,
     };
   });
 
@@ -2135,6 +2399,9 @@ export function ClientPaymentSettlementTable({
       acc.invoiceAmount += row.invTotal;
       acc.netPayable += row.netPayable;
       acc.settledNow += row.settled;
+      acc.tdsNow += row.tds;
+      acc.verifiedTdsNow += row.verifiedTds || 0;
+      acc.pendingTdsNow += row.pendingTds || 0;
       acc.remainingBalance += row.remaining;
       return acc;
     },
@@ -2142,9 +2409,40 @@ export function ClientPaymentSettlementTable({
       invoiceAmount: 0,
       netPayable: 0,
       settledNow: 0,
+      tdsNow: 0,
+      verifiedTdsNow: 0,
+      pendingTdsNow: 0,
       remainingBalance: 0,
     },
   );
+
+  // Card TDS Value
+  const cardTdsValue = Number(
+    paymentInfo?.tdsAmount ??
+      paymentInfo?.totalVerifiedTds ??
+      paymentInfo?.tdsDeducted ??
+      totals.tdsNow ??
+      0,
+  );
+
+  const isBatchTdsVerified = Boolean(
+    paymentInfo?.isTdsVerified ||
+      paymentInfo?.tdsStatus === "verified" ||
+      (Number(paymentInfo?.totalVerifiedTds || 0) > 0) ||
+      (Number(paymentInfo?.clientSummary?.totalVerifiedTds || 0) > 0) ||
+      (hasInvoices
+        ? totals.pendingTdsNow === 0 && totals.tdsNow > 0
+        : false) ||
+      (hasInvoices && rows.some((r) => r.isTdsVerified && r.tds > 0)),
+  );
+
+  const effectiveVerifiedTds = isBatchTdsVerified
+    ? (totals.verifiedTdsNow > 0 ? totals.verifiedTdsNow : cardTdsValue)
+    : totals.verifiedTdsNow;
+
+  const effectivePendingTds = isBatchTdsVerified
+    ? 0
+    : (totals.pendingTdsNow > 0 ? totals.pendingTdsNow : cardTdsValue);
 
   // 1. Payment Received = Settled against invoice(s) + unallocated amount (OR On Account)
   const settledAgainstInvoices =
@@ -2164,24 +2462,25 @@ export function ClientPaymentSettlementTable({
         : 0),
   );
 
-  // Payment Received = Settled against invoice(s) + unallocated amount (OR On Account)
+  // Payment Received = Cash settled against invoice(s) + unallocated amount
   const computedPayment = settledAgainstInvoices + unallocatedAmount;
-  const parsedPayment =
-    paymentInfo?.amount !== undefined && paymentInfo?.amount !== null
-      ? Math.max(
-          Number(String(paymentInfo.amount).replace(/[^0-9.-]+/g, "")),
-          computedPayment,
-        )
-      : paymentInfo?.paymentAmount !== undefined &&
-          paymentInfo?.paymentAmount !== null
+  const rawCashPayment =
+    paymentInfo?.cashAmount !== undefined && paymentInfo?.cashAmount !== null
+      ? Number(String(paymentInfo.cashAmount).replace(/[^0-9.-]+/g, ""))
+      : paymentInfo?.amount !== undefined && paymentInfo?.amount !== null
         ? Math.max(
-            Number(String(paymentInfo.paymentAmount).replace(/[^0-9.-]+/g, "")),
+            Number(String(paymentInfo.amount).replace(/[^0-9.-]+/g, "")),
             computedPayment,
           )
-        : computedPayment;
+        : paymentInfo?.paymentAmount !== undefined &&
+            paymentInfo?.paymentAmount !== null
+          ? Math.max(
+              Number(String(paymentInfo.paymentAmount).replace(/[^0-9.-]+/g, "")),
+              computedPayment,
+            )
+          : computedPayment;
 
   // 1. Overall Outstanding of client (Net Payable Amount)
-  // Can be passed via totalOutstanding, overallOutstanding, or derived from (remaining account outstanding + payment)
   let rawAccountRemaining = null;
   if (remainingOutstanding !== null && remainingOutstanding !== undefined) {
     rawAccountRemaining = Number(
@@ -2263,7 +2562,9 @@ export function ClientPaymentSettlementTable({
   }
 
   const derivedFromRemaining =
-    rawAccountRemaining !== null ? rawAccountRemaining + parsedPayment : null;
+    rawAccountRemaining !== null
+      ? rawAccountRemaining + rawCashPayment + effectiveVerifiedTds
+      : null;
 
   const invoiceBatchTotal =
     totals.netPayable > 0 ? totals.netPayable : totals.invoiceAmount;
@@ -2278,46 +2579,58 @@ export function ClientPaymentSettlementTable({
 
   // 2. "Rest Due Amount" is netOutstanding from clients/[id]/page.js
   let parsedRemaining = null;
-  if (
+  if (hasInvoices) {
+    parsedRemaining = totals.remainingBalance;
+  } else if (
     paymentInfo?.netOutstanding !== null &&
     paymentInfo?.netOutstanding !== undefined
   ) {
-    parsedRemaining = Number(
+    const rawVal = Number(
       String(paymentInfo.netOutstanding).replace(/[^0-9.-]+/g, ""),
     );
+    parsedRemaining =
+      !isBatchTdsVerified && effectivePendingTds > 0 && rawVal === 0
+        ? effectivePendingTds
+        : rawVal;
   } else if (
     paymentInfo?.restDueAmount !== null &&
     paymentInfo?.restDueAmount !== undefined
   ) {
-    parsedRemaining = Number(
+    const rawVal = Number(
       String(paymentInfo.restDueAmount).replace(/[^0-9.-]+/g, ""),
     );
+    parsedRemaining =
+      !isBatchTdsVerified && effectivePendingTds > 0 && rawVal === 0
+        ? effectivePendingTds
+        : rawVal;
   } else if (
     paymentInfo?.clientSummary?.netOutstanding !== null &&
     paymentInfo?.clientSummary?.netOutstanding !== undefined
   ) {
-    parsedRemaining = Number(
+    const rawVal = Number(
       String(paymentInfo.clientSummary.netOutstanding).replace(
         /[^0-9.-]+/g,
         "",
       ),
     );
+    parsedRemaining =
+      !isBatchTdsVerified && effectivePendingTds > 0 && rawVal === 0
+        ? effectivePendingTds
+        : rawVal;
   } else if (rawAccountRemaining !== null) {
     parsedRemaining = rawAccountRemaining;
   } else {
-    parsedRemaining = Math.max(0, netPayableAmount - parsedPayment);
+    parsedRemaining = Math.max(
+      0,
+      netPayableAmount - rawCashPayment - effectiveVerifiedTds,
+    );
   }
-
-  // 3. Total Outstanding
-  const parsedPriorTotal = Math.max(
-    netPayableAmount,
-    parsedRemaining + parsedPayment,
-  );
 
   // Card metrics:
   // Card 1: Total Outstanding (Overall all invoice amount + open balance if exists)
   // Card 2: Payment Received (Settled against invoices + unallocated amount)
-  // Card 3: Rest Due Amount (netOutstanding from clients/[id]/page.js)
+  // Card 3: TDS Deducted (TDS Card - Verified or Pending)
+  // Card 4: Rest Due Amount (netOutstanding including unverified TDS)
   const card1Value =
     paymentInfo?.totalOutstanding !== null &&
     paymentInfo?.totalOutstanding !== undefined
@@ -2337,19 +2650,46 @@ export function ClientPaymentSettlementTable({
               : netPayableAmount > 0
                 ? netPayableAmount
                 : totals.invoiceAmount;
-  const card1Label = "Account Total";
-  const card1Subtext = "";
+  const card1Label = "Total Outstanding";
+  const card1Subtext = "Overall Outstanding (Invoices + Opening Balance)";
 
-  const card2Value = parsedPayment;
+  // If rawCashPayment exactly matches card1Value and TDS was deducted, ensure cash card displays actual cash received
+  const card2Value =
+    cardTdsValue > 0 &&
+    rawCashPayment === card1Value &&
+    rawCashPayment > cardTdsValue
+      ? rawCashPayment - cardTdsValue
+      : rawCashPayment;
   const card2Label = "Payment Received";
   const card2Subtext =
     unallocatedAmount > 0
       ? `Settled: ${formatCurrency(settledAgainstInvoices)}`
-      : " ";
+      : "Settled against invoice(s)";
+
+  const hasPendingTds = effectivePendingTds > 0;
+  const isAllTdsVerified = !hasPendingTds && cardTdsValue > 0;
+
+  const cardTdsLabel =
+    cardTdsValue > 0
+      ? isAllTdsVerified
+        ? "TDS Deducted (Verified)"
+        : hasPendingTds && effectiveVerifiedTds > 0
+          ? "TDS (Partially Verified)"
+          : "TDS Deducted (Pending)"
+      : "TDS Deducted";
+
+  const cardTdsSubtext =
+    cardTdsValue > 0
+      ? isAllTdsVerified
+        ? "Verified via 26AS / Form 16A"
+        : hasPendingTds
+          ? "Pending Verification • In Rest Due"
+          : "Tax Deducted (IT Act)"
+      : "Nil / No TDS";
 
   const card3Value = parsedRemaining;
   const card3Label = "Rest Due Amount";
-  const card3Subtext = "Net Outstanding";
+  const card3Subtext = hasPendingTds ? "Includes Pending TDS" : "Net Outstanding";
 
   const hasMeta =
     paymentInfo?.paymentDate ||
@@ -2360,16 +2700,20 @@ export function ClientPaymentSettlementTable({
 
   return (
     <div style={{ margin: "20px 0" }}>
-      {/* 1. The 3-Card Financial Summary Strip */}
+      {/* 1. The 4-Card Financial Summary Strip */}
       <PaymentAccountBalanceSummary
         totalOutstanding={card1Value}
         paymentAmount={card2Value}
+        tdsAmount={cardTdsValue}
         remainingOutstanding={card3Value}
+        isTdsVerified={!hasPendingTds}
         overallLabel={card1Label}
         deductionLabel={card2Label}
+        tdsLabel={cardTdsLabel}
         restLabel={card3Label}
         overallSubtext={card1Subtext}
         deductionSubtext={card2Subtext}
+        tdsSubtext={cardTdsSubtext}
         restSubtext={card3Subtext}
       />
 
@@ -2464,7 +2808,7 @@ export function ClientPaymentSettlementTable({
             <table
               style={{
                 width: "100%",
-                minWidth: "640px",
+                minWidth: "680px",
                 fontSize: "12px",
                 borderCollapse: "collapse",
                 backgroundColor: "#ffffff",
@@ -2524,6 +2868,16 @@ export function ClientPaymentSettlementTable({
                     }}
                   >
                     Payment Settled (₹)
+                  </th>
+                  <th
+                    style={{
+                      padding: "10px 12px",
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                      color: "#4F46E5",
+                    }}
+                  >
+                    TDS Deducted (₹)
                   </th>
                   <th
                     style={{
@@ -2616,6 +2970,56 @@ export function ClientPaymentSettlementTable({
                           padding: "10px 12px",
                           fontSize: "13px",
                           textAlign: "right",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {inv.tds > 0 ? (
+                          <div>
+                            <span
+                              style={{
+                                fontWeight: 700,
+                                color: inv.isTdsVerified ? "#4F46E5" : "#D97706",
+                              }}
+                            >
+                              {formatCurrency(inv.tds)}
+                            </span>
+                            <div style={{ fontSize: "10px", marginTop: "2px" }}>
+                              {inv.isTdsVerified ? (
+                                <span
+                                  style={{
+                                    color: "#166534",
+                                    background: "#DCFCE7",
+                                    padding: "1px 5px",
+                                    borderRadius: "3px",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  ✓ Verified
+                                </span>
+                              ) : (
+                                <span
+                                  style={{
+                                    color: "#92400E",
+                                    background: "#FEF3C7",
+                                    padding: "1px 5px",
+                                    borderRadius: "3px",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  ⏳ Pending
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <span style={{ color: "#94A3B8" }}>{formatCurrency(0)}</span>
+                        )}
+                      </td>
+                      <td
+                        style={{
+                          padding: "10px 12px",
+                          fontSize: "13px",
+                          textAlign: "right",
                           fontWeight: 600,
                           color: inv.remaining > 0 ? "#DC2626" : "#64748B",
                           whiteSpace: "nowrap",
@@ -2644,6 +3048,20 @@ export function ClientPaymentSettlementTable({
                             }}
                           >
                             Fully Settled
+                          </span>
+                        ) : inv.isTdsPending ? (
+                          <span
+                            style={{
+                              background: "#FEF3C7",
+                              color: "#92400E",
+                              padding: "3px 8px",
+                              borderRadius: "4px",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              display: "inline-block",
+                            }}
+                          >
+                            TDS Pending Verification
                           </span>
                         ) : (
                           <span
@@ -2682,7 +3100,7 @@ export function ClientPaymentSettlementTable({
                       fontSize: "13px",
                     }}
                   >
-                    Total :
+                    Total Settled in This Batch:
                   </td>
                   <td
                     style={{
@@ -2693,7 +3111,7 @@ export function ClientPaymentSettlementTable({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(totals.netPayable)}
+                    {formatCurrency(totals.netPayable > 0 ? totals.netPayable : totals.invoiceAmount)}
                   </td>
                   <td
                     style={{
@@ -2706,6 +3124,30 @@ export function ClientPaymentSettlementTable({
                     }}
                   >
                     {formatCurrency(totals.settledNow)}
+                  </td>
+                  <td
+                    style={{
+                      padding: "11px 12px",
+                      textAlign: "right",
+                      color: "#4F46E5",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <div>{formatCurrency(totals.tdsNow)}</div>
+                    {totals.pendingTdsNow > 0 && (
+                      <div
+                        style={{
+                          fontSize: "10px",
+                          color: "#B45309",
+                          fontWeight: 600,
+                          marginTop: "2px",
+                        }}
+                      >
+                        ({formatCurrency(totals.pendingTdsNow)} pending)
+                      </div>
+                    )}
                   </td>
                   <td
                     style={{
@@ -2732,19 +3174,27 @@ export function ClientPaymentSettlementTable({
       {parsedRemaining > 0 ? (
         <div
           style={{
-            background: "#EFF6FF",
-            border: "1px solid #BFDBFE",
-            borderLeft: "4px solid #2563EB",
+            background: hasPendingTds ? "#FFFBEB" : "#EFF6FF",
+            border: `1px solid ${hasPendingTds ? "#FDE68A" : "#BFDBFE"}`,
+            borderLeft: `4px solid ${hasPendingTds ? "#D97706" : "#2563EB"}`,
             borderRadius: "6px",
             padding: "12px 14px",
             marginTop: "16px",
             fontSize: "13px",
-            color: "#1E40AF",
+            color: hasPendingTds ? "#92400E" : "#1E40AF",
             lineHeight: 1.5,
           }}
         >
-          ℹ️ Kindly ensure timely settlement of the remaining dues as per agreed
-          credit terms.
+          {hasPendingTds ? (
+            <>
+              <strong>⚠️ Notice on TDS Deduction:</strong> TDS of{" "}
+              <strong>{formatCurrency(effectivePendingTds)}</strong> is pending
+              verification (Form 16A / 26AS). Until verified by accounts, this
+              amount remains included in the Rest Due Amount.
+            </>
+          ) : (
+            "ℹ️ Kindly ensure timely settlement of the remaining dues as per agreed credit terms."
+          )}
         </div>
       ) : (
         <div

@@ -84,6 +84,10 @@ export async function getBulkPaymentNotificationsPreview({
                 paidAmount: true,
                 outstandingAmount: true,
                 status: true,
+                isTdsVerified: true,
+                tdsDeductedAmount: true,
+                tdsAmount: true,
+                tdsVerifiedAt: true,
               },
             },
           },
@@ -307,6 +311,10 @@ export async function sendBulkPaymentConfirmationEmails({
               paidAmount: true,
               outstandingAmount: true,
               status: true,
+              isTdsVerified: true,
+              tdsDeductedAmount: true,
+              tdsAmount: true,
+              tdsVerifiedAt: true,
             },
           },
           allocations: {
@@ -323,6 +331,10 @@ export async function sendBulkPaymentConfirmationEmails({
                   paidAmount: true,
                   outstandingAmount: true,
                   status: true,
+                  isTdsVerified: true,
+                  tdsDeductedAmount: true,
+                  tdsAmount: true,
+                  tdsVerifiedAt: true,
                 },
               },
             },
@@ -377,6 +389,10 @@ export async function sendBulkPaymentConfirmationEmails({
               paidAmount: true,
               outstandingAmount: true,
               status: true,
+              isTdsVerified: true,
+              tdsDeductedAmount: true,
+              tdsAmount: true,
+              tdsVerifiedAt: true,
             },
           });
           for (const inv of fetchedInvoices) {
@@ -401,20 +417,43 @@ export async function sendBulkPaymentConfirmationEmails({
             const invoiceFaceAmount =
               rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
             const netPayable = rawNet > 0 ? rawNet : invoiceFaceAmount;
+            const isVerified = Boolean(
+              inv.isTdsVerified ||
+              inv.tdsStatus === "verified" ||
+              inv.isVerified ||
+              Boolean(inv.tdsVerifiedAt) ||
+              (Number(clientSummary?.totalVerifiedTds || 0) > 0 &&
+                Number(inv.tdsDeductedAmount || inv.tdsAmount || 0) > 0),
+            );
+            const tdsSettled = Number(
+              alloc.allocatedTds ??
+                alloc.tdsSettled ??
+                alloc.tdsAmount ??
+                inv.tdsDeductedAmount ??
+                inv.tdsAmount ??
+                0,
+            );
+            const verifiedTds = isVerified ? tdsSettled : 0;
 
             if (settledInvoicesMap.has(invId)) {
               const existing = settledInvoicesMap.get(invId);
               existing.settledAmount += allocated;
+              existing.tdsSettled = (existing.tdsSettled || 0) + tdsSettled;
+              if (isVerified) existing.isTdsVerified = true;
+              const exVerifiedTds = existing.isTdsVerified ? existing.tdsSettled : 0;
               existing.remainingBalance = Math.max(
                 0,
-                existing.remainingBalance - allocated,
+                existing.netPayableAmount - existing.settledAmount - exVerifiedTds,
               );
             } else {
               const remainingBalance = Number(
                 inv.outstandingAmount !== null &&
                   inv.outstandingAmount !== undefined
                   ? inv.outstandingAmount
-                  : Math.max(0, netPayable - Number(inv.paidAmount || 0)),
+                  : Math.max(
+                      0,
+                      netPayable - Number(inv.paidAmount || 0) - verifiedTds,
+                    ),
               );
 
               settledInvoicesMap.set(invId, {
@@ -426,8 +465,10 @@ export async function sendBulkPaymentConfirmationEmails({
                   invoiceFaceAmount > 0 ? invoiceFaceAmount : netPayable,
                 netPayableAmount: netPayable,
                 settledAmount: allocated,
+                tdsSettled,
+                isTdsVerified: isVerified,
                 remainingBalance,
-                status: inv.status,
+                status: remainingBalance <= 0 && isVerified ? "paid" : inv.status || "partial",
               });
             }
           }
@@ -444,19 +485,37 @@ export async function sendBulkPaymentConfirmationEmails({
           const invoiceFaceAmount =
             rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
           const netPayable = rawNet > 0 ? rawNet : invoiceFaceAmount;
+          const isVerified = Boolean(
+            inv.isTdsVerified ||
+            inv.tdsStatus === "verified" ||
+            inv.isVerified ||
+            Boolean(inv.tdsVerifiedAt) ||
+            (Number(clientSummary?.totalVerifiedTds || 0) > 0 &&
+              Number(inv.tdsDeductedAmount || inv.tdsAmount || 0) > 0),
+          );
+          const tdsSettled = Number(
+            inv.tdsDeductedAmount ?? inv.tdsAmount ?? 0,
+          );
+          const verifiedTds = isVerified ? tdsSettled : 0;
           const remainingBalance = Number(
             inv.outstandingAmount !== null &&
               inv.outstandingAmount !== undefined
               ? inv.outstandingAmount
-              : Math.max(0, netPayable - Number(inv.paidAmount || 0)),
+              : Math.max(
+                  0,
+                  netPayable - Number(inv.paidAmount || 0) - verifiedTds,
+                ),
           );
 
           if (settledInvoicesMap.has(invId)) {
             const existing = settledInvoicesMap.get(invId);
             existing.settledAmount += allocated;
+            existing.tdsSettled = (existing.tdsSettled || 0) + tdsSettled;
+            if (isVerified) existing.isTdsVerified = true;
+            const exVerifiedTds = existing.isTdsVerified ? existing.tdsSettled : 0;
             existing.remainingBalance = Math.max(
               0,
-              existing.remainingBalance - allocated,
+              existing.netPayableAmount - existing.settledAmount - exVerifiedTds,
             );
           } else {
             settledInvoicesMap.set(invId, {
@@ -468,8 +527,10 @@ export async function sendBulkPaymentConfirmationEmails({
                 invoiceFaceAmount > 0 ? invoiceFaceAmount : netPayable,
               netPayableAmount: netPayable,
               settledAmount: allocated,
+              tdsSettled,
+              isTdsVerified: isVerified,
               remainingBalance,
-              status: inv.status,
+              status: remainingBalance <= 0 && isVerified ? "paid" : inv.status || "partial",
             });
           }
         }
@@ -563,6 +624,21 @@ export async function sendBulkPaymentConfirmationEmails({
 
       const finalCustomNote = customNote || customMessage || "";
 
+      const totalBatchTds =
+        Number(clientSummary?.totalVerifiedTds ?? 0) > 0
+          ? Number(clientSummary.totalVerifiedTds)
+          : settledInvoices.reduce(
+              (sum, inv) => sum + Number(inv.tdsSettled || 0),
+              0,
+            );
+
+      const isBatchTdsVerified =
+        Number(clientSummary?.totalVerifiedTds ?? 0) > 0 ||
+        (settledInvoices.length > 0
+          ? settledInvoices.every((i) => i.isTdsVerified)
+          : false) ||
+        settledInvoices.some((i) => i.isTdsVerified);
+
       // Render standard unified email using renderEmail (with NOTIFICATION_TYPES.PAYMENT_RECEIVED)
       const emailHtml = renderEmail({
         type: NOTIFICATION_TYPES.PAYMENT_RECEIVED,
@@ -571,6 +647,9 @@ export async function sendBulkPaymentConfirmationEmails({
         clientSummary,
         paymentInfo: {
           amount: totalBatchAmount,
+          cashAmount: totalBatchAmount,
+          tdsAmount: totalBatchTds,
+          isTdsVerified: isBatchTdsVerified,
           paymentDate: latestPaymentDate,
           method: paymentMethod,
           reference: referenceNumber,
@@ -590,6 +669,9 @@ export async function sendBulkPaymentConfirmationEmails({
         variables: {
           clientName: clientName || "Valued Customer",
           paymentAmount: totalBatchAmount,
+          cashAmount: totalBatchAmount,
+          tdsAmount: totalBatchTds,
+          isTdsVerified: isBatchTdsVerified,
           paymentDate: latestPaymentDate,
           paymentMethod,
           referenceNumber,

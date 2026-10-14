@@ -244,6 +244,13 @@ export function SingleInvoiceEmailTemplate({
             paymentsReceived ??
             paidVal
           }
+          tdsAmount={
+            clientSummary?.totalVerifiedTds ??
+            clientSummary?.tdsAmount ??
+            verifiedTds ??
+            tdsVal ??
+            0
+          }
           restDueAmount={
             clientSummary?.netOutstanding ??
             netOutstanding ??
@@ -269,6 +276,8 @@ export function SingleInvoiceEmailTemplate({
             dueAmt
           }
           isOverdue={Boolean(invoice.isOverdue)}
+          isSettlement={isPaidOrCleared}
+          showTdsCard={isPaidOrCleared || verifiedTds > 0}
         />
       )}
 
@@ -276,6 +285,7 @@ export function SingleInvoiceEmailTemplate({
         invoice={invoice}
         overallDue={invoiceAmountVal}
         paymentDeduction={paidVal}
+        tdsAmount={verifiedTds || tdsVal}
         restDueAmount={dueAmt}
         awbs={invoice.awbs || []}
         isOverdue={Boolean(invoice.isOverdue)}
@@ -858,6 +868,22 @@ export function renderEmail(props = {}) {
       }
     }
 
+    const batchTdsAmount = Number(
+      vars.tdsAmount ??
+        props.paymentInfo?.tdsAmount ??
+        vars.totalVerifiedTds ??
+        props.paymentInfo?.totalVerifiedTds ??
+        0,
+    );
+
+    const isBatchVerified = Boolean(
+      vars.isTdsVerified ||
+        props.paymentInfo?.isTdsVerified ||
+        (Number(vars.totalVerifiedTds || props.paymentInfo?.totalVerifiedTds || props.clientSummary?.totalVerifiedTds || 0) > 0) ||
+        (Array.isArray(settledInvoicesList) &&
+          settledInvoicesList.some((i) => i.isTdsVerified || i.tdsVerifiedAt || i.tdsStatus === "verified" || i.isVerified))
+    );
+
     const normalizedSettledInvoices = (settledInvoicesList || []).map(
       (inv, idx) => {
         const invNum = inv.invoiceNumber || inv.number || `INV-${idx + 1}`;
@@ -875,11 +901,44 @@ export function renderEmail(props = {}) {
             inv.amountSettled ??
             inv.allocatedAmount ??
             inv.paidAmount ??
+            inv.cashSettled ??
             0,
         );
+        const isInvTdsVerified = Boolean(
+          inv.isTdsVerified ||
+            inv.tdsStatus === "verified" ||
+            inv.isVerified ||
+            Boolean(inv.tdsVerifiedAt) ||
+            isBatchVerified,
+        );
+        let tdsSettled = Number(
+          inv.tdsSettled ??
+            inv.allocatedTds ??
+            inv.tdsDeductedAmount ??
+            inv.tdsAmount ??
+            inv.verifiedTds ??
+            inv.tds ??
+            0,
+        );
+
+        if (tdsSettled <= 0 && batchTdsAmount > 0) {
+          if ((settledInvoicesList || []).length === 1) {
+            tdsSettled = batchTdsAmount;
+          } else if (invFace > settled) {
+            const diff = Number((invFace - settled).toFixed(2));
+            if (Math.abs(diff - batchTdsAmount) <= 1.0) {
+              tdsSettled = batchTdsAmount;
+            }
+          }
+        }
+
+        const verifiedTds = isInvTdsVerified ? tdsSettled : 0;
+        const pendingTds = !isInvTdsVerified ? tdsSettled : 0;
         const remaining =
           inv.remainingBalance !== undefined && inv.remainingBalance !== null
-            ? Number(inv.remainingBalance)
+            ? (!isInvTdsVerified && pendingTds > 0 && Number(inv.remainingBalance) === 0
+                ? Math.max(0, (netPayable > 0 ? netPayable : invFace) - settled)
+                : Number(inv.remainingBalance))
             : inv.outstandingAmount !== undefined &&
                 inv.outstandingAmount !== null
               ? Number(inv.outstandingAmount)
@@ -887,9 +946,13 @@ export function renderEmail(props = {}) {
                 ? Number(inv.due)
                 : Math.max(
                     0,
-                    (netPayable > 0 ? netPayable : invFace) - settled,
+                    (netPayable > 0 ? netPayable : invFace) - settled - verifiedTds,
                   );
-        const totalAmount = invFace > 0 ? invFace : settled + remaining;
+        const totalAmount =
+          invFace > 0
+            ? invFace
+            : settled + (isInvTdsVerified ? tdsSettled : 0) + remaining;
+        const isFullySettled = remaining <= 0 && (!pendingTds || isInvTdsVerified);
 
         return {
           ...inv,
@@ -899,8 +962,18 @@ export function renderEmail(props = {}) {
           invoiceAmount: totalAmount,
           netPayableAmount: netPayable > 0 ? netPayable : totalAmount,
           settledAmount: settled,
+          tdsSettled,
+          verifiedTds,
+          pendingTds,
+          isTdsVerified: isInvTdsVerified,
           remainingBalance: remaining,
-          status: inv.status || (remaining <= 0 ? "paid" : "partial"),
+          status:
+            inv.status ||
+            (isFullySettled
+              ? "paid"
+              : pendingTds > 0
+                ? "tds_pending"
+                : "partial"),
         };
       },
     );
@@ -908,6 +981,21 @@ export function renderEmail(props = {}) {
     const totalSettledFromInvoices = normalizedSettledInvoices.reduce(
       (sum, i) => sum + Number(i.settledAmount || 0),
       0,
+    );
+
+    const totalTdsFromInvoices = normalizedSettledInvoices.reduce(
+      (sum, i) => sum + Number(i.tdsSettled || 0),
+      0,
+    );
+
+    const resolvedTdsAmount = Number(
+      vars.tdsAmount ??
+        props.paymentInfo?.tdsAmount ??
+        vars.totalVerifiedTds ??
+        props.paymentInfo?.totalVerifiedTds ??
+        totalTdsFromInvoices ??
+        batchTdsAmount ??
+        0,
     );
 
     const totalNetPayableFromInvoices = normalizedSettledInvoices.reduce(
@@ -1121,6 +1209,21 @@ export function renderEmail(props = {}) {
 
     const paymentInfo = {
       amount: paymentAmount,
+      cashAmount:
+        vars.cashAmount ??
+        props.paymentInfo?.cashAmount ??
+        (paymentAmount - resolvedTdsAmount > 0
+          ? paymentAmount - resolvedTdsAmount
+          : paymentAmount),
+      tdsAmount: resolvedTdsAmount,
+      isTdsVerified: isBatchVerified,
+      totalVerifiedTds: isBatchVerified
+        ? resolvedTdsAmount
+        : Number(
+            props.clientSummary?.totalVerifiedTds ||
+              vars.totalVerifiedTds ||
+              0,
+          ),
       settledAmount: totalSettledFromInvoices,
       unallocatedAmount,
       totalNetPayable: netPayableAmount,

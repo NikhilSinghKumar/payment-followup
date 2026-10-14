@@ -523,6 +523,10 @@ export async function createPayment(formData) {
         .select({
           isOpeningBalance: invoices.isOpeningBalance,
           invoiceNumber: invoices.invoiceNumber,
+          isTdsVerified: invoices.isTdsVerified,
+          tdsVerifiedAt: invoices.tdsVerifiedAt,
+          tdsDeductedAmount: invoices.tdsDeductedAmount,
+          tdsAmount: invoices.tdsAmount,
         })
         .from(invoices)
         .where(eq(invoices.id, allocation.invoiceId))
@@ -533,12 +537,25 @@ export async function createPayment(formData) {
         String(invCheck?.invoiceNumber || "").toUpperCase().startsWith("OPENING");
 
       if (!isOpening) {
+        // Do NOT overwrite an already verified invoice to false!
+        const shouldBeVerified = Boolean(
+          allocation.isTdsVerified ||
+          invCheck?.isTdsVerified ||
+          Boolean(invCheck?.tdsVerifiedAt)
+        );
+        const newTdsAmount =
+          allocation.tdsAmount !== null && allocation.tdsAmount !== undefined
+            ? allocation.tdsAmount.toString()
+            : invCheck?.tdsDeductedAmount || invCheck?.tdsAmount || "0";
+
         await db
           .update(invoices)
           .set({
-            tdsDeductedAmount: allocation.tdsAmount.toString(),
-            isTdsVerified: allocation.isTdsVerified,
-            tdsVerifiedAt: allocation.isTdsVerified ? new Date() : null,
+            tdsDeductedAmount: newTdsAmount,
+            isTdsVerified: shouldBeVerified,
+            tdsVerifiedAt: shouldBeVerified
+              ? invCheck?.tdsVerifiedAt || new Date()
+              : null,
             updatedAt: new Date(),
           })
           .where(eq(invoices.id, allocation.invoiceId));
@@ -554,20 +571,71 @@ export async function createPayment(formData) {
 
   try {
     if (allocations.length > 0) {
+      // Query fresh invoice records to ensure up-to-date TDS verification status
+      const invStatuses = await db
+        .select({
+          id: invoices.id,
+          invoiceNumber: invoices.invoiceNumber,
+          isTdsVerified: invoices.isTdsVerified,
+          tdsVerifiedAt: invoices.tdsVerifiedAt,
+          tdsDeductedAmount: invoices.tdsDeductedAmount,
+          tdsAmount: invoices.tdsAmount,
+        })
+        .from(invoices)
+        .where(
+          inArray(
+            invoices.id,
+            allocations.map((a) => a.invoiceId),
+          ),
+        );
+      const invStatusMap = new Map(invStatuses.map((i) => [i.id, i]));
+
+      const totalTds = allocations.reduce((sum, a) => {
+        const inv = invStatusMap.get(a.invoiceId);
+        const tdsVal = Number(
+          a.tdsAmount ?? inv?.tdsDeductedAmount ?? inv?.tdsAmount ?? 0,
+        );
+        return sum + tdsVal;
+      }, 0);
+
+      const isAnyTdsVerified = allocations.some((a) => {
+        const inv = invStatusMap.get(a.invoiceId);
+        return Boolean(
+          a.isTdsVerified || inv?.isTdsVerified || Boolean(inv?.tdsVerifiedAt),
+        );
+      });
+
       await processClientPaymentSettlementEvent({
         clientId,
         companyId: currentUser.companyId,
         paymentId,
         paymentDetails: {
           amount,
+          cashAmount: amount,
+          tdsAmount: totalTds,
+          isTdsVerified: isAnyTdsVerified,
           paymentDate,
           method,
           referenceNumber: reference,
         },
-        settledInvoices: allocations.map((a) => ({
-          invoiceId: a.invoiceId,
-          settledAmount: a.allocatedAmount,
-        })),
+        settledInvoices: allocations.map((a) => {
+          const inv = invStatusMap.get(a.invoiceId);
+          const isVer = Boolean(
+            a.isTdsVerified || inv?.isTdsVerified || Boolean(inv?.tdsVerifiedAt),
+          );
+          const tdsVal = Number(
+            a.tdsAmount ?? inv?.tdsDeductedAmount ?? inv?.tdsAmount ?? 0,
+          );
+          return {
+            invoiceId: a.invoiceId,
+            settledAmount: a.allocatedAmount,
+            cashSettled: a.allocatedAmount,
+            tdsSettled: tdsVal,
+            tdsAmount: tdsVal,
+            allocatedTds: tdsVal,
+            isTdsVerified: isVer,
+          };
+        }),
         sendEmail,
       });
     }
@@ -1167,20 +1235,39 @@ export async function allocatePaymentToInvoices(paymentId, allocations) {
 
     // 6. Trigger multi-invoice settlement event if available
     try {
+      const settledInvoicesData = sanitizedAllocations.map((a) => {
+        const inv = invoiceMap.get(a.invoiceId);
+        const invTds = Number(inv?.tdsDeductedAmount || inv?.tdsAmount || 0);
+        return {
+          invoiceId: a.invoiceId,
+          settledAmount: a.amount,
+          cashSettled: a.amount,
+          tdsSettled: invTds,
+          tdsAmount: invTds,
+          allocatedTds: invTds,
+          isTdsVerified: Boolean(inv?.isTdsVerified || inv?.tdsVerifiedAt),
+        };
+      });
+      const totalTds = settledInvoicesData.reduce(
+        (sum, a) => sum + Number(a.tdsSettled || 0),
+        0,
+      );
+      const isAnyVerified = settledInvoicesData.some((a) => a.isTdsVerified);
+
       await processClientPaymentSettlementEvent({
         clientId: payment.clientId,
         companyId: currentUser.companyId,
         paymentId: parsedPaymentId,
         paymentDetails: {
           amount: payment.amount,
+          cashAmount: payment.amount,
+          tdsAmount: totalTds,
+          isTdsVerified: isAnyVerified,
           paymentDate: payment.paymentDate,
           method: payment.method,
           referenceNumber: payment.reference || payment.receiptNumber,
         },
-        settledInvoices: sanitizedAllocations.map((a) => ({
-          invoiceId: a.invoiceId,
-          settledAmount: a.amount,
-        })),
+        settledInvoices: settledInvoicesData,
       });
     } catch (notifErr) {
       console.error(

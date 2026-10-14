@@ -60,14 +60,19 @@ export async function GET(req) {
             const invAmt = Number(
               inv.netPayableAmount || inv.invoiceAmount || 45000,
             );
-            const settledAmt = idx === 0 ? invAmt : Math.round(invAmt / 2);
+            const isVerified = Boolean(inv.isTdsVerified || inv.tdsVerifiedAt);
+            const tdsAmt = Number(inv.tdsDeductedAmount || inv.tdsAmount || 0);
+            const settledAmt = idx === 0 ? invAmt - (isVerified ? tdsAmt : 0) : Math.round(invAmt / 2);
             return {
               invoiceId: inv.id,
               invoiceNumber: inv.invoiceNumber,
               invoiceDate: inv.invoiceDate || new Date().toISOString(),
               invoiceAmount: invAmt,
               settledAmount: settledAmt,
-              remainingBalance: Math.max(0, invAmt - settledAmt),
+              tdsSettled: tdsAmt,
+              tdsAmount: tdsAmt,
+              isTdsVerified: isVerified,
+              remainingBalance: Math.max(0, invAmt - settledAmt - (isVerified ? tdsAmt : 0)),
             };
           })
         : [
@@ -76,7 +81,10 @@ export async function GET(req) {
               invoiceNumber: "PAF-D/24-25/584",
               invoiceDate: "2024-08-15",
               invoiceAmount: 50000,
-              settledAmount: 50000,
+              settledAmount: 49000,
+              tdsSettled: 1000,
+              tdsAmount: 1000,
+              isTdsVerified: true,
               remainingBalance: 0,
             },
             {
@@ -84,13 +92,20 @@ export async function GET(req) {
               invoiceNumber: "PAF-D/24-25/612",
               invoiceDate: "2024-08-20",
               invoiceAmount: 75000,
-              settledAmount: 25000,
+              settledAmount: 23500,
+              tdsSettled: 1500,
+              tdsAmount: 1500,
+              isTdsVerified: true,
               remainingBalance: 50000,
             },
           ];
 
     const totalSettled = settledInvoices.reduce(
       (sum, i) => sum + i.settledAmount,
+      0,
+    );
+    const totalTds = settledInvoices.reduce(
+      (sum, i) => sum + Number(i.tdsSettled || 0),
       0,
     );
 
@@ -103,6 +118,9 @@ export async function GET(req) {
         minimumFractionDigits: 2,
       }),
       paymentAmount: totalSettled,
+      cashAmount: totalSettled,
+      tdsAmount: totalTds,
+      isTdsVerified: settledInvoices.every((i) => i.isTdsVerified),
       formattedPaymentAmount: totalSettled.toLocaleString("en-IN", {
         minimumFractionDigits: 2,
       }),

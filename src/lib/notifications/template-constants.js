@@ -22,6 +22,7 @@ export const AVAILABLE_VARIABLES = [
     desc: "Total invoice billing amount",
   },
   { tag: "{{amount}}", label: "Amount", desc: "Payment amount (for receipts)" },
+  { tag: "{{tdsAmount}}", label: "TDS Amount", desc: "TDS deducted amount (for receipts)" },
   { tag: "{{count}}", label: "Count", desc: "Number of invoices settled" },
   { tag: "{{overdueDays}}", label: "Overdue Days", desc: "Days past due date" },
   {

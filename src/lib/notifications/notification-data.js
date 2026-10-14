@@ -675,41 +675,82 @@ export async function getClientPaymentReceivedData({
       enrichedSettledInvoices = await Promise.all(
         settledInvoices.map(async (item) => {
           let inv = null;
-          if (
-            !item.invoiceNumber ||
-            item.invoiceAmount === undefined ||
-            item.netPayableAmount === undefined
-          ) {
-            const rows = await db
-              .select({
-                id: invoices.id,
-                invoiceNumber: invoices.invoiceNumber,
-                invoiceDate: invoices.invoiceDate,
-                dueDate: invoices.dueDate,
-                invoiceAmount: invoices.invoiceAmount,
-                netPayableAmount: invoices.netPayableAmount,
-              })
-              .from(invoices)
-              .where(eq(invoices.id, item.invoiceId))
-              .limit(1);
-            inv = rows[0];
+          if (item.invoiceId) {
+            try {
+              const rows = await db
+                .select({
+                  id: invoices.id,
+                  invoiceNumber: invoices.invoiceNumber,
+                  invoiceDate: invoices.invoiceDate,
+                  dueDate: invoices.dueDate,
+                  invoiceAmount: invoices.invoiceAmount,
+                  netPayableAmount: invoices.netPayableAmount,
+                  tdsDeductedAmount: invoices.tdsDeductedAmount,
+                  tdsAmount: invoices.tdsAmount,
+                  isTdsVerified: invoices.isTdsVerified,
+                  tdsVerifiedAt: invoices.tdsVerifiedAt,
+                  paidAmount: invoices.paidAmount,
+                  outstandingAmount: invoices.outstandingAmount,
+                  status: invoices.status,
+                })
+                .from(invoices)
+                .where(eq(invoices.id, item.invoiceId))
+                .limit(1);
+              inv = rows[0];
+            } catch (invErr) {
+              console.warn("[notification-data] invoice query:", invErr?.message);
+            }
           }
 
           const grossInvoiceAmount = Number(
             item.invoiceAmount ?? inv?.invoiceAmount ?? 0,
           );
           const isTdsVerified = Boolean(
-            item.isTdsVerified ?? inv?.isTdsVerified,
+            inv?.isTdsVerified ||
+            Boolean(inv?.tdsVerifiedAt) ||
+            item.isTdsVerified ||
+            item.tdsStatus === "verified" ||
+            item.isVerified ||
+            paymentDetails.isTdsVerified ||
+            (Number(clientFinancials?.totalVerifiedTds || 0) > 0 &&
+              Number(inv?.tdsDeductedAmount || item.tdsSettled || 0) > 0),
           );
           const cashSettled = Number(
-            item.allocatedAmount ?? item.cashSettled ?? item.paidAmount ?? item.amount ?? 0,
+            item.allocatedAmount ??
+              item.cashSettled ??
+              item.paidAmount ??
+              item.amount ??
+              (grossInvoiceAmount > 0 && Number(item.settledAmount || 0) > 0
+                ? Number(item.settledAmount)
+                : 0),
           );
-          const tdsSettled = Number(
-            item.allocatedTds ?? item.tdsSettled ?? item.tdsAmount ?? 0,
+          const rawInvTds = Number(
+            inv?.tdsDeductedAmount ?? inv?.tdsAmount ?? 0,
           );
-          const verifiedTds = isTdsVerified
-            ? tdsSettled || Number(inv?.tdsDeductedAmount || 0)
-            : 0;
+          let tdsSettled = Number(
+            item.allocatedTds ??
+              item.tdsSettled ??
+              item.tdsAmount ??
+              rawInvTds,
+          );
+          if (tdsSettled <= 0 && rawInvTds > 0) {
+            tdsSettled = rawInvTds;
+          }
+
+          // If still 0, check if this payment or single-invoice settlement has TDS
+          const paymentTds = Number(paymentDetails.tdsAmount || 0);
+          if (tdsSettled <= 0 && paymentTds > 0) {
+            if (settledInvoices.length === 1) {
+              tdsSettled = paymentTds;
+            } else if (grossInvoiceAmount > cashSettled) {
+              const diff = Number((grossInvoiceAmount - cashSettled).toFixed(2));
+              if (Math.abs(diff - paymentTds) <= 1.0) {
+                tdsSettled = paymentTds;
+              }
+            }
+          }
+
+          const verifiedTds = isTdsVerified ? tdsSettled : 0;
           const settledAmount = Number(
             item.settledAmount ?? cashSettled + tdsSettled,
           );
@@ -885,6 +926,11 @@ export async function getClientPaymentReceivedData({
     paymentAmount: totalPaymentAmount,
     cashAmount,
     tdsAmount,
+    isTdsVerified:
+      enrichedSettledInvoices.length > 0
+        ? enrichedSettledInvoices.every((i) => i.isTdsVerified) ||
+          enrichedSettledInvoices.some((i) => i.isTdsVerified)
+        : Boolean(paymentDetails.isTdsVerified || clientTotalVerifiedTds > 0),
     settledAmount: totalSettledAmount,
     unallocatedAmount,
     clientUnallocatedBalance,
