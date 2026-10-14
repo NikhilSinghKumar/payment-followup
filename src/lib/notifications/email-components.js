@@ -1608,7 +1608,7 @@ export function AccountFinancialSummary({
               >
                 {parsedTds > 0
                   ? isTdsVerified
-                    ? `✓ ${tdsSubtext || "Verified via 26AS / Form 16A"}`
+                    ? `✓ ${tdsSubtext || "Verified"}`
                     : `⏳ ${tdsSubtext || "Pending Verification • In Rest Due"}`
                   : "Nil / No TDS"}
               </div>
@@ -2237,11 +2237,11 @@ export function PaymentAccountBalanceSummary({
   isTdsVerified = true,
   overallLabel = "Invoice Amount",
   deductionLabel = "Payment Received",
-  tdsLabel = "TDS Deducted",
+  tdsLabel = "TDS",
   restLabel = "Rest Due Amount",
   overallSubtext = "",
   deductionSubtext = "",
-  tdsSubtext = "Tax Deducted (IT Act)",
+  tdsSubtext = "",
   restSubtext = "",
 }) {
   return (
@@ -2659,8 +2659,8 @@ export function ClientPaymentSettlementTable({
               : netPayableAmount > 0
                 ? netPayableAmount
                 : totals.invoiceAmount;
-  const card1Label = "Total Outstanding";
-  const card1Subtext = "Overall Outstanding (Invoices + Opening Balance)";
+  const card1Label = "Account Total";
+  const card1Subtext = "";
 
   // If rawCashPayment exactly matches card1Value and TDS was deducted, ensure cash card displays actual cash received
   const card2Value =
@@ -2673,7 +2673,7 @@ export function ClientPaymentSettlementTable({
   const card2Subtext =
     unallocatedAmount > 0
       ? `Settled: ${formatCurrency(settledAgainstInvoices)}`
-      : "Settled against invoice(s)";
+      : "";
 
   const hasPendingTds = effectivePendingTds > 0;
   const isAllTdsVerified = !hasPendingTds && cardTdsValue > 0;
@@ -2681,24 +2681,24 @@ export function ClientPaymentSettlementTable({
   const cardTdsLabel =
     cardTdsValue > 0
       ? isAllTdsVerified
-        ? "TDS Deducted (Verified)"
+        ? "TDS"
         : hasPendingTds && effectiveVerifiedTds > 0
           ? "TDS (Partially Verified)"
-          : "TDS Deducted (Pending)"
+          : "TDS (Pending)"
       : "TDS Deducted";
 
   const cardTdsSubtext =
     cardTdsValue > 0
       ? isAllTdsVerified
-        ? "Verified via 26AS / Form 16A"
+        ? "Verified"
         : hasPendingTds
-          ? "Pending Verification • In Rest Due"
+          ? "Pending Verification"
           : "Tax Deducted (IT Act)"
       : "Nil / No TDS";
 
   const card3Value = parsedRemaining;
   const card3Label = "Rest Due Amount";
-  const card3Subtext = hasPendingTds ? "Includes Pending TDS" : "Net Outstanding";
+  const card3Subtext = hasPendingTds ? "" : "";
 
   const hasMeta =
     paymentInfo?.paymentDate ||
@@ -2886,7 +2886,7 @@ export function ClientPaymentSettlementTable({
                       color: "#4F46E5",
                     }}
                   >
-                    TDS Deducted (₹)
+                    TDS(₹)
                   </th>
                   <th
                     style={{
@@ -2992,33 +2992,6 @@ export function ClientPaymentSettlementTable({
                             >
                               {formatCurrency(inv.tds)}
                             </span>
-                            <div style={{ fontSize: "10px", marginTop: "2px" }}>
-                              {inv.isTdsVerified ? (
-                                <span
-                                  style={{
-                                    color: "#166534",
-                                    background: "#DCFCE7",
-                                    padding: "1px 5px",
-                                    borderRadius: "3px",
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  ✓ Verified
-                                </span>
-                              ) : (
-                                <span
-                                  style={{
-                                    color: "#92400E",
-                                    background: "#FEF3C7",
-                                    padding: "1px 5px",
-                                    borderRadius: "3px",
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  ⏳ Pending
-                                </span>
-                              )}
-                            </div>
                           </div>
                         ) : (
                           <span style={{ color: "#94A3B8" }}>{formatCurrency(0)}</span>
@@ -3070,7 +3043,7 @@ export function ClientPaymentSettlementTable({
                               display: "inline-block",
                             }}
                           >
-                            TDS Pending Verification
+                            TDS Pending
                           </span>
                         ) : (
                           <span
@@ -3109,7 +3082,7 @@ export function ClientPaymentSettlementTable({
                       fontSize: "13px",
                     }}
                   >
-                    Total Settled in This Batch:
+                    Total :
                   </td>
                   <td
                     style={{
@@ -3120,7 +3093,7 @@ export function ClientPaymentSettlementTable({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(totals.netPayable > 0 ? totals.netPayable : totals.invoiceAmount)}
+                    {formatCurrency(totals.invoiceAmount)}
                   </td>
                   <td
                     style={{
@@ -3145,18 +3118,6 @@ export function ClientPaymentSettlementTable({
                     }}
                   >
                     <div>{formatCurrency(totals.tdsNow)}</div>
-                    {totals.pendingTdsNow > 0 && (
-                      <div
-                        style={{
-                          fontSize: "10px",
-                          color: "#B45309",
-                          fontWeight: 600,
-                          marginTop: "2px",
-                        }}
-                      >
-                        ({formatCurrency(totals.pendingTdsNow)} pending)
-                      </div>
-                    )}
                   </td>
                   <td
                     style={{
