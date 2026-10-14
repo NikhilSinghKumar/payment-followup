@@ -499,6 +499,16 @@ export async function sendBulkPaymentConfirmationEmails({
               0,
             );
 
+      // Overall Outstanding: all invoice amount + open balance if exists
+      const resolvedTotalInvoiceAmount =
+        clientSummary?.totalAmount !== undefined &&
+        clientSummary?.totalAmount !== null
+          ? Number(clientSummary.totalAmount)
+          : clientSummary?.totalInvoicedAmount !== undefined &&
+              clientSummary?.totalInvoicedAmount !== null
+            ? Number(clientSummary.totalInvoicedAmount)
+            : resolvedTotalNetPayable;
+
       // Rest Due Amount should strictly be netOutstanding matching clients/[id]/page.js
       const resolvedNetOutstanding =
         clientSummary?.netOutstanding !== undefined &&
@@ -564,9 +574,11 @@ export async function sendBulkPaymentConfirmationEmails({
           paymentDate: latestPaymentDate,
           method: paymentMethod,
           reference: referenceNumber,
+          totalOutstanding: resolvedTotalInvoiceAmount,
+          totalInvoiceAmount: resolvedTotalInvoiceAmount,
+          overallOutstanding: resolvedTotalInvoiceAmount,
           totalNetPayable: resolvedTotalNetPayable,
           netPayableAmount: resolvedTotalNetPayable,
-          totalOutstanding: resolvedTotalNetPayable,
           netOutstanding: resolvedNetOutstanding,
           restDueAmount: resolvedNetOutstanding,
           totalAccountOutstanding: resolvedNetOutstanding,
@@ -582,6 +594,9 @@ export async function sendBulkPaymentConfirmationEmails({
           paymentMethod,
           referenceNumber,
           settledInvoices,
+          totalOutstanding: resolvedTotalInvoiceAmount,
+          totalInvoiceAmount: resolvedTotalInvoiceAmount,
+          overallOutstanding: resolvedTotalInvoiceAmount,
           totalNetPayable: resolvedTotalNetPayable,
           netPayableAmount: resolvedTotalNetPayable,
           totalOutstanding: resolvedTotalNetPayable,
@@ -614,7 +629,7 @@ export async function sendBulkPaymentConfirmationEmails({
           const pdfResult = await generateClientLedgerPdf({
             clientId,
             companyId,
-            statementDate: latestPaymentDate || new Date(),
+            statementDate: new Date(),
           });
           if (pdfResult?.buffer) {
             ledgerAttachment = {

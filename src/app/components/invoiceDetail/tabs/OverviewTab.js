@@ -1,6 +1,10 @@
 import { formatDateDisplay } from "@/lib/date-parser";
 
 export default function OverviewTab({ invoice }) {
+  const isOpening =
+    Boolean(invoice.isOpeningBalance) ||
+    String(invoice.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+
   const money = (value) =>
     `₹${Number(value || 0).toLocaleString("en-IN", {
       minimumFractionDigits: 2,
@@ -44,7 +48,7 @@ export default function OverviewTab({ invoice }) {
 
             <InfoItem
               label="TDS Applicable"
-              value={invoice.tdsApplicableUsed ? "Yes" : "No"}
+              value={isOpening ? "No (Opening Bal)" : (invoice.tdsApplicableUsed ? "Yes" : "No")}
             />
           </div>
         </section>
@@ -89,7 +93,9 @@ export default function OverviewTab({ invoice }) {
               positive
             />
 
-            <AmountRow label="TDS" value={money(invoice.tdsAmount)} negative />
+            {!isOpening && (
+              <AmountRow label="TDS" value={money(invoice.tdsAmount)} negative />
+            )}
 
             <AmountRow
               label="Deduction"

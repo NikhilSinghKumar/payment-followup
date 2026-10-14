@@ -44,6 +44,15 @@ export async function generateClientLedgerPdf({
     throw new Error("Valid clientId is required to generate Ledger Statement");
   }
 
+  const effectiveStatementDate = statementDate
+    ? statementDate instanceof Date && !isNaN(statementDate.getTime())
+      ? statementDate
+      : new Date(statementDate)
+    : new Date();
+  const validStatementDate = !isNaN(effectiveStatementDate.getTime())
+    ? effectiveStatementDate
+    : new Date();
+
   // 1. Fetch Client info
   const clientRows = await db
     .select()
@@ -75,7 +84,7 @@ export async function generateClientLedgerPdf({
     company = compRows[0] || null;
   }
 
-  // 3. Fetch Client Invoices (including opening balance invoice)
+  // 3. Fetch Client Invoices (including opening balance invoice and TDS fields)
   const clientInvoices = await db
     .select({
       id: invoices.id,
@@ -86,6 +95,11 @@ export async function generateClientLedgerPdf({
       paidAmount: invoices.paidAmount,
       outstandingAmount: invoices.outstandingAmount,
       isOpeningBalance: invoices.isOpeningBalance,
+      isTdsVerified: invoices.isTdsVerified,
+      tdsVerifiedAt: invoices.tdsVerifiedAt,
+      tdsDeductedAmount: invoices.tdsDeductedAmount,
+      tdsAmount: invoices.tdsAmount,
+      tdsNotes: invoices.tdsNotes,
     })
     .from(invoices)
     .where(
@@ -129,12 +143,19 @@ export async function generateClientLedgerPdf({
   // 5. Build and normalize transaction entries
   const transactions = [];
 
-  // Add Invoices (Debits)
+  // Add Invoices (Debits) and TDS Verified (Credits in separate rows)
   for (const inv of clientInvoices) {
     const isOpening = Boolean(inv.isOpeningBalance);
-    const rawNet = Number(inv.netPayableAmount || 0);
     const rawGross = Number(inv.invoiceAmount || 0);
-    const amount = rawNet > 0 ? rawNet : rawGross > 0 ? rawGross : 0;
+    const rawNet = Number(inv.netPayableAmount || 0);
+    // In Debit: Opening balance (if exists), Actual Invoice Amount (invoice wise)
+    const debitAmount = isOpening
+      ? rawNet > 0
+        ? rawNet
+        : rawGross
+      : rawGross > 0
+        ? rawGross
+        : rawNet;
 
     transactions.push({
       dateStr: formatLedgerDate(inv.invoiceDate),
@@ -144,13 +165,40 @@ export async function generateClientLedgerPdf({
         ? "Open Balance"
         : inv.invoiceNumber || `INV-${inv.id}`,
       receiptNo: "",
-      debit: amount,
+      debit: debitAmount,
       credit: 0,
       type: isOpening ? "OPENING_DEBIT" : "INVOICE",
     });
+
+    // In Credit: show TDS verified in separate rows
+    const isTdsVerified = Boolean(inv.isTdsVerified);
+    const tdsDeductedVal = Number(
+      inv.tdsDeductedAmount !== undefined &&
+        inv.tdsDeductedAmount !== null &&
+        Number(inv.tdsDeductedAmount) > 0
+        ? inv.tdsDeductedAmount
+        : inv.tdsAmount || 0,
+    );
+    const verifiedTds = isTdsVerified && !isOpening ? tdsDeductedVal : 0;
+
+    if (verifiedTds > 0) {
+      const tdsDate = inv.tdsVerifiedAt || inv.invoiceDate;
+      const invNum = inv.invoiceNumber || `INV-${inv.id}`;
+      transactions.push({
+        dateStr: formatLedgerDate(tdsDate),
+        // Sort slightly after invoice date on same day
+        sortDate: tdsDate ? new Date(tdsDate).getTime() + 1 : 1,
+        isOpening: false,
+        invoiceNo: "",
+        receiptNo: invNum ? `TDS (${invNum})` : "TDS",
+        debit: 0,
+        credit: verifiedTds,
+        type: "TDS_VERIFIED",
+      });
+    }
   }
 
-  // Add Payments (Credits)
+  // Add Payments (Credits) - Actual payment received
   for (const p of clientPayments) {
     const isOpening = Boolean(p.isOpeningBalance);
     const amount = Number(p.amount || 0);
@@ -175,7 +223,17 @@ export async function generateClientLedgerPdf({
   transactions.sort((a, b) => {
     if (a.isOpening && !b.isOpening) return -1;
     if (!a.isOpening && b.isOpening) return 1;
-    return a.sortDate - b.sortDate;
+    if (a.sortDate !== b.sortDate) {
+      return a.sortDate - b.sortDate;
+    }
+    const order = {
+      OPENING_DEBIT: 1,
+      OPENING_CREDIT: 2,
+      INVOICE: 3,
+      TDS_VERIFIED: 4,
+      PAYMENT: 5,
+    };
+    return (order[a.type] || 9) - (order[b.type] || 9);
   });
 
   // Calculate Running Debits, Credits, Running Balance, and Closing Balance
@@ -186,7 +244,7 @@ export async function generateClientLedgerPdf({
 
   if (transactions.length === 0) {
     tableRows.push([
-      formatLedgerDate(statementDate),
+      formatLedgerDate(validStatementDate),
       "-",
       "-",
       "0.00",
@@ -218,6 +276,25 @@ export async function generateClientLedgerPdf({
   }
 
   const closingBalance = totalDebits - totalCredits;
+
+  // Append Total Row
+  tableRows.push([
+    {
+      content: "Total",
+      styles: { fontStyle: "bold" },
+    },
+    "",
+    "",
+    {
+      content: totalDebits.toFixed(2),
+      styles: { fontStyle: "bold", halign: "right" },
+    },
+    {
+      content: totalCredits.toFixed(2),
+      styles: { fontStyle: "bold", halign: "right" },
+    },
+    "",
+  ]);
 
   // Append Closing Balance row
   if (closingBalance >= 0) {
@@ -312,7 +389,7 @@ export async function generateClientLedgerPdf({
   // Statement Date
   doc.setFontSize(9);
   doc.setTextColor(60, 60, 60);
-  doc.text(`Date: ${formatLedgerDate(statementDate)}`, 105, curY + 17, {
+  doc.text(`Date: ${formatLedgerDate(validStatementDate)}`, 105, curY + 17, {
     align: "center",
   });
 
@@ -369,7 +446,7 @@ export async function generateClientLedgerPdf({
   const cleanClientName = (client.companyName || "Client")
     .replace(/[^a-zA-Z0-9_-]/g, "_")
     .replace(/_+/g, "_");
-  const dateSuffix = formatLedgerDate(statementDate).replace(/-/g, "");
+  const dateSuffix = formatLedgerDate(validStatementDate).replace(/-/g, "");
   const filename = `Ledger_Account_${cleanClientName}_${dateSuffix}.pdf`;
 
   return {

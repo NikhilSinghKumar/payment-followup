@@ -59,14 +59,19 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                 </tr>
               ) : (
                 invoices.map((invoice) => {
+                  const isOpening =
+                    Boolean(invoice.isOpeningBalance) ||
+                    String(invoice.invoiceNumber || "").toUpperCase().startsWith("OPENING");
                   const outstanding = Number(invoice.outstandingAmount || 0);
-                  const tdsVal = Number(
-                    invoice.tdsDeducted ||
-                      invoice.tdsDeductedAmount ||
-                      invoice.tdsAmount ||
-                      0,
-                  );
-                  const isVerified = Boolean(invoice.isTdsVerified);
+                  const tdsVal = isOpening
+                    ? 0
+                    : Number(
+                        invoice.tdsDeducted ||
+                          invoice.tdsDeductedAmount ||
+                          invoice.tdsAmount ||
+                          0,
+                      );
+                  const isVerified = !isOpening && Boolean(invoice.isTdsVerified);
 
                   return (
                     <tr

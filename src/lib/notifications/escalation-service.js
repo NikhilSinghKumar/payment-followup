@@ -152,7 +152,12 @@ export async function evaluateAndRunEscalations(companyId) {
         invoiceDate: invoices.invoiceDate,
         dueDate: invoices.dueDate,
         status: invoices.status,
+        invoiceAmount: invoices.invoiceAmount,
         netPayableAmount: invoices.netPayableAmount,
+        paidAmount: invoices.paidAmount,
+        tdsAmount: invoices.tdsAmount,
+        tdsDeductedAmount: invoices.tdsDeductedAmount,
+        isTdsVerified: invoices.isTdsVerified,
         outstandingAmount: invoices.outstandingAmount,
         clientName: clients.companyName,
         clientEmail: clients.email,
@@ -177,9 +182,25 @@ export async function evaluateAndRunEscalations(companyId) {
         .where(eq(invoiceEscalationStates.invoiceId, inv.id))
         .limit(1);
 
-      const outstanding = Number(
-        inv.outstandingAmount ?? inv.netPayableAmount ?? 0,
-      );
+      const rawGross = Number(inv.invoiceAmount || 0);
+      const rawNet = Number(inv.netPayableAmount || 0);
+      const invGross = rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
+      const paid = Number(inv.paidAmount || 0);
+      const isOpening =
+        Boolean(inv.isOpeningBalance) ||
+        String(inv.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+      const isTdsVerified = !isOpening && Boolean(inv.isTdsVerified);
+      const verifiedTds = isTdsVerified
+        ? Number(inv.tdsDeductedAmount || inv.tdsAmount || 0)
+        : 0;
+      const remainingDue = Number((invGross - paid - verifiedTds).toFixed(2));
+      const isSlightRoundoff =
+        isTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
+      const outstanding = isSlightRoundoff
+        ? 0
+        : inv.outstandingAmount !== null && inv.outstandingAmount !== undefined
+          ? Number(inv.outstandingAmount)
+          : Math.max(0, remainingDue);
       const isPaid =
         inv.status === "paid" || outstanding <= 0 || inv.status === "cancelled";
 
@@ -239,8 +260,9 @@ export async function evaluateAndRunEscalations(companyId) {
         invoiceNumber: inv.invoiceNumber,
         invoiceDate: inv.invoiceDate,
         dueDate: inv.dueDate,
+        invoiceAmount: invGross,
         outstandingAmount: outstanding,
-        netPayableAmount: Number(inv.netPayableAmount || 0),
+        netPayableAmount: invGross,
         status: inv.status,
         daysOverdue: Math.max(0, daysOverdue),
         isOverdue,
@@ -616,7 +638,7 @@ function generateClientEscalationEmailHtml({
             ${statusBadge}
           </td>
           <td style="padding: 10px 10px; font-size: 13px; text-align: right; color: #475569; white-space: nowrap;">
-            ${formatCurrency(inv.netPayableAmount || inv.outstandingAmount)}
+            ${formatCurrency(inv.invoiceAmount || inv.netPayableAmount || inv.outstandingAmount)}
           </td>
           <td style="padding: 10px 12px; font-size: 13px; text-align: right; font-weight: 700; color: ${isPastDue ? "#DC2626" : "#0F172A"}; white-space: nowrap;">
             ${formatCurrency(inv.outstandingAmount)}

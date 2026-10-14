@@ -19,14 +19,19 @@ export function enrichInvoice(invoice) {
     );
   }
 
-  const tdsDeducted = Number(
+  const isOpening =
+    Boolean(invoice?.isOpeningBalance) ||
+    String(invoice?.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+
+  const rawTdsDeducted = Number(
     invoice?.tdsDeductedAmount !== undefined &&
       invoice?.tdsDeductedAmount !== null &&
       Number(invoice?.tdsDeductedAmount) > 0
       ? invoice.tdsDeductedAmount
       : invoice?.tdsAmount || 0,
   );
-  const isTdsVerified = Boolean(invoice?.isTdsVerified);
+  const tdsDeducted = isOpening ? 0 : rawTdsDeducted;
+  const isTdsVerified = isOpening ? false : Boolean(invoice?.isTdsVerified);
   const verifiedTds = isTdsVerified ? tdsDeducted : 0;
   const pendingTds = !isTdsVerified ? tdsDeducted : 0;
 

@@ -642,56 +642,105 @@ export function ClientOutstandingInvoices({
 }) {
   const invoiceList = Array.isArray(invoices) ? invoices : [];
 
-  const totals = invoiceList.reduce(
-    (summary, invoice) => {
-      const rawGross = Number(invoice.invoiceAmount || 0);
-      const rawNet = Number(invoice.netPayableAmount || 0);
-      const invNetPayable =
-        rawNet > 0
-          ? rawNet
-          : rawGross > 0
-            ? rawGross
-            : Number(invoice.overallDue || 0);
-      const paidAmt = Number(
-        invoice.paymentDeduction !== undefined &&
-          invoice.paymentDeduction !== null
-          ? invoice.paymentDeduction
-          : (invoice.paidAmount ?? invoice.paid ?? 0),
+  const processedInvoices = invoiceList.map((invoice) => {
+    let creditDays = Number(invoice.creditDays || 0);
+    if (!creditDays && invoice.invoiceDate && invoice.dueDate) {
+      const invD = new Date(invoice.invoiceDate);
+      const dueD = new Date(invoice.dueDate);
+      invD.setHours(0, 0, 0, 0);
+      dueD.setHours(0, 0, 0, 0);
+      creditDays = Math.max(
+        0,
+        Math.round((dueD.getTime() - invD.getTime()) / (1000 * 60 * 60 * 24)),
       );
-      const restDue = Number(
-        invoice.restDueAmount !== undefined && invoice.restDueAmount !== null
-          ? invoice.restDueAmount
-          : invoice.outstandingAmount !== undefined &&
-              invoice.outstandingAmount !== null
-            ? invoice.outstandingAmount
-            : invoice.due !== undefined && invoice.due !== null
-              ? invoice.due
-              : Math.max(0, invNetPayable - paidAmt),
-      );
+    }
 
-      summary.invoiceAmount += rawGross > 0 ? rawGross : invNetPayable;
-      summary.netPayableAmount += invNetPayable;
-      summary.paidAmount += paidAmt;
-      summary.outstandingAmount += restDue;
+    const rawGross = Number(invoice.invoiceAmount || 0);
+    const rawNet = Number(invoice.netPayableAmount || 0);
+    const invOverall =
+      rawGross > 0
+        ? rawGross
+        : rawNet > 0
+          ? rawNet
+          : Number(invoice.overallDue || 0);
+    const isInvTdsVerified = Boolean(invoice.isTdsVerified);
+    const invVerifiedTds = isInvTdsVerified
+      ? Number(
+          invoice.verifiedTds ??
+            invoice.tdsDeductedAmount ??
+            invoice.tdsAmount ??
+            0,
+        )
+      : 0;
+    const invDeduction = Number(
+      invoice.paymentDeduction !== undefined &&
+        invoice.paymentDeduction !== null
+        ? invoice.paymentDeduction
+        : (invoice.paidAmount ?? invoice.paid ?? 0),
+    );
+    const invRemainingDue = Number(
+      (invOverall - invDeduction - invVerifiedTds).toFixed(2),
+    );
+    const isInvSlightRoundoff =
+      isInvTdsVerified && invRemainingDue <= 0.99 && invRemainingDue >= -0.99;
+    const invRestDue = isInvSlightRoundoff
+      ? 0
+      : invoice.due !== undefined && invoice.due !== null
+        ? Number(invoice.due)
+        : invoice.outstandingAmount !== undefined &&
+            invoice.outstandingAmount !== null
+          ? Number(invoice.outstandingAmount)
+          : invoice.restDueAmount !== undefined &&
+              invoice.restDueAmount !== null
+            ? Number(invoice.restDueAmount)
+            : Math.max(0, invRemainingDue);
+
+    const isInvOverdue = Boolean(
+      invoice.isOverdue ||
+      Number(invoice.dueDays || invoice.agingDays || 0) > 0 ||
+      invoice.agingStatus?.toLowerCase().includes("overdue"),
+    );
+
+    return {
+      ...invoice,
+      invOverall,
+      invDeduction,
+      invVerifiedTds,
+      invRestDue,
+      creditDays,
+      isInvOverdue,
+    };
+  });
+
+  const totals = processedInvoices.reduce(
+    (summary, inv) => {
+      summary.invoiceAmount += inv.invOverall;
+      summary.paidAmount += inv.invDeduction;
+      summary.verifiedTds += inv.invVerifiedTds;
+      summary.outstandingAmount += inv.invRestDue;
       return summary;
     },
     {
       invoiceAmount: 0,
-      netPayableAmount: 0,
       paidAmount: 0,
+      verifiedTds: 0,
       outstandingAmount: 0,
     },
   );
 
-  // 1. "Net Payable Amount" for client matches totalNetPayable from clients/[id]/page.js
+  // 1. "Invoice Amount" for client matches totalAmount from clients/[id]/page.js
   const displayOverall =
-    totalNetPayable !== null && totalNetPayable !== undefined
-      ? Number(totalNetPayable)
-      : overallDue !== null && overallDue !== undefined
-        ? Number(overallDue)
-        : totals.netPayableAmount > 0
-          ? totals.netPayableAmount
-          : totals.invoiceAmount;
+    clientSummary?.totalAmount !== undefined &&
+    clientSummary?.totalAmount !== null
+      ? Number(clientSummary.totalAmount)
+      : clientSummary?.totalInvoicedAmount !== undefined &&
+          clientSummary?.totalInvoicedAmount !== null
+        ? Number(clientSummary.totalInvoicedAmount)
+        : totalNetPayable !== null && totalNetPayable !== undefined
+          ? Number(totalNetPayable)
+          : overallDue !== null && overallDue !== undefined
+            ? Number(overallDue)
+            : totals.invoiceAmount;
 
   // 2. "Payment Received" for client matches paymentsReceived from clients/[id]/page.js
   const displayDeduction =
@@ -726,12 +775,7 @@ export function ClientOutstandingInvoices({
     ),
   );
 
-  const hasAnyOverdue = invoiceList.some(
-    (inv) =>
-      inv.isOverdue ||
-      Number(inv.dueDays || inv.agingDays || 0) > 0 ||
-      inv.agingStatus?.toLowerCase().includes("overdue"),
-  );
+  const hasAnyOverdue = processedInvoices.some((inv) => inv.isInvOverdue);
 
   if (!invoiceList.length) {
     return (
@@ -867,7 +911,7 @@ export function ClientOutstandingInvoices({
                   whiteSpace: "nowrap",
                 }}
               >
-                Net Payable (₹)
+                Invoice Amount (₹)
               </th>
               <th
                 align="right"
@@ -924,56 +968,7 @@ export function ClientOutstandingInvoices({
             </tr>
           </thead>
           <tbody>
-            {invoiceList.map((invoice, index) => {
-              let creditDays = Number(invoice.creditDays || 0);
-              if (!creditDays && invoice.invoiceDate && invoice.dueDate) {
-                const invD = new Date(invoice.invoiceDate);
-                const dueD = new Date(invoice.dueDate);
-                invD.setHours(0, 0, 0, 0);
-                dueD.setHours(0, 0, 0, 0);
-                creditDays = Math.max(
-                  0,
-                  Math.round(
-                    (dueD.getTime() - invD.getTime()) / (1000 * 60 * 60 * 24),
-                  ),
-                );
-              }
-
-              const rawGross = Number(invoice.invoiceAmount || 0);
-              const rawNet = Number(invoice.netPayableAmount || 0);
-              const invOverall =
-                rawGross > 0
-                  ? rawGross
-                  : rawNet > 0
-                    ? rawNet
-                    : Number(invoice.overallDue || 0);
-              const invDeduction = Number(
-                invoice.paymentDeduction !== undefined &&
-                  invoice.paymentDeduction !== null
-                  ? invoice.paymentDeduction
-                  : (invoice.paidAmount ?? invoice.paid ?? 0),
-              );
-              const invRestDue = Number(
-                invoice.restDueAmount !== undefined &&
-                  invoice.restDueAmount !== null
-                  ? invoice.restDueAmount
-                  : invoice.outstandingAmount !== undefined &&
-                      invoice.outstandingAmount !== null
-                    ? invoice.outstandingAmount
-                    : invoice.due !== undefined && invoice.due !== null
-                      ? invoice.due
-                      : Math.max(
-                          0,
-                          (rawNet > 0 ? rawNet : invOverall) - invDeduction,
-                        ),
-              );
-
-              const isInvOverdue = Boolean(
-                invoice.isOverdue ||
-                Number(invoice.dueDays || invoice.agingDays || 0) > 0 ||
-                invoice.agingStatus?.toLowerCase().includes("overdue"),
-              );
-
+            {processedInvoices.map((invoice, index) => {
               const rowBg = index % 2 === 1 ? "#F8FAFC" : "#FFFFFF";
 
               return (
@@ -1005,9 +1000,9 @@ export function ClientOutstandingInvoices({
                     style={{
                       padding: "10px 10px",
                       borderBottom: "1px solid #E2E8F0",
-                      color: isInvOverdue ? "#DC2626" : "#475569",
+                      color: invoice.isInvOverdue ? "#DC2626" : "#475569",
                       fontSize: "12px",
-                      fontWeight: isInvOverdue ? 700 : 500,
+                      fontWeight: invoice.isInvOverdue ? 700 : 500,
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -1024,7 +1019,7 @@ export function ClientOutstandingInvoices({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(rawNet > 0 ? rawNet : invOverall)}
+                    {formatCurrency(invoice.invOverall)}
                   </td>
                   <td
                     style={{
@@ -1037,20 +1032,20 @@ export function ClientOutstandingInvoices({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(invDeduction)}
+                    {formatCurrency(invoice.invDeduction)}
                   </td>
                   <td
                     style={{
                       padding: "10px 10px",
                       borderBottom: "1px solid #E2E8F0",
-                      color: isInvOverdue ? "#DC2626" : "#0F172A",
+                      color: invoice.isInvOverdue ? "#DC2626" : "#0F172A",
                       fontSize: "13px",
                       fontWeight: 700,
                       textAlign: "right",
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(invRestDue)}
+                    {formatCurrency(invoice.invRestDue)}
                   </td>
                   <td
                     style={{
@@ -1060,12 +1055,12 @@ export function ClientOutstandingInvoices({
                       fontWeight: 600,
                       color:
                         invoice.agingColor ||
-                        (isInvOverdue ? "#DC2626" : "#334155"),
+                        (invoice.isInvOverdue ? "#DC2626" : "#334155"),
                       whiteSpace: "nowrap",
                     }}
                   >
                     {invoice.agingStatus ||
-                      (isInvOverdue
+                      (invoice.isInvOverdue
                         ? `${invoice.dueDays || 0}d Overdue`
                         : "Current")}
                   </td>
@@ -1079,7 +1074,7 @@ export function ClientOutstandingInvoices({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {creditDays} days
+                    {invoice.creditDays} days
                   </td>
                 </tr>
               );
@@ -1117,7 +1112,7 @@ export function ClientOutstandingInvoices({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(totals.netPayableAmount)}
+                    {formatCurrency(totals.invoiceAmount)}
                   </td>
                   <td
                     style={{
@@ -1157,7 +1152,7 @@ export function ClientOutstandingInvoices({
                 </tr>
 
                 {/* 2. Unallocated / On-Account credit adjustment row */}
-                {/* <tr
+                <tr
                   style={{
                     background: "#F0FDF4",
                     borderTop: "1px dashed #86EFAC",
@@ -1221,7 +1216,7 @@ export function ClientOutstandingInvoices({
                   >
                     Credit Held on Ledger
                   </td>
-                </tr> */}
+                </tr>
 
                 {/* 3. Reconciled Net Rest Due Row */}
                 <tr
@@ -1240,7 +1235,7 @@ export function ClientOutstandingInvoices({
                       textAlign: "right",
                     }}
                   >
-                    Total Due:
+                    Total:
                   </td>
                   <td
                     style={{
@@ -1252,14 +1247,20 @@ export function ClientOutstandingInvoices({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(totals.netPayableAmount)}
+                    {formatCurrency(totals.invoiceAmount)}
                   </td>
                   <td
                     style={{
                       padding: "11px 10px",
+                      color: "#16A34A",
+                      fontSize: "13px",
+                      fontWeight: 700,
                       textAlign: "right",
+                      whiteSpace: "nowrap",
                     }}
-                  />
+                  >
+                    {formatCurrency(totals.paidAmount + resolvedUnallocated)}
+                  </td>
                   <td
                     style={{
                       padding: "11px 10px",
@@ -1270,7 +1271,18 @@ export function ClientOutstandingInvoices({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(displayRestDue)}
+                    {formatCurrency(Math.max(0, totals.outstandingAmount - resolvedUnallocated))}
+                  </td>
+                  <td
+                    colSpan={2}
+                    style={{
+                      padding: "11px 8px",
+                      color: hasAnyOverdue ? "#DC2626" : "#475569",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {hasAnyOverdue ? "Overdue" : "Current"}
                   </td>
                 </tr>
               </>
@@ -1292,7 +1304,7 @@ export function ClientOutstandingInvoices({
                     textAlign: "right",
                   }}
                 >
-                  Total Account Dues:
+                  Total :
                 </td>
                 <td
                   style={{
@@ -1304,14 +1316,20 @@ export function ClientOutstandingInvoices({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {formatCurrency(totals.netPayableAmount)}
+                  {formatCurrency(totals.invoiceAmount)}
                 </td>
                 <td
                   style={{
                     padding: "11px 10px",
+                    color: "#16A34A",
+                    fontSize: "13px",
+                    fontWeight: 700,
                     textAlign: "right",
+                    whiteSpace: "nowrap",
                   }}
-                />
+                >
+                  {formatCurrency(totals.paidAmount)}
+                </td>
                 <td
                   style={{
                     padding: "11px 10px",
@@ -1322,18 +1340,7 @@ export function ClientOutstandingInvoices({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {formatCurrency(displayRestDue)}
-                </td>
-                <td
-                  colSpan={2}
-                  style={{
-                    padding: "11px 8px",
-                    color: hasAnyOverdue ? "#DC2626" : "#475569",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                  }}
-                >
-                  {hasAnyOverdue ? "Overdue" : "Current"}
+                  {formatCurrency(totals.outstandingAmount)}
                 </td>
               </tr>
             )}
@@ -1359,10 +1366,10 @@ export function AccountFinancialSummary({
   netOutstanding = null,
   onAccountAmount = null,
   unallocatedAmount = null,
-  overallLabel = "Net Payable Amount",
+  overallLabel = "Account Total",
   deductionLabel = "Payment Received",
   restLabel = "Rest Due Amount",
-  overallSubtext = "Total Net Payable",
+  overallSubtext = " ",
   deductionSubtext = "Paid / Credited",
   restSubtext = "Net Outstanding",
   isOverdue = false,
@@ -1607,13 +1614,10 @@ export function SingleInvoiceDataTable({
   dueDaysText = "",
 }) {
   const rawGross = Number(invoice.invoiceAmount || 0);
-  const rawNet = Number(invoice.netPayableAmount || 0);
   const parsedOverall =
     rawGross > 0
       ? rawGross
-      : rawNet > 0
-        ? rawNet
-        : Number(overallDue || invoice.overallDue || 0);
+      : Number(invoice.netPayableAmount || overallDue || invoice.overallDue || 0);
 
   const parsedDeduction = Number(
     paymentDeduction !== undefined && paymentDeduction !== null
@@ -1624,20 +1628,35 @@ export function SingleInvoiceDataTable({
         : (invoice.paidAmount ?? invoice.paid ?? 0),
   );
 
+  const isTdsVerified = Boolean(invoice.isTdsVerified);
+  const verifiedTds = isTdsVerified
+    ? Number(
+        invoice.verifiedTds ??
+          invoice.tdsDeductedAmount ??
+          invoice.tdsAmount ??
+          0,
+      )
+    : 0;
+
+  const remainingDue = Number(
+    (parsedOverall - parsedDeduction - verifiedTds).toFixed(2),
+  );
+  const isSlightRoundoff =
+    isTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
+
   const parsedRest = Number(
-    restDueAmount !== undefined && restDueAmount !== null
-      ? restDueAmount
-      : invoice.restDueAmount !== undefined && invoice.restDueAmount !== null
-        ? invoice.restDueAmount
-        : invoice.outstandingAmount !== undefined &&
-            invoice.outstandingAmount !== null
-          ? invoice.outstandingAmount
-          : invoice.due !== undefined && invoice.due !== null
-            ? invoice.due
-            : Math.max(
-                0,
-                (rawNet > 0 ? rawNet : parsedOverall) - parsedDeduction,
-              ),
+    isSlightRoundoff
+      ? 0
+      : restDueAmount !== undefined && restDueAmount !== null
+        ? restDueAmount
+        : invoice.due !== undefined && invoice.due !== null
+          ? invoice.due
+          : invoice.restDueAmount !== undefined && invoice.restDueAmount !== null
+            ? invoice.restDueAmount
+            : invoice.outstandingAmount !== undefined &&
+                invoice.outstandingAmount !== null
+              ? invoice.outstandingAmount
+              : Math.max(0, remainingDue),
   );
 
   const awbText =
@@ -2069,10 +2088,26 @@ export function ClientPaymentSettlementTable({
     if (invTotal <= 0 && (settled > 0 || (rem !== null && rem > 0))) {
       invTotal = settled + (rem || 0);
     }
+    const isInvTdsVerified = Boolean(inv.isTdsVerified);
+    const verifiedTds = isInvTdsVerified
+      ? Number(
+          inv.verifiedTds ??
+            inv.tdsSettled ??
+            inv.allocatedTds ??
+            inv.tdsDeductedAmount ??
+            inv.tdsAmount ??
+            0,
+        )
+      : 0;
+    const remainingDue = Number((invTotal - settled - verifiedTds).toFixed(2));
+    const isSlightRoundoff =
+      isInvTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
     const remaining =
       rem !== null
         ? Math.max(0, rem)
-        : Math.max(0, (rawNet > 0 ? rawNet : invTotal) - settled);
+        : isSlightRoundoff
+          ? 0
+          : Math.max(0, remainingDue);
     const isFullySettled = remaining <= 0;
 
     const netPayable =
@@ -2280,23 +2315,41 @@ export function ClientPaymentSettlementTable({
   );
 
   // Card metrics:
-  // Card 1: Net Payable Amount (totalNetPayable from clients/[id]/page.js)
+  // Card 1: Total Outstanding (Overall all invoice amount + open balance if exists)
   // Card 2: Payment Received (Settled against invoices + unallocated amount)
   // Card 3: Rest Due Amount (netOutstanding from clients/[id]/page.js)
-  const card1Value = netPayableAmount;
-  const card1Label = "Net Payable Amount";
-  const card1Subtext = "Total Net Payable";
+  const card1Value =
+    paymentInfo?.totalOutstanding !== null &&
+    paymentInfo?.totalOutstanding !== undefined
+      ? Number(paymentInfo.totalOutstanding)
+      : paymentInfo?.totalInvoiceAmount !== null &&
+          paymentInfo?.totalInvoiceAmount !== undefined
+        ? Number(paymentInfo.totalInvoiceAmount)
+        : paymentInfo?.clientSummary?.totalAmount !== null &&
+            paymentInfo?.clientSummary?.totalAmount !== undefined
+          ? Number(paymentInfo.clientSummary.totalAmount)
+          : paymentInfo?.clientSummary?.totalInvoicedAmount !== null &&
+              paymentInfo?.clientSummary?.totalInvoicedAmount !== undefined
+            ? Number(paymentInfo.clientSummary.totalInvoicedAmount)
+            : paymentInfo?.invoiceAmount !== null &&
+                paymentInfo?.invoiceAmount !== undefined
+              ? Number(paymentInfo.invoiceAmount)
+              : netPayableAmount > 0
+                ? netPayableAmount
+                : totals.invoiceAmount;
+  const card1Label = "Account Total";
+  const card1Subtext = "";
 
   const card2Value = parsedPayment;
   const card2Label = "Payment Received";
   const card2Subtext =
     unallocatedAmount > 0
       ? `Settled: ${formatCurrency(settledAgainstInvoices)}`
-      : "Settled against invoice(s)";
+      : " ";
 
   const card3Value = parsedRemaining;
   const card3Label = "Rest Due Amount";
-  const card3Subtext = "Current Net Outstanding";
+  const card3Subtext = "Net Outstanding";
 
   const hasMeta =
     paymentInfo?.paymentDate ||
@@ -2460,7 +2513,7 @@ export function ClientPaymentSettlementTable({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    Net Payable Amount (₹)
+                    Invoice Amount (₹)
                   </th>
                   <th
                     style={{
@@ -2544,7 +2597,7 @@ export function ClientPaymentSettlementTable({
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {formatCurrency(inv.netPayableAmount)}
+                        {formatCurrency(inv.invTotal)}
                       </td>
                       <td
                         style={{
@@ -2629,7 +2682,7 @@ export function ClientPaymentSettlementTable({
                       fontSize: "13px",
                     }}
                   >
-                    Total Settled in This Batch:
+                    Total :
                   </td>
                   <td
                     style={{

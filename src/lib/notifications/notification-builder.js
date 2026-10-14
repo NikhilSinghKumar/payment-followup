@@ -30,14 +30,21 @@ function buildInvoiceVariables(data) {
   const rawGross = Number(data.invoiceAmount || 0);
   const rawNet = Number(data.netPayableAmount || 0);
   const invFace = rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
-  const netPayable = rawNet > 0 ? rawNet : invFace;
   const paid = Number(data.paid ?? data.paidAmount ?? 0);
+  const isTdsVerified = Boolean(data.isTdsVerified);
+  const verifiedTds = isTdsVerified
+    ? Number(data.verifiedTds ?? data.tdsDeducted ?? data.tdsAmount ?? 0)
+    : 0;
+
+  // In due/overdue emails & payment received emails:
+  // If payment is done: net outstanding = (Total Invoice Amount - total payment received - tds verified).
+  // If payment is not done: total outstanding = net invoice amount (not net receivable/payable).
   const due =
     data.due !== undefined && data.due !== null
       ? Number(data.due)
       : data.outstandingAmount !== undefined && data.outstandingAmount !== null
         ? Number(data.outstandingAmount)
-        : Math.max(0, netPayable - paid);
+        : Math.max(0, Number((invFace - paid - verifiedTds).toFixed(2)));
 
   return {
     companyName: data.companyName,
@@ -50,13 +57,15 @@ function buildInvoiceVariables(data) {
     invoiceAmount: invFace,
     tdsAmount: Number(data.tdsAmount || 0),
     tdsDeducted: Number(data.tdsDeducted || 0),
-    netPayableAmount: netPayable,
+    verifiedTds,
+    isTdsVerified,
+    netPayableAmount: invFace,
     status: data.status || "Active / Due",
 
     // map from invoice summary
     paidAmount: paid,
-    settledAmount: paid,
-    totalSettled: paid,
+    settledAmount: paid + verifiedTds,
+    totalSettled: paid + verifiedTds,
     outstandingAmount: due,
     due,
     overdueDays: data.dueDays || data.overdueDays || 0,
@@ -166,13 +175,17 @@ function buildPaymentReceived(data) {
             : 0;
 
   const totalOutstanding =
-    data.totalNetPayable !== undefined
-      ? Number(data.totalNetPayable)
-      : data.netPayableAmount !== undefined
-        ? Number(data.netPayableAmount)
-        : data.totalOutstanding !== undefined
-          ? Number(data.totalOutstanding)
-          : remainingOutstanding + paymentAmount;
+    data.totalInvoiceAmount !== undefined
+      ? Number(data.totalInvoiceAmount)
+      : data.invoiceAmount !== undefined
+        ? Number(data.invoiceAmount)
+        : data.totalNetPayable !== undefined
+          ? Number(data.totalNetPayable)
+          : data.netPayableAmount !== undefined
+            ? Number(data.netPayableAmount)
+            : data.totalOutstanding !== undefined
+              ? Number(data.totalOutstanding)
+              : remainingOutstanding + paymentAmount;
 
   const formattedTotalOutstanding = totalOutstanding.toLocaleString("en-IN", {
     minimumFractionDigits: 2,
@@ -376,16 +389,35 @@ export function buildClientPaymentReminderVariables(data) {
       const rawGross = Number(invoice.invoiceAmount || 0);
       const rawNet = Number(invoice.netPayableAmount || 0);
       const invFace = rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
-      const netPayable = rawNet > 0 ? rawNet : invFace;
       const paid = Number(invoice.paidAmount ?? invoice.paid ?? 0);
-      const outstanding = Number(
-        invoice.outstandingAmount !== undefined &&
-          invoice.outstandingAmount !== null
-          ? invoice.outstandingAmount
+      const isOpening =
+        Boolean(invoice.isOpeningBalance) ||
+        String(invoice.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+      const isTdsVerified = !isOpening && Boolean(invoice.isTdsVerified);
+      const verifiedTds = isTdsVerified
+        ? Number(
+            invoice.verifiedTds ??
+              invoice.tdsDeducted ??
+              invoice.tdsDeductedAmount ??
+              invoice.tdsAmount ??
+              0,
+          )
+        : 0;
+
+      // In due/overdue emails:
+      // If payment is done: net outstanding = (Total Invoice Amount - total payment received - tds verified)
+      // If payment is not done: total outstanding = net invoice amount (not net receivable/payable)
+      const remainingDue = Number((invFace - paid - verifiedTds).toFixed(2));
+      const isSlightRoundoff =
+        isTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
+      const outstanding = isSlightRoundoff
+        ? 0
+        : invoice.outstandingAmount !== undefined &&
+            invoice.outstandingAmount !== null
+          ? Number(invoice.outstandingAmount)
           : invoice.due !== undefined && invoice.due !== null
-            ? invoice.due
-            : Math.max(0, netPayable - paid),
-      );
+            ? Number(invoice.due)
+            : Math.max(0, remainingDue);
 
       return {
         invoiceId: invoice.invoiceId,
@@ -393,8 +425,10 @@ export function buildClientPaymentReminderVariables(data) {
         invoiceDate: invoice.invoiceDate,
         dueDate: invoice.dueDate,
         invoiceAmount: invFace,
-        netPayableAmount: netPayable,
+        netPayableAmount: invFace,
         paidAmount: paid,
+        verifiedTds,
+        isTdsVerified,
         outstandingAmount: outstanding,
         creditDays: Number(invoice.creditDays || 0),
         agingDays: Number(invoice.agingDays || 0),

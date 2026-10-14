@@ -1,6 +1,10 @@
 import { getGstAppliedText, getTdsAppliedText } from "@/lib/tax-display";
 
 export default function InvoiceTaxSummary({ data }) {
+  const isOpening =
+    Boolean(data.isOpeningBalance) ||
+    String(data.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+
   const formatCurrency = (value) =>
     `₹${Number(value || 0).toLocaleString("en-IN", {
       minimumFractionDigits: 2,
@@ -32,7 +36,9 @@ export default function InvoiceTaxSummary({ data }) {
 
         <SummaryRow label="IGST" value={formatCurrency(data.igstAmount)} />
 
-        <SummaryRow label="TDS" value={formatCurrency(data.tdsAmount)} />
+        {!isOpening && (
+          <SummaryRow label="TDS" value={formatCurrency(data.tdsAmount)} />
+        )}
 
         <SummaryRow
           label="Deduction"
@@ -78,7 +84,9 @@ export default function InvoiceTaxSummary({ data }) {
               <span className="text-zinc-500">TDS Applied</span>
 
               <span className="font-medium text-zinc-800">
-                {getTdsAppliedText(data.tdsApplicableUsed)}
+                {isOpening
+                  ? "Not Applicable (Opening Balance)"
+                  : getTdsAppliedText(data.tdsApplicableUsed)}
               </span>
             </div>
           </div>

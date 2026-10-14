@@ -232,7 +232,7 @@ export const notifyClientPaymentReceived = async (clientPaymentData) => {
       const pdfRes = await generateClientLedgerPdf({
         clientId: data.clientId,
         companyId: data.companyId,
-        statementDate: data.paymentDate || new Date(),
+        statementDate: new Date(),
       });
       if (pdfRes?.buffer) {
         data.attachments = [

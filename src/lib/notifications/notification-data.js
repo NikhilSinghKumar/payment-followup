@@ -45,6 +45,10 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
       netPayableAmount: invoices.netPayableAmount,
       paidAmount: invoices.paidAmount,
       tdsDeducted: invoices.tdsAmount,
+      tdsDeductedAmount: invoices.tdsDeductedAmount,
+      isTdsVerified: invoices.isTdsVerified,
+      deductionAmount: invoices.deductionAmount,
+      otherCharges: invoices.otherCharges,
       outstandingAmount: invoices.outstandingAmount,
       basicAmount: invoices.basicAmount,
       tdsApplicableUsed: invoices.tdsApplicableUsed,
@@ -81,8 +85,21 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
     );
 
   const totalCash = Number(allocationResult[0]?.totalCash || 0);
-  const totalTds = Number(invoice.tdsDeducted || 0);
-  const totalSettled = Number((totalCash + totalTds).toFixed(2));
+  const isTdsVerified = Boolean(invoice.isTdsVerified);
+  const tdsDeducted = Number(invoice.tdsDeductedAmount || invoice.tdsDeducted || invoice.tdsAmount || 0);
+  const verifiedTds = isTdsVerified ? tdsDeducted : 0;
+
+  const grossInvoiceAmount = Number(invoice.invoiceAmount || 0);
+  const deductions =
+    Number(invoice.deductionAmount || 0) + Number(invoice.otherCharges || 0);
+  const netInvoiceAmount = Math.max(0, grossInvoiceAmount - deductions);
+
+  // In due/overdue emails & payment emails:
+  // If payment is done: net outstanding = (Total Invoice Amount - total payment received - tds verified).
+  // If payment is not done: total outstanding = net invoice amount.
+  const remainingDue = Number((netInvoiceAmount - totalCash - verifiedTds).toFixed(2));
+  const isSlightRoundoff = isTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
+  const outstandingAmount = isSlightRoundoff ? 0 : Math.max(0, remainingDue);
 
   const paymentResult = paymentId
     ? await db
@@ -100,10 +117,11 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
 
   const payment = paymentResult[0] ?? null;
 
-  // Payment Summary
+  // Payment Summary per Net Invoice Amount & Verified TDS
   const paymentSummary = calculateInvoiceStatus({
-    netPayable: invoice.netPayableAmount,
-    paid: totalSettled,
+    netPayable: netInvoiceAmount,
+    paid: totalCash,
+    verifiedTds,
     dueDate: invoice.dueDate,
   });
 
@@ -171,16 +189,18 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
     invoiceDate: invoice.invoiceDate,
     dueDate: invoice.dueDate,
 
-    invoiceAmount: Number(invoice.invoiceAmount),
-    tdsAmount: Number(payment?.tdsAmount || totalTds || 0),
-    tdsDeducted: Number(invoice.tdsDeducted || totalTds || 0),
-    netPayableAmount: Number(invoice.netPayableAmount),
+    invoiceAmount: netInvoiceAmount,
+    tdsAmount: Number(payment?.tdsAmount || tdsDeducted || 0),
+    tdsDeducted,
+    isTdsVerified,
+    verifiedTds,
+    netPayableAmount: netInvoiceAmount,
 
     status: paymentSummary.status,
 
     // Invoice payment summary
-    paid: paymentSummary.paid,
-    due: paymentSummary.due,
+    paid: totalCash,
+    due: outstandingAmount,
     dueDays: paymentSummary.dueDays,
     // Payment
     paymentAmount: payment ? Number(payment.amount) : 0,
@@ -189,9 +209,9 @@ export async function getInvoiceNotificationData(invoiceId, paymentId = null) {
       ? Number(payment.amount) + Number(payment.tdsAmount || 0)
       : 0,
     paymentDate: payment?.paymentDate,
-    totalPaid: paymentSummary.paid,
-    settledAmount: paymentSummary.paid,
-    outstandingAmount: paymentSummary.due,
+    totalPaid: totalCash,
+    settledAmount: totalCash + verifiedTds,
+    outstandingAmount,
 
     // Sender company
     senderCompany: invoice.senderCompany,
@@ -243,6 +263,8 @@ export async function getClientPaymentReminderData(clientId = null) {
 
       invoiceAmount: invoices.invoiceAmount,
       netPayableAmount: invoices.netPayableAmount,
+      tdsDeductedAmount: invoices.tdsDeductedAmount,
+      isTdsVerified: invoices.isTdsVerified,
 
       // --------------------------------------------------
       // Total paid & TDS deducted
@@ -353,6 +375,9 @@ export async function getClientPaymentReminderData(clientId = null) {
       invoices.dueDate,
       invoices.invoiceAmount,
       invoices.netPayableAmount,
+      invoices.tdsDeductedAmount,
+      invoices.isTdsVerified,
+      invoices.tdsAmount,
     );
 
   // ======================================================
@@ -362,12 +387,21 @@ export async function getClientPaymentReminderData(clientId = null) {
   const clientsMap = new Map();
 
   for (const row of rows) {
+    const grossInvoiceAmount = Number(row.invoiceAmount || 0);
     const paidAmount = Number(row.paidAmount || 0);
-    const tdsDeducted = Number(row.tdsDeducted || 0);
-    const totalSettled = paidAmount + tdsDeducted;
-    const netPayableAmount = Number(row.netPayableAmount || 0);
+    const isTdsVerified = Boolean(row.isTdsVerified);
+    const tdsDeducted = Number(
+      row.tdsDeductedAmount || row.tdsDeducted || 0,
+    );
+    const verifiedTds = isTdsVerified ? tdsDeducted : 0;
+    const totalSettled = paidAmount + verifiedTds;
 
-    const outstandingAmount = Math.max(netPayableAmount - totalSettled, 0);
+    // In due/overdue emails:
+    // If payment is done: net outstanding = (Total Invoice Amount - total payment received - tds verified).
+    // If payment is not done: total outstanding = net invoice amount (not net receivable/payable).
+    const remainingDue = Number((grossInvoiceAmount - paidAmount - verifiedTds).toFixed(2));
+    const isSlightRoundoff = isTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
+    const outstandingAmount = isSlightRoundoff ? 0 : Math.max(0, remainingDue);
 
     // -----------------------------------------------
     // Ignore fully paid / settled invoices
@@ -480,8 +514,11 @@ export async function getClientPaymentReminderData(clientId = null) {
       invoiceAmount: Number(row.invoiceAmount || 0),
       paidAmount,
       tdsDeducted,
+      verifiedTds,
+      isTdsVerified,
       totalSettled,
       outstandingAmount,
+      due: outstandingAmount,
 
       creditDays,
 
@@ -502,12 +539,17 @@ export async function getClientPaymentReminderData(clientId = null) {
   for (const clientItem of clientsMap.values()) {
     try {
       const fin = await fetchClientFinancialSummary(clientItem.clientId);
-      clientItem.totalNetPayable = fin.totalNetPayable;
-      clientItem.netPayableAmount = fin.totalNetPayable;
+      clientItem.totalInvoiceAmount = fin.totalAmount;
+      clientItem.totalInvoicedAmount = fin.totalAmount;
+      clientItem.totalNetPayable = fin.totalAmount; // Total Invoice Amount
+      clientItem.netInvoiceAmount = fin.totalAmount;
+      clientItem.netPayableAmount = fin.totalAmount;
       clientItem.paymentsReceived = fin.paymentsReceived;
+      clientItem.totalVerifiedTds = fin.totalVerifiedTds;
       clientItem.netOutstanding = fin.netOutstanding;
       clientItem.restDueAmount = fin.netOutstanding;
-      clientItem.totalOutstanding = fin.netOutstanding;
+      clientItem.totalOutstanding = fin.totalAmount;
+      clientItem.totalAccountOutstanding = fin.netOutstanding;
       clientItem.clientSummary = fin;
     } catch (err) {
       console.warn(
@@ -656,26 +698,34 @@ export async function getClientPaymentReceivedData({
           const grossInvoiceAmount = Number(
             item.invoiceAmount ?? inv?.invoiceAmount ?? 0,
           );
-          const netPayable = Number(
-            item.netPayableAmount ??
-              inv?.netPayableAmount ??
-              (grossInvoiceAmount > 0 ? grossInvoiceAmount : 0),
+          const isTdsVerified = Boolean(
+            item.isTdsVerified ?? inv?.isTdsVerified,
           );
           const cashSettled = Number(
-            item.allocatedAmount ?? item.cashSettled ?? item.amount ?? 0,
+            item.allocatedAmount ?? item.cashSettled ?? item.paidAmount ?? item.amount ?? 0,
           );
           const tdsSettled = Number(
             item.allocatedTds ?? item.tdsSettled ?? item.tdsAmount ?? 0,
           );
+          const verifiedTds = isTdsVerified
+            ? tdsSettled || Number(inv?.tdsDeductedAmount || 0)
+            : 0;
           const settledAmount = Number(
             item.settledAmount ?? cashSettled + tdsSettled,
           );
-          // Rest Due Amount should be calculated (Net Payable - Payment Received), exclude Unallocated Amount
+          // If payment is done, net outstanding = (Total Invoice Amount - total payment received - tds verified)
+          const remainingDue = Number(
+            (grossInvoiceAmount - cashSettled - verifiedTds).toFixed(2),
+          );
+          const isSlightRoundoff =
+            isTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
           const remainingBalance =
             item.remainingBalance !== undefined &&
             item.remainingBalance !== null
               ? Number(item.remainingBalance)
-              : Math.max(0, netPayable - settledAmount);
+              : isSlightRoundoff
+                ? 0
+                : Math.max(0, remainingDue);
 
           return {
             invoiceId: item.invoiceId || inv?.id,
@@ -685,11 +735,12 @@ export async function getClientPaymentReceivedData({
               `INV-${item.invoiceId}`,
             invoiceDate: item.invoiceDate || inv?.invoiceDate,
             dueDate: item.dueDate || inv?.dueDate,
-            invoiceAmount:
-              grossInvoiceAmount > 0 ? grossInvoiceAmount : netPayable,
-            netPayableAmount: netPayable,
+            invoiceAmount: grossInvoiceAmount,
+            netPayableAmount: grossInvoiceAmount,
             cashSettled,
             tdsSettled,
+            verifiedTds,
+            isTdsVerified,
             settledAmount,
             remainingBalance,
             status: remainingBalance <= 0 ? "paid" : "partial",
@@ -794,17 +845,35 @@ export async function getClientPaymentReceivedData({
     totalSettledAmount + unallocatedAmount,
   );
 
-  // "Net Payable Amount" for a client should be totalNetPayable that is used on clients/[id]/page.js file
-  const finalTotalNetPayable =
-    totalNetPayableFromClient > 0
-      ? totalNetPayableFromClient
-      : batchNetPayableTotal;
+  // Total Invoice Amount for client (not net receivable/payable)
+  const clientTotalInvoiceAmount =
+    clientFinancials?.totalAmount ??
+    clientFinancials?.totalInvoicedAmount ??
+    totalInvoiceAmount;
 
-  // "Rest Due Amount" should be netOutstanding that is used on clients/[id]/page.js
+  const clientPaymentsReceived =
+    clientFinancials?.paymentsReceived ??
+    paymentsReceivedFromClient ??
+    totalPaymentAmount;
+
+  const clientTotalVerifiedTds =
+    clientFinancials?.totalVerifiedTds ?? 0;
+
+  // If payment is done, net outstanding = (Total Invoice Amount - total payment received - tds verified)
   const finalNetOutstanding =
-    totalNetPayableFromClient > 0
-      ? netOutstandingFromClient
-      : Math.max(0, finalTotalNetPayable - totalPaymentAmount);
+    clientFinancials?.netOutstanding !== undefined &&
+    clientFinancials?.netOutstanding !== null
+      ? Number(clientFinancials.netOutstanding)
+      : Math.max(
+          0,
+          Number(
+            (
+              clientTotalInvoiceAmount -
+              clientPaymentsReceived -
+              clientTotalVerifiedTds
+            ).toFixed(2),
+          ),
+        );
 
   return {
     companyId: activeCompanyId,
@@ -819,18 +888,20 @@ export async function getClientPaymentReceivedData({
     settledAmount: totalSettledAmount,
     unallocatedAmount,
     clientUnallocatedBalance,
-    invoiceAmount: totalInvoiceAmount,
-    // "Net Payable Amount" for client matches totalNetPayable on clients/[id]/page.js
-    totalNetPayable: finalTotalNetPayable,
-    netPayableAmount: finalTotalNetPayable,
-    // "Rest Due Amount" matches netOutstanding on clients/[id]/page.js
+    invoiceAmount: clientTotalInvoiceAmount,
+    totalInvoiceAmount: clientTotalInvoiceAmount,
+    // Total Outstanding should be Net Invoice Amount (not net receivable/payable)
+    totalNetPayable: clientTotalInvoiceAmount,
+    netPayableAmount: clientTotalInvoiceAmount,
+    // Rest Due Amount: (Total Invoice Amount - total payment received - tds verified)
     netOutstanding: finalNetOutstanding,
     restDueAmount: finalNetOutstanding,
     overallOutstanding: finalNetOutstanding,
-    totalOutstanding: finalTotalNetPayable,
+    totalOutstanding: clientTotalInvoiceAmount,
     totalAccountOutstanding: finalNetOutstanding,
     remainingOutstanding: finalNetOutstanding,
-    paymentsReceived: paymentsReceivedFromClient,
+    paymentsReceived: clientPaymentsReceived,
+    totalVerifiedTds: clientTotalVerifiedTds,
     clientSummary: clientFinancials,
     paymentDate: paymentDetails.paymentDate || new Date().toISOString(),
     paymentMethod:

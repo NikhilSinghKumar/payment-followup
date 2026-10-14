@@ -5,18 +5,29 @@ import { Check, ShieldCheck, Clock, Edit2, X } from "lucide-react";
 import { updateInvoiceTds } from "@/app/actions/tds";
 
 export default function TdsVerifyButton({ invoice }) {
+  const isOpening =
+    Boolean(invoice?.isOpeningBalance) ||
+    String(invoice?.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState("");
 
   const currentTds = Number(
-    invoice.tdsDeducted || invoice.tdsDeductedAmount || invoice.tdsAmount || 0,
+    invoice?.tdsDeducted ||
+      invoice?.tdsDeductedAmount ||
+      invoice?.tdsAmount ||
+      0,
   );
-  const isVerified = Boolean(invoice.isTdsVerified);
+  const isVerified = Boolean(invoice?.isTdsVerified);
 
   const [tdsAmount, setTdsAmount] = useState(currentTds.toString());
   const [verifiedChecked, setVerifiedChecked] = useState(isVerified);
-  const [notes, setNotes] = useState(invoice.tdsNotes || "");
+  const [notes, setNotes] = useState(invoice?.tdsNotes || "");
+
+  if (isOpening) {
+    return null;
+  }
 
   function handleOpen() {
     setTdsAmount(currentTds.toString());
@@ -57,10 +68,7 @@ export default function TdsVerifyButton({ invoice }) {
       >
         {isVerified ? (
           <>
-            <ShieldCheck
-              size={14}
-              className="text-emerald-600 dark:text-emerald-400"
-            />
+            <ShieldCheck size={14} className="text-emerald-600 dark:text-emerald-400" />
             <span>TDS Verified (₹{currentTds.toLocaleString("en-IN")})</span>
           </>
         ) : (
@@ -77,10 +85,7 @@ export default function TdsVerifyButton({ invoice }) {
           <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
               <div className="flex items-center gap-2">
-                <ShieldCheck
-                  size={18}
-                  className="text-blue-600 dark:text-blue-400"
-                />
+                <ShieldCheck size={18} className="text-blue-600 dark:text-blue-400" />
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                   TDS Management & Verification
                 </h3>
@@ -105,17 +110,13 @@ export default function TdsVerifyButton({ invoice }) {
                 <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
                   <span>Invoice Total:</span>
                   <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    ₹
-                    {Number(invoice.invoiceAmount || 0).toLocaleString("en-IN")}
+                    ₹{Number(invoice.invoiceAmount || 0).toLocaleString("en-IN")}
                   </span>
                 </div>
                 <div className="mt-1 flex justify-between text-zinc-600 dark:text-zinc-400">
                   <span>Actual Cash/Bank Received:</span>
                   <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                    ₹
-                    {Number(
-                      invoice.paid || invoice.paidAmount || 0,
-                    ).toLocaleString("en-IN")}
+                    ₹{Number(invoice.paid || invoice.paidAmount || 0).toLocaleString("en-IN")}
                   </span>
                 </div>
               </div>
@@ -123,10 +124,7 @@ export default function TdsVerifyButton({ invoice }) {
               {/* Editable TDS Deducted Amount Input */}
               <div>
                 <label className="mb-1 block font-semibold text-zinc-700 dark:text-zinc-300">
-                  TDS Deducted Amount (₹){" "}
-                  <span className="text-zinc-400 font-normal">
-                    (Manual Override)
-                  </span>
+                  TDS Deducted Amount (₹) <span className="text-zinc-400 font-normal">(Manual Override)</span>
                 </label>
                 <input
                   type="number"
@@ -138,8 +136,7 @@ export default function TdsVerifyButton({ invoice }) {
                   placeholder="Enter TDS amount deducted"
                 />
                 <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Default calculated TDS: ₹
-                  {Number(invoice.tdsAmount || 0).toLocaleString("en-IN")}
+                  Default calculated TDS: ₹{Number(invoice.tdsAmount || 0).toLocaleString("en-IN")}
                 </p>
               </div>
 
@@ -157,8 +154,7 @@ export default function TdsVerifyButton({ invoice }) {
                       TDS Verified (Form 26AS Confirmed)
                     </span>
                     <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-                      Check this box when you confirm the client has deposited
-                      the TDS and it reflects in Form 26AS.
+                      Check this box when you confirm the client has deposited the TDS and it reflects in Form 26AS.
                     </p>
                   </div>
                 </label>
@@ -167,8 +163,7 @@ export default function TdsVerifyButton({ invoice }) {
               {/* Notes */}
               <div>
                 <label className="mb-1 block font-medium text-zinc-700 dark:text-zinc-300">
-                  Remarks / Certificate No.{" "}
-                  <span className="text-zinc-400">(Optional)</span>
+                  Remarks / Certificate No. <span className="text-zinc-400">(Optional)</span>
                 </label>
                 <input
                   type="text"
@@ -184,19 +179,11 @@ export default function TdsVerifyButton({ invoice }) {
                 <div className="flex justify-between">
                   <span>Reconciliation equation:</span>
                   <b>
-                    ₹
-                    {(
-                      Number(invoice.paid || invoice.paidAmount || 0) +
-                      (parseFloat(tdsAmount) || 0)
-                    ).toLocaleString("en-IN")}{" "}
-                    / ₹
-                    {Number(invoice.invoiceAmount || 0).toLocaleString("en-IN")}
+                    ₹{(Number(invoice.paid || invoice.paidAmount || 0) + (parseFloat(tdsAmount) || 0)).toLocaleString("en-IN")} / ₹{Number(invoice.invoiceAmount || 0).toLocaleString("en-IN")}
                   </b>
                 </div>
                 <p className="mt-0.5 opacity-80">
-                  Actual Payment Received +{" "}
-                  {verifiedChecked ? "Verified" : "Pending"} TDS totals to
-                  invoice amount.
+                  Actual Payment Received + {verifiedChecked ? "Verified" : "Pending"} TDS totals to invoice amount.
                 </p>
               </div>
             </div>

@@ -519,15 +519,30 @@ export async function createPayment(formData) {
 
   for (const allocation of allocations) {
     if (allocation.tdsAmount !== null && !isNaN(allocation.tdsAmount)) {
-      await db
-        .update(invoices)
-        .set({
-          tdsDeductedAmount: allocation.tdsAmount.toString(),
-          isTdsVerified: allocation.isTdsVerified,
-          tdsVerifiedAt: allocation.isTdsVerified ? new Date() : null,
-          updatedAt: new Date(),
+      const [invCheck] = await db
+        .select({
+          isOpeningBalance: invoices.isOpeningBalance,
+          invoiceNumber: invoices.invoiceNumber,
         })
-        .where(eq(invoices.id, allocation.invoiceId));
+        .from(invoices)
+        .where(eq(invoices.id, allocation.invoiceId))
+        .limit(1);
+
+      const isOpening =
+        Boolean(invCheck?.isOpeningBalance) ||
+        String(invCheck?.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+
+      if (!isOpening) {
+        await db
+          .update(invoices)
+          .set({
+            tdsDeductedAmount: allocation.tdsAmount.toString(),
+            isTdsVerified: allocation.isTdsVerified,
+            tdsVerifiedAt: allocation.isTdsVerified ? new Date() : null,
+            updatedAt: new Date(),
+          })
+          .where(eq(invoices.id, allocation.invoiceId));
+      }
     }
 
     await updateInvoiceFinancials(allocation.invoiceId);

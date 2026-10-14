@@ -52,7 +52,61 @@ export async function updateInvoiceFinancials(invoiceId) {
   // =====================================
   // TDS FINANCIAL CALCULATION
   // =====================================
-  let tdsDeducted = Number(invoice.tdsDeductedAmount || invoice.tdsAmount || 0);
+  const isOpening =
+    Boolean(invoice.isOpeningBalance) ||
+    String(invoice.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+
+  if (isOpening) {
+    const grossInvoiceAmount = Number(
+      invoice.invoiceAmount || invoice.netPayableAmount || 0,
+    );
+    const deductions =
+      Number(invoice.deductionAmount || 0) + Number(invoice.otherCharges || 0);
+    const netBilled = Math.max(0, grossInvoiceAmount - deductions);
+    const outstandingAmount = Math.max(
+      0,
+      Number((netBilled - paidAmount).toFixed(2)),
+    );
+
+    const invoiceStatus = calculateInvoiceStatus({
+      netPayable: netBilled,
+      paid: paidAmount,
+      verifiedTds: 0,
+      dueDate: invoice.dueDate,
+    });
+
+    await db
+      .update(invoices)
+      .set({
+        paidAmount: paidAmount.toString(),
+        outstandingAmount: outstandingAmount.toString(),
+        netPayableAmount: netBilled.toString(),
+        tdsAmount: "0.00",
+        tdsDeductedAmount: "0.00",
+        tdsApplicableUsed: false,
+        tdsRateUsed: "0.00",
+        isTdsVerified: false,
+        tdsVerifiedAt: null,
+        tdsNotes: null,
+        isOpeningBalance: true,
+        status: invoiceStatus.status,
+        updatedAt: new Date(),
+      })
+      .where(eq(invoices.id, invoiceId));
+
+    return {
+      paidAmount,
+      outstandingAmount,
+      netPayableAmount: netBilled,
+      verifiedTds: 0,
+      pendingTds: 0,
+      status: invoiceStatus.status,
+    };
+  }
+
+  let tdsDeducted = Number(
+    invoice.tdsDeductedAmount || invoice.tdsAmount || 0,
+  );
 
   const grossInvoiceAmount = Number(
     invoice.invoiceAmount || invoice.netPayableAmount || 0,
@@ -86,13 +140,12 @@ export async function updateInvoiceFinancials(invoiceId) {
   // OUTSTANDING
   // =====================================
   // Total invoice is settled when paidAmount + verifiedTds reaches netBilled
-  const remainingDue = Number(
-    (netBilled - paidAmount - verifiedTds).toFixed(2),
-  );
+  const remainingDue = Number((netBilled - paidAmount - verifiedTds).toFixed(2));
   // In business accounting, if verified TDS + payments cover the invoice within round-off tolerance (< ₹1.00), invoice is fully settled
-  const isSlightRoundoff =
-    isTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
-  const outstandingAmount = isSlightRoundoff ? 0 : Math.max(0, remainingDue);
+  const isSlightRoundoff = isTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
+  const outstandingAmount = isSlightRoundoff
+    ? 0
+    : Math.max(0, remainingDue);
 
   // =====================================
   // STATUS

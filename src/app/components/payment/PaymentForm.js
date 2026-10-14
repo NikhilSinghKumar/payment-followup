@@ -324,10 +324,16 @@ export default function PaymentForm({
 
         {/* Hidden Allocation Form Inputs */}
         {Object.entries(allocations).map(([invId, allocAmt]) => {
-          const currentTds = tdsState[invId] || {
-            amount: 0,
-            isVerified: false,
-          };
+          const invObj = invoices.find((inv) => String(inv.id) === String(invId));
+          const isOpening =
+            invObj?.isOpeningBalance ||
+            String(invObj?.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+          const currentTds = !isOpening
+            ? tdsState[invId] || {
+                amount: 0,
+                isVerified: false,
+              }
+            : { amount: 0, isVerified: false };
           return (
             <div key={`alloc-group-${invId}`}>
               <input type="hidden" name="allocationInvoiceId" value={invId} />
@@ -692,87 +698,100 @@ export default function PaymentForm({
                           : "bg-white hover:bg-zinc-50/70 dark:bg-zinc-900 dark:hover:bg-zinc-800/40"
                       }`}
                     >
-                      {/* Checkbox */}
-                      <div
-                        className="shrink-0"
-                        title={
-                          isSelected ? "Deselect invoice" : "Select invoice"
-                        }
-                      >
-                        {isSelected ? (
-                          <div className="flex h-4 w-4 items-center justify-center rounded bg-blue-600 text-white shadow-2xs">
-                            <Check size={11} />
-                          </div>
-                        ) : (
-                          <div className="h-4 w-4 rounded border border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-600 dark:bg-zinc-800" />
-                        )}
-                      </div>
-
-                      {/* Invoice Info & Sub-client */}
-                      <div className="w-[180px] shrink-0 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                            {invoice.invoiceNumber}
-                          </span>
-                          {invoice.isOpeningBalance && (
-                            <span className="shrink-0 rounded bg-purple-100 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:bg-purple-950/70 dark:text-purple-300">
-                              Opening Bal
-                            </span>
-                          )}
-                          {invoice.isOverdue && !invoice.isOpeningBalance && (
-                            <span className="shrink-0 rounded bg-red-100 px-1 py-0.2 text-[9px] font-bold uppercase text-red-700 dark:bg-red-950/70 dark:text-red-300">
-                              Overdue
-                            </span>
-                          )}
+                    {/* Checkbox */}
+                    <div
+                      className="shrink-0"
+                      title={isSelected ? "Deselect invoice" : "Select invoice"}
+                    >
+                      {isSelected ? (
+                        <div className="flex h-4 w-4 items-center justify-center rounded bg-blue-600 text-white shadow-2xs">
+                          <Check size={11} />
                         </div>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-400">
-                          {invoice.subClientName && (
-                            <span
-                              className="inline-block max-w-[95px] truncate rounded bg-purple-50 px-1 py-0.2 font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300"
-                              title={invoice.subClientName}
-                            >
-                              {invoice.subClientName}
-                            </span>
-                          )}
-                          <span>Due: {formatDate(invoice.dueDate)}</span>
-                        </div>
-                      </div>
+                      ) : (
+                        <div className="h-4 w-4 rounded border border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-600 dark:bg-zinc-800" />
+                      )}
+                    </div>
 
-                      {/* AWB Information Section */}
-                      <div className="flex-1 min-w-[150px]">
-                        <AwbDetailsPopover
-                          awbs={invoice.awbs}
-                          invoiceNumber={invoice.invoiceNumber}
-                        />
-                      </div>
-
-                      {/* Financial Values */}
-                      <div className="w-[120px] shrink-0 text-right">
-                        <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                          {formatCurrency(invoice.due || 0)}
-                        </div>
-                        <div className="text-[10px] text-zinc-400">
-                          Total: {formatCurrency(invoice.invoiceAmount || 0)}
-                        </div>
-                      </div>
-
-                      {/* Allocation Status Badge */}
-                      <div className="w-[130px] shrink-0 text-right">
-                        {isSelected ? (
-                          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                            <Check size={11} />
-                            Settling: {formatCurrency(currentAllocation)}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-zinc-400 font-normal">
-                            Click to settle
+                    {/* Invoice Info & Sub-client */}
+                    <div className="w-[180px] shrink-0 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                          {invoice.invoiceNumber}
+                        </span>
+                        {invoice.isOpeningBalance && (
+                          <span className="shrink-0 rounded bg-purple-100 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:bg-purple-950/70 dark:text-purple-300">
+                            Opening Bal
                           </span>
                         )}
+                        {invoice.isOverdue && !invoice.isOpeningBalance && (
+                          <span className="shrink-0 rounded bg-red-100 px-1 py-0.2 text-[9px] font-bold uppercase text-red-700 dark:bg-red-950/70 dark:text-red-300">
+                            Overdue
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-400">
+                        {invoice.subClientName && (
+                          <span
+                            className="inline-block max-w-[95px] truncate rounded bg-purple-50 px-1 py-0.2 font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300"
+                            title={invoice.subClientName}
+                          >
+                            {invoice.subClientName}
+                          </span>
+                        )}
+                        <span>Due: {formatDate(invoice.dueDate)}</span>
                       </div>
                     </div>
 
-                    {/* Inline TDS Control Strip when invoice is selected */}
-                    {isSelected && (
+                    {/* AWB Information Section */}
+                    <div className="flex-1 min-w-[150px]">
+                      <AwbDetailsPopover
+                        awbs={invoice.awbs}
+                        invoiceNumber={invoice.invoiceNumber}
+                      />
+                    </div>
+
+                    {/* Financial Values */}
+                    <div className="w-[120px] shrink-0 text-right">
+                      <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                        {formatCurrency(invoice.due || 0)}
+                      </div>
+                      <div className="text-[10px] text-zinc-400">
+                        Total: {formatCurrency(invoice.invoiceAmount || 0)}
+                      </div>
+                    </div>
+
+                    {/* Allocation Status Badge */}
+                    <div className="w-[130px] shrink-0 text-right">
+                      {isSelected ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                          <Check size={11} />
+                          Settling: {formatCurrency(currentAllocation)}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-zinc-400 font-normal">
+                          Click to settle
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Inline TDS Control Strip when invoice is selected */}
+                  {isSelected && (
+                    invoice.isOpeningBalance ||
+                    String(invoice.invoiceNumber || "").toUpperCase().startsWith("OPENING") ? (
+                      <div
+                        key={`tds-strip-${invoice.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex flex-wrap items-center justify-between gap-3 border-t border-purple-100 bg-purple-50/50 px-4 py-2 text-xs text-purple-800 dark:border-purple-900/40 dark:bg-purple-950/30 dark:text-purple-300"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">Brought-Forward Opening Balance:</span>
+                          <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                            TDS is not applicable to opening balances. Settle directly through payment.
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
                       <div
                         key={`tds-strip-${invoice.id}`}
                         onClick={(e) => e.stopPropagation()}
@@ -783,12 +802,8 @@ export default function PaymentForm({
                           <label className="flex items-center gap-2 cursor-pointer font-medium text-zinc-700 dark:text-zinc-200">
                             <input
                               type="checkbox"
-                              checked={Boolean(
-                                tdsState[invoice.id]?.isVerified,
-                              )}
-                              onChange={() =>
-                                handleTdsVerifiedToggle(invoice.id)
-                              }
+                              checked={Boolean(tdsState[invoice.id]?.isVerified)}
+                              onChange={() => handleTdsVerifiedToggle(invoice.id)}
                               className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
                             />
                             <span>TDS Verified (Form 26AS)</span>
@@ -819,10 +834,7 @@ export default function PaymentForm({
                               placeholder="0.00"
                               value={tdsState[invoice.id]?.amount ?? ""}
                               onChange={(e) =>
-                                handleTdsAmountChange(
-                                  invoice.id,
-                                  e.target.value,
-                                )
+                                handleTdsAmountChange(invoice.id, e.target.value)
                               }
                               className="h-7 w-28 rounded border border-zinc-300 bg-white px-2 text-xs font-semibold text-zinc-800 shadow-2xs focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                             />
@@ -832,42 +844,24 @@ export default function PaymentForm({
                         {/* Reconciliation Math feedback */}
                         <div className="flex items-center gap-2 text-[11px] text-zinc-600 dark:text-zinc-300">
                           <span>
-                            Paid:{" "}
-                            <b>
-                              ₹
-                              {Number(currentAllocation).toLocaleString(
-                                "en-IN",
-                              )}
-                            </b>{" "}
-                            + TDS:{" "}
-                            <b>
-                              ₹
-                              {Number(
-                                tdsState[invoice.id]?.amount || 0,
-                              ).toLocaleString("en-IN")}
-                            </b>{" "}
-                            ={" "}
+                            Paid: <b>₹{Number(currentAllocation).toLocaleString("en-IN")}</b> + TDS:{" "}
+                            <b>₹{Number(tdsState[invoice.id]?.amount || 0).toLocaleString("en-IN")}</b> ={" "}
                             <b className="text-blue-700 dark:text-blue-300">
-                              ₹
-                              {(
-                                Number(currentAllocation) +
-                                Number(tdsState[invoice.id]?.amount || 0)
-                              ).toLocaleString("en-IN")}
+                              ₹{(Number(currentAllocation) + Number(tdsState[invoice.id]?.amount || 0)).toLocaleString("en-IN")}
                             </b>
                           </span>
-                          {Number(currentAllocation) +
-                            Number(tdsState[invoice.id]?.amount || 0) >=
-                            Number(invoice.invoiceAmount || 0) && (
+                          {(Number(currentAllocation) + Number(tdsState[invoice.id]?.amount || 0)) >= Number(invoice.invoiceAmount || 0) && (
                             <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 px-1.5 py-0.2 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                               <Check size={10} /> Full Match
                             </span>
                           )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    )
+                  )}
+                </div>
+              );
+            })}
             </div>
           )}
 

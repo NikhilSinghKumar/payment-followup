@@ -225,12 +225,6 @@ export async function fetchClientFinancialSummary(clientId, companyId = null) {
   // Unallocated payment funds currently held on account
   const onAccountAmount = Math.max(paymentsReceived - totalAllocated, 0);
 
-  // Net Outstanding = Net Payable - Payments Received
-  const netOutstanding = Math.max(totalNetPayable - paymentsReceived, 0);
-
-  // True Credit Balance = Only when client payments received exceed total net payable
-  const creditBalance = Math.max(paymentsReceived - totalNetPayable, 0);
-
   const totalVerifiedTds = normalizedInvoiceData.reduce(
     (sum, item) => sum + Number(item.verifiedTds || 0),
     0,
@@ -239,6 +233,20 @@ export async function fetchClientFinancialSummary(clientId, companyId = null) {
   const totalPendingTds = normalizedInvoiceData.reduce(
     (sum, item) => sum + Number(item.pendingTds || 0),
     0,
+  );
+
+  // Net Outstanding = (Total Invoice Amount - Total Payment Received - Total Verified TDS)
+  // Per TDS management requirements: If payment is done, net outstanding is (Total Invoice Amount - total payment received - tds verified).
+  // If payment is not done, total outstanding is the net invoice amount (not net receivable/payable).
+  const netOutstanding = Math.max(
+    0,
+    Number((totalAmount - paymentsReceived - totalVerifiedTds).toFixed(2)),
+  );
+
+  // True Credit Balance = Only when client payments received + verified TDS exceed total invoice amount
+  const creditBalance = Math.max(
+    0,
+    Number((paymentsReceived + totalVerifiedTds - totalAmount).toFixed(2)),
   );
 
   return {

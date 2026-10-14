@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { invoices, clients, paymentAllocations, payments } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/auth";
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql, not, ilike } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { updateInvoiceFinancials } from "@/lib/invoice/updateInvoiceFinancials";
 
@@ -41,10 +41,12 @@ export async function getTdsManagementData({
     .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
     .orderBy(clients.companyName);
 
-  // 2. Query invoices that have TDS or belong to clients with TDS
+  // 2. Query invoices that have TDS or belong to clients with TDS (strictly excluding Opening Balance invoices)
   const conditions = [
     eq(invoices.companyId, companyId),
     isNull(invoices.deletedAt),
+    eq(invoices.isOpeningBalance, false),
+    not(ilike(invoices.invoiceNumber, "OPENING%")),
   ];
 
   if (clientId && clientId !== "ALL") {
@@ -86,16 +88,30 @@ export async function getTdsManagementData({
     const grossInvoiceAmount = Number(inv.invoiceAmount || 0);
     const actualPaymentReceived = Number(inv.paidAmount || 0);
 
-    // Calculated expected TDS based on rate and basic amount
-    const expectedTds = Number(inv.tdsAmount || 0);
+    // Calculated expected TDS based on rate and basic amount (rounded to nearest rupee per Sec 288B)
+    const rawExpected = Number(inv.tdsAmount || 0);
+    const expectedTds = Math.round(rawExpected);
 
     // Actual deducted TDS (defaults to expected TDS if not explicitly entered)
-    const rawDeducted =
+    let rawDeducted =
       inv.tdsDeductedAmount !== null &&
       inv.tdsDeductedAmount !== undefined &&
       Number(inv.tdsDeductedAmount) > 0
         ? Number(inv.tdsDeductedAmount)
         : expectedTds;
+
+    // Under Section 288B of Indian Income Tax Act, deductors round TDS to whole rupees.
+    // If client paid invoice and the unpaid balance matches TDS within round-off tolerance (<= ₹1.00),
+    // align to the exact balance withheld by the client so there is zero points difference.
+    const unpaidBalance = Number((grossInvoiceAmount - actualPaymentReceived).toFixed(2));
+    if (
+      actualPaymentReceived > 0 &&
+      unpaidBalance > 0 &&
+      rawDeducted > 0 &&
+      Math.abs(unpaidBalance - rawDeducted) <= 1.0
+    ) {
+      rawDeducted = unpaidBalance;
+    }
 
     const tdsDeducted = rawDeducted;
     const isVerified = Boolean(inv.isTdsVerified);
@@ -197,10 +213,12 @@ export async function toggleTdsVerification(invoiceId, isVerified) {
 
   const numInvoiceId = Number(invoiceId);
 
-  // Check invoice exists
+  // Check invoice exists and is not an opening balance
   const [existing] = await db
     .select({
       id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      isOpeningBalance: invoices.isOpeningBalance,
       tdsAmount: invoices.tdsAmount,
       tdsDeductedAmount: invoices.tdsDeductedAmount,
     })
@@ -216,6 +234,13 @@ export async function toggleTdsVerification(invoiceId, isVerified) {
 
   if (!existing) {
     throw new Error("Invoice not found.");
+  }
+
+  if (
+    existing.isOpeningBalance ||
+    String(existing.invoiceNumber || "").toUpperCase().startsWith("OPENING")
+  ) {
+    throw new Error("TDS does not apply to Opening Balance invoices.");
   }
 
   // If deducted amount is not set, set it to the default tdsAmount
@@ -269,7 +294,11 @@ export async function updateInvoiceTds({
   }
 
   const [existing] = await db
-    .select({ id: invoices.id })
+    .select({
+      id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      isOpeningBalance: invoices.isOpeningBalance,
+    })
     .from(invoices)
     .where(
       and(
@@ -282,6 +311,13 @@ export async function updateInvoiceTds({
 
   if (!existing) {
     throw new Error("Invoice not found.");
+  }
+
+  if (
+    existing.isOpeningBalance ||
+    String(existing.invoiceNumber || "").toUpperCase().startsWith("OPENING")
+  ) {
+    throw new Error("TDS does not apply to Opening Balance invoices.");
   }
 
   await db

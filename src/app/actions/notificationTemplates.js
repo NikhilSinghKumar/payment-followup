@@ -305,8 +305,13 @@ export async function renderTemplatePreview({ type, subject, body }) {
       typeSpecificData = {
         clientName: MOCK_DATA.clientName,
         companyName: MOCK_DATA.companyName,
-        amount: isSuspension ? "67,250.00" : "45,250.00",
-        outstandingAmount: isSuspension ? "67,250.00" : "45,250.00",
+        amount: "67,250.00",
+        outstandingAmount: "67,250.00",
+        totalOutstanding: 67250,
+        totalNetPayable: 67250,
+        netOutstanding: 67250,
+        restDueAmount: 67250,
+        totalInvoiceAmount: 67250,
         overdueDays: isSuspension ? "25" : "14",
         count: "2",
         invoices: [

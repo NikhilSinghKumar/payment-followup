@@ -86,9 +86,29 @@ export async function getInvoiceReminderData(invoiceId) {
     );
 
   const totalPaid = Number(paymentResult[0]?.total || 0);
+  const grossInvoiceAmount = Number(invoice.invoiceAmount || 0);
+  const deductions =
+    Number(invoice.deductionAmount || 0) + Number(invoice.otherCharges || 0);
+  const netInvoiceAmount = Math.max(0, grossInvoiceAmount - deductions);
+  const isTdsVerified = Boolean(invoice.isTdsVerified);
+  const verifiedTds = isTdsVerified
+    ? Number(invoice.tdsDeductedAmount || invoice.tdsAmount || 0)
+    : 0;
+
+  // In due/overdue emails:
+  // If payment is done: net outstanding = (Total Invoice Amount - total payment received - tds verified)
+  // If payment is not done: total outstanding = net invoice amount (not net receivable/payable)
+  const remainingDue = Number(
+    (netInvoiceAmount - totalPaid - verifiedTds).toFixed(2),
+  );
+  const isSlightRoundoff =
+    isTdsVerified && remainingDue <= 0.99 && remainingDue >= -0.99;
+  const outstandingAmount = isSlightRoundoff ? 0 : Math.max(0, remainingDue);
+
   const statusSummary = calculateInvoiceStatus({
-    netPayable: invoice.netPayableAmount,
+    netPayable: netInvoiceAmount,
     paid: totalPaid,
+    verifiedTds,
     dueDate: invoice.dueDate,
   });
 
@@ -148,6 +168,14 @@ export async function getInvoiceReminderData(invoiceId) {
     invoice: {
       ...invoice,
       ...statusSummary,
+      invoiceAmount: netInvoiceAmount,
+      netPayableAmount: netInvoiceAmount,
+      outstandingAmount,
+      due: outstandingAmount,
+      totalPaid,
+      paid: totalPaid,
+      verifiedTds,
+      isTdsVerified,
       awbs,
     },
     client: {
@@ -325,7 +353,7 @@ export async function sendInvoiceReminder({
         break;
       case "OVERDUE":
       default:
-        subject = `Overdue Payment Reminder"})`;
+        subject = `Overdue Payment Reminder: Invoice #${invoice.invoiceNumber} (${invoice.dueDaysText || "Overdue"})`;
         headerTitle = "Overdue Payment Reminder";
         headerColor = "#2654b6"; // Orange
         break;
