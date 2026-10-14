@@ -354,6 +354,17 @@ export async function sendBulkPaymentConfirmationEmails({
         minimumFractionDigits: 2,
       });
 
+      // Fetch authoritative client financial summary from single source of truth (matching clients/[id]/page.js)
+      let clientSummary = null;
+      try {
+        clientSummary = await fetchClientFinancialSummary(clientId, companyId);
+      } catch (err) {
+        console.warn(
+          `[sendBulkPaymentConfirmationEmails] Error fetching client summary for #${clientId}:`,
+          err,
+        );
+      }
+
       // Aggregate settled invoices across payments
       const settledInvoicesMap = new Map();
 
@@ -417,14 +428,14 @@ export async function sendBulkPaymentConfirmationEmails({
             const invoiceFaceAmount =
               rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
             const netPayable = rawNet > 0 ? rawNet : invoiceFaceAmount;
-            const isVerified = Boolean(
-              inv.isTdsVerified ||
-              inv.tdsStatus === "verified" ||
-              inv.isVerified ||
-              Boolean(inv.tdsVerifiedAt) ||
-              (Number(clientSummary?.totalVerifiedTds || 0) > 0 &&
-                Number(inv.tdsDeductedAmount || inv.tdsAmount || 0) > 0),
-            );
+            const isVerified =
+              typeof inv.isTdsVerified === "boolean"
+                ? inv.isTdsVerified
+                : Boolean(
+                    inv.tdsStatus === "verified" ||
+                    inv.isVerified ||
+                    Boolean(inv.tdsVerifiedAt),
+                  );
             const tdsSettled = Number(
               alloc.allocatedTds ??
                 alloc.tdsSettled ??
@@ -439,7 +450,11 @@ export async function sendBulkPaymentConfirmationEmails({
               const existing = settledInvoicesMap.get(invId);
               existing.settledAmount += allocated;
               existing.tdsSettled = (existing.tdsSettled || 0) + tdsSettled;
-              if (isVerified) existing.isTdsVerified = true;
+              if (isVerified) {
+                existing.isTdsVerified = true;
+              } else {
+                existing.isTdsVerified = false;
+              }
               const exVerifiedTds = existing.isTdsVerified ? existing.tdsSettled : 0;
               existing.remainingBalance = Math.max(
                 0,
@@ -485,14 +500,14 @@ export async function sendBulkPaymentConfirmationEmails({
           const invoiceFaceAmount =
             rawGross > 0 ? rawGross : rawNet > 0 ? rawNet : 0;
           const netPayable = rawNet > 0 ? rawNet : invoiceFaceAmount;
-          const isVerified = Boolean(
-            inv.isTdsVerified ||
-            inv.tdsStatus === "verified" ||
-            inv.isVerified ||
-            Boolean(inv.tdsVerifiedAt) ||
-            (Number(clientSummary?.totalVerifiedTds || 0) > 0 &&
-              Number(inv.tdsDeductedAmount || inv.tdsAmount || 0) > 0),
-          );
+          const isVerified =
+            typeof inv.isTdsVerified === "boolean"
+              ? inv.isTdsVerified
+              : Boolean(
+                  inv.tdsStatus === "verified" ||
+                  inv.isVerified ||
+                  Boolean(inv.tdsVerifiedAt),
+                );
           const tdsSettled = Number(
             inv.tdsDeductedAmount ?? inv.tdsAmount ?? 0,
           );
@@ -511,7 +526,11 @@ export async function sendBulkPaymentConfirmationEmails({
             const existing = settledInvoicesMap.get(invId);
             existing.settledAmount += allocated;
             existing.tdsSettled = (existing.tdsSettled || 0) + tdsSettled;
-            if (isVerified) existing.isTdsVerified = true;
+            if (isVerified) {
+              existing.isTdsVerified = true;
+            } else {
+              existing.isTdsVerified = false;
+            }
             const exVerifiedTds = existing.isTdsVerified ? existing.tdsSettled : 0;
             existing.remainingBalance = Math.max(
               0,
@@ -537,17 +556,6 @@ export async function sendBulkPaymentConfirmationEmails({
       }
 
       const settledInvoices = Array.from(settledInvoicesMap.values());
-
-      // Fetch authoritative client financial summary from single source of truth (matching clients/[id]/page.js)
-      let clientSummary = null;
-      try {
-        clientSummary = await fetchClientFinancialSummary(clientId, companyId);
-      } catch (err) {
-        console.warn(
-          `[sendBulkPaymentConfirmationEmails] Error fetching client summary for #${clientId}:`,
-          err,
-        );
-      }
 
       // Net Payable Amount for a client should strictly be totalNetPayable matching clients/[id]/page.js
       const resolvedTotalNetPayable =
@@ -625,19 +633,22 @@ export async function sendBulkPaymentConfirmationEmails({
       const finalCustomNote = customNote || customMessage || "";
 
       const totalBatchTds =
-        Number(clientSummary?.totalVerifiedTds ?? 0) > 0
-          ? Number(clientSummary.totalVerifiedTds)
-          : settledInvoices.reduce(
-              (sum, inv) => sum + Number(inv.tdsSettled || 0),
-              0,
-            );
+        settledInvoices.reduce(
+          (sum, inv) => sum + Number(inv.tdsSettled || 0),
+          0,
+        ) ||
+        clientPayments.reduce(
+          (sum, p) => sum + Number(p.tdsAmount || 0),
+          0,
+        );
 
+      const invoicesWithTds = settledInvoices.filter(
+        (i) => Number(i.tdsSettled || 0) > 0,
+      );
       const isBatchTdsVerified =
-        Number(clientSummary?.totalVerifiedTds ?? 0) > 0 ||
-        (settledInvoices.length > 0
-          ? settledInvoices.every((i) => i.isTdsVerified)
-          : false) ||
-        settledInvoices.some((i) => i.isTdsVerified);
+        invoicesWithTds.length > 0
+          ? invoicesWithTds.every((i) => i.isTdsVerified)
+          : true;
 
       // Render standard unified email using renderEmail (with NOTIFICATION_TYPES.PAYMENT_RECEIVED)
       const emailHtml = renderEmail({

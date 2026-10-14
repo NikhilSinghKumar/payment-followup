@@ -876,13 +876,26 @@ export function renderEmail(props = {}) {
         0,
     );
 
-    const isBatchVerified = Boolean(
-      vars.isTdsVerified ||
-        props.paymentInfo?.isTdsVerified ||
-        (Number(vars.totalVerifiedTds || props.paymentInfo?.totalVerifiedTds || props.clientSummary?.totalVerifiedTds || 0) > 0) ||
-        (Array.isArray(settledInvoicesList) &&
-          settledInvoicesList.some((i) => i.isTdsVerified || i.tdsVerifiedAt || i.tdsStatus === "verified" || i.isVerified))
+    const hasAnyInvoicesWithTds = (settledInvoicesList || []).some(
+      (i) => Number(i.tdsSettled || i.tdsAmount || i.tdsDeductedAmount || 0) > 0,
     );
+    const isBatchVerified = hasAnyInvoicesWithTds
+      ? (settledInvoicesList || [])
+          .filter((i) => Number(i.tdsSettled || i.tdsAmount || i.tdsDeductedAmount || 0) > 0)
+          .every((i) =>
+            typeof i.isTdsVerified === "boolean"
+              ? i.isTdsVerified
+              : Boolean(i.tdsStatus === "verified" || i.tdsVerifiedAt),
+          )
+      : typeof vars.isTdsVerified === "boolean"
+        ? vars.isTdsVerified
+        : typeof props.paymentInfo?.isTdsVerified === "boolean"
+          ? props.paymentInfo.isTdsVerified
+          : Boolean(
+              vars.isTdsVerified ||
+                props.paymentInfo?.isTdsVerified ||
+                Number(vars.totalVerifiedTds || props.paymentInfo?.totalVerifiedTds || 0) > 0,
+            );
 
     const normalizedSettledInvoices = (settledInvoicesList || []).map(
       (inv, idx) => {
@@ -904,13 +917,20 @@ export function renderEmail(props = {}) {
             inv.cashSettled ??
             0,
         );
-        const isInvTdsVerified = Boolean(
-          inv.isTdsVerified ||
-            inv.tdsStatus === "verified" ||
-            inv.isVerified ||
-            Boolean(inv.tdsVerifiedAt) ||
-            isBatchVerified,
-        );
+        const isInvTdsVerified =
+          typeof inv.isTdsVerified === "boolean"
+            ? inv.isTdsVerified
+            : typeof inv.isVerified === "boolean"
+              ? inv.isVerified
+              : inv.tdsStatus === "verified"
+                ? true
+                : inv.tdsStatus === "pending"
+                  ? false
+                  : Boolean(
+                      inv.tdsVerifiedAt ||
+                      (Number(inv.verifiedTds || 0) > 0) ||
+                      (isBatchVerified && batchTdsAmount > 0),
+                    );
         let tdsSettled = Number(
           inv.tdsSettled ??
             inv.allocatedTds ??

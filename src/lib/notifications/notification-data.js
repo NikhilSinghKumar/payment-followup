@@ -705,16 +705,21 @@ export async function getClientPaymentReceivedData({
           const grossInvoiceAmount = Number(
             item.invoiceAmount ?? inv?.invoiceAmount ?? 0,
           );
-          const isTdsVerified = Boolean(
-            inv?.isTdsVerified ||
-            Boolean(inv?.tdsVerifiedAt) ||
-            item.isTdsVerified ||
-            item.tdsStatus === "verified" ||
-            item.isVerified ||
-            paymentDetails.isTdsVerified ||
-            (Number(clientFinancials?.totalVerifiedTds || 0) > 0 &&
-              Number(inv?.tdsDeductedAmount || item.tdsSettled || 0) > 0),
-          );
+          const isTdsVerified =
+            typeof inv?.isTdsVerified === "boolean"
+              ? inv.isTdsVerified
+              : typeof item.isTdsVerified === "boolean"
+                ? item.isTdsVerified
+                : typeof item.isVerified === "boolean"
+                  ? item.isVerified
+                  : item.tdsStatus === "verified"
+                    ? true
+                    : item.tdsStatus === "pending"
+                      ? false
+                      : Boolean(
+                          inv?.tdsVerifiedAt ||
+                          paymentDetails.isTdsVerified,
+                        );
           const cashSettled = Number(
             item.allocatedAmount ??
               item.cashSettled ??

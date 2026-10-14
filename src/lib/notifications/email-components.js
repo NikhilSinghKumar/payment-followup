@@ -1718,13 +1718,19 @@ export function SingleInvoiceDataTable({
         : (invoice.paidAmount ?? invoice.paid ?? 0),
   );
 
-  const isTdsVerified = Boolean(
-    invoice.isTdsVerified ||
-      invoice.tdsStatus === "verified" ||
-      invoice.isVerified ||
-      Boolean(invoice.tdsVerifiedAt) ||
-      Boolean(Number(invoice.verifiedTds || 0) > 0),
-  );
+  const isTdsVerified =
+    typeof invoice.isTdsVerified === "boolean"
+      ? invoice.isTdsVerified
+      : typeof invoice.isVerified === "boolean"
+        ? invoice.isVerified
+        : invoice.tdsStatus === "verified"
+          ? true
+          : invoice.tdsStatus === "pending"
+            ? false
+            : Boolean(
+                invoice.tdsVerifiedAt ||
+                Number(invoice.verifiedTds || 0) > 0,
+              );
   const rawTds = Number(
     invoice.verifiedTds ??
       invoice.tdsDeductedAmount ??
@@ -2302,16 +2308,20 @@ export function ClientPaymentSettlementTable({
           ? rawNet
           : Number(inv.totalAmount || 0);
 
-    const isInvTdsVerified = Boolean(
-      inv.isTdsVerified ||
-        inv.tdsStatus === "verified" ||
-        inv.isVerified ||
-        Boolean(inv.tdsVerifiedAt) ||
-        Boolean(Number(inv.verifiedTds || 0) > 0) ||
-        paymentInfo?.isTdsVerified ||
-        (Number(paymentInfo?.totalVerifiedTds || 0) > 0) ||
-        (Number(paymentInfo?.clientSummary?.totalVerifiedTds || 0) > 0),
-    );
+    const isInvTdsVerified =
+      typeof inv.isTdsVerified === "boolean"
+        ? inv.isTdsVerified
+        : typeof inv.isVerified === "boolean"
+          ? inv.isVerified
+          : inv.tdsStatus === "verified"
+            ? true
+            : inv.tdsStatus === "pending"
+              ? false
+              : Boolean(
+                  inv.tdsVerifiedAt ||
+                  Number(inv.verifiedTds || 0) > 0 ||
+                  paymentInfo?.isTdsVerified,
+                );
     let tdsSettled = Number(
       inv.tdsSettled ??
         inv.allocatedTds ??
@@ -2426,14 +2436,13 @@ export function ClientPaymentSettlementTable({
   );
 
   const isBatchTdsVerified = Boolean(
-    paymentInfo?.isTdsVerified ||
-      paymentInfo?.tdsStatus === "verified" ||
-      (Number(paymentInfo?.totalVerifiedTds || 0) > 0) ||
-      (Number(paymentInfo?.clientSummary?.totalVerifiedTds || 0) > 0) ||
-      (hasInvoices
-        ? totals.pendingTdsNow === 0 && totals.tdsNow > 0
-        : false) ||
-      (hasInvoices && rows.some((r) => r.isTdsVerified && r.tds > 0)),
+    hasInvoices
+      ? totals.tdsNow > 0
+        ? totals.pendingTdsNow === 0
+        : true
+      : paymentInfo?.isTdsVerified ||
+        paymentInfo?.tdsStatus === "verified" ||
+        (Number(paymentInfo?.totalVerifiedTds || 0) > 0),
   );
 
   const effectiveVerifiedTds = isBatchTdsVerified
