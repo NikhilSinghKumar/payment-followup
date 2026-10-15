@@ -79,7 +79,7 @@ export default function TdsVerifyButton({ invoice }) {
         ) : (
           <>
             <Clock size={14} className="text-amber-600 dark:text-amber-400" />
-            <span>TDS Pending (₹{currentTds.toLocaleString("en-IN")})</span>
+            <span>TDS Pending</span>
           </>
         )}
       </button>
