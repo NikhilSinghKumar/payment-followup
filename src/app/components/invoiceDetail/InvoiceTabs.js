@@ -42,14 +42,14 @@ export default function InvoiceTabs({
   ];
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="rounded-xl border border-zinc-200 bg-white shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
       {/* TAB HEADER */}
-      <div className="flex gap-2 border-b border-zinc-200 p-3 dark:border-zinc-800">
+      <div className="flex gap-1.5 border-b border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
         {tabs.map((item) => (
           <button
             key={item.key}
             onClick={() => setTab(item.key)}
-            className={`rounded-lg px-4 py-2 text-sm font-medium cursor-pointer transition ${
+            className={`rounded-lg px-2.5 py-1 text-xs font-semibold cursor-pointer transition ${
               tab === item.key
                 ? "bg-blue-600 text-white shadow-2xs"
                 : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
@@ -61,7 +61,7 @@ export default function InvoiceTabs({
       </div>
 
       {/* TAB CONTENT */}
-      <div className="p-4 sm:p-5">
+      <div className="p-2.5 sm:p-3">
         {tab === "overview" && <OverviewTab invoice={invoice} />}
 
         {tab === "awbs" && <AwbsTab invoiceId={invoiceId} awbs={awbs} />}

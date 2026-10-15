@@ -100,201 +100,243 @@ export default function InvoicesTableClient({ invoices = [] }) {
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
         <div className="overflow-x-auto [scrollbar-width:thin]">
-          <div className="min-w-[1140px]">
+          <table className="w-full table-auto border-collapse text-left text-xs">
             {/* Table Header */}
-            <div className="grid grid-cols-[36px_38px_2fr_1fr_1.1fr_1fr_1fr_1fr_100px_100px_130px] items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300">
-              <div className="flex items-center justify-center">
-                <input
-                  type="checkbox"
-                  checked={allEligibleSelected}
-                  onChange={toggleSelectAll}
-                  title="Select all pending invoices"
-                  className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-              <div>S.N.</div>
-              <div>Company</div>
-              <div className="text-center">Invoice No.</div>
-              <div className="text-center pl-2">
-                <SortDropdown />
-              </div>
-              <div className="text-center">Paid</div>
-              <div className="text-center">TDS</div>
-              <div className="text-center">Outstanding</div>
-              <div className="text-center">Due Date</div>
-              <div className="text-center">Status</div>
-              <div className="text-center">Actions</div>
-            </div>
+            <thead>
+              <tr className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300">
+                <th className="w-8 px-2.5 py-2.5 text-center">
+                  <input
+                    type="checkbox"
+                    checked={allEligibleSelected}
+                    onChange={toggleSelectAll}
+                    title="Select all pending invoices"
+                    className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                </th>
+                <th className="w-10 px-2 py-2.5 text-center text-zinc-500">
+                  S.N.
+                </th>
+                <th className="px-3 py-2.5 text-left font-semibold">Company</th>
+                <th className="whitespace-nowrap px-2.5 py-2.5 text-center font-semibold">
+                  Invoice No.
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2.5 text-right font-semibold">
+                  <div className="inline-flex items-center justify-end">
+                    <SortDropdown />
+                  </div>
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2.5 text-right font-semibold">
+                  Paid
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2.5 text-center font-semibold">
+                  TDS
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2.5 text-right font-semibold">
+                  Outstanding
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2.5 text-center font-semibold">
+                  Due Date
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2.5 text-center font-semibold">
+                  Status
+                </th>
+                <th className="whitespace-nowrap px-3 py-2.5 text-center font-semibold sticky right-0 z-20 bg-zinc-50 dark:bg-zinc-800 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                  Actions
+                </th>
+              </tr>
+            </thead>
 
-            {/* Table Rows */}
-            {invoices.length > 0 ? (
-              invoices.map((inv, index) => {
-                let isOverdue = false;
-                let formattedDate = "—";
+            {/* Table Body */}
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+              {invoices.length > 0 ? (
+                invoices.map((inv, index) => {
+                  let isOverdue = false;
+                  let formattedDate = "—";
 
-                if (inv.dueDate) {
-                  const due = new Date(inv.dueDate);
-                  due.setHours(0, 0, 0, 0);
-                  isOverdue = due < today;
-                  formattedDate = formatDateDisplay(inv.dueDate);
-                }
+                  if (inv.dueDate) {
+                    const due = new Date(inv.dueDate);
+                    due.setHours(0, 0, 0, 0);
+                    isOverdue = due < today;
+                    formattedDate = formatDateDisplay(inv.dueDate);
+                  }
 
-                const isSelected = selectedIds.includes(inv.id);
-                const isPendingDue =
-                  Number(inv.outstandingAmount || inv.due || 0) > 0;
+                  const isSelected = selectedIds.includes(inv.id);
+                  const isPendingDue =
+                    Number(inv.outstandingAmount || inv.due || 0) > 0;
 
-                return (
-                  <div
-                    key={inv.id}
-                    onClick={(e) => {
-                      // If clicked on action links or inputs, do not toggle row selection
-                      if (e.target.closest("a, button, input")) return;
-                      if (isPendingDue) toggleSelectInvoice(inv.id);
-                    }}
-                    className={`grid grid-cols-[36px_38px_2fr_1fr_1.1fr_1fr_1fr_1fr_100px_100px_130px] items-center border-b border-zinc-100 px-4 py-1.5 text-xs transition-colors dark:border-zinc-800/60 ${
-                      isSelected
-                        ? "bg-blue-50/60 dark:bg-blue-950/30"
-                        : "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
-                    } ${isPendingDue ? "cursor-pointer" : ""}`}
-                  >
-                    {/* Selection Checkbox */}
-                    <div className="flex items-center justify-center">
-                      {isPendingDue ? (
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSelectInvoice(inv.id)}
-                          className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      ) : (
-                        <span className="text-[10px] text-zinc-300 dark:text-zinc-600">
-                          —
-                        </span>
-                      )}
-                    </div>
-
-                    {/* S.N. */}
-                    <div className="font-medium text-zinc-700 dark:text-zinc-400">
-                      {index + 1}
-                    </div>
-
-                    {/* Company */}
-                    <div className="font-medium text-zinc-800 truncate pr-3 dark:text-zinc-200">
-                      {inv.companyName ?? "Unknown"}
-                      {inv.companyCode && (
-                        <span className="ml-1 text-[10px] text-zinc-400">
-                          ({inv.companyCode})
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Invoice Number */}
-                    <div className="font-medium text-center text-zinc-800 whitespace-nowrap dark:text-zinc-200">
-                      {inv.invoiceNumber ?? "—"}
-                    </div>
-
-                    {/* Amount */}
-                    <div className="font-medium text-center text-zinc-800 whitespace-nowrap dark:text-zinc-200">
-                      {formatCurrency(inv.invoiceAmount)}
-                    </div>
-
-                    {/* Paid */}
-                    <div className="font-medium text-center text-emerald-600 whitespace-nowrap dark:text-emerald-400">
-                      {formatCurrency(inv.paidAmount || 0)}
-                    </div>
-
-                    {/* TDS */}
-                    <div className="font-medium text-center whitespace-nowrap">
-                      {Number(
-                        inv.tdsDeducted ||
-                          inv.tdsDeductedAmount ||
-                          inv.tdsAmount ||
-                          0,
-                      ) > 0 ? (
-                        <div className="flex flex-col items-center">
-                          <span className="text-zinc-800 dark:text-zinc-200">
-                            {formatCurrency(
-                              inv.tdsDeducted ||
-                                inv.tdsDeductedAmount ||
-                                inv.tdsAmount,
-                            )}
+                  return (
+                    <tr
+                      key={inv.id}
+                      onClick={(e) => {
+                        if (e.target.closest("a, button, input")) return;
+                        if (isPendingDue) toggleSelectInvoice(inv.id);
+                      }}
+                      className={`group text-xs transition-colors ${
+                        isSelected
+                          ? "bg-blue-50/70 dark:bg-blue-950/40"
+                          : "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
+                      } ${isPendingDue ? "cursor-pointer" : ""}`}
+                    >
+                      {/* Checkbox */}
+                      <td className="px-2.5 py-2 text-center">
+                        {isPendingDue ? (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectInvoice(inv.id)}
+                            className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          />
+                        ) : (
+                          <span className="text-[10px] text-zinc-300 dark:text-zinc-600">
+                            —
                           </span>
+                        )}
+                      </td>
+
+                      {/* S.N. */}
+                      <td className="px-2 py-2 text-center font-medium text-zinc-500 dark:text-zinc-400">
+                        {index + 1}
+                      </td>
+
+                      {/* Company */}
+                      <td className="px-3 py-2 font-medium text-zinc-800 dark:text-zinc-200 max-w-[200px]">
+                        <div
+                          className="truncate"
+                          title={inv.companyName || "Unknown"}
+                        >
+                          <span>{inv.companyName ?? "Unknown"}</span>
+                          {inv.companyCode && (
+                            <span className="ml-1 text-[10px] text-zinc-400">
+                              ({inv.companyCode})
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Invoice Number */}
+                      <td className="whitespace-nowrap px-2.5 py-2 text-center font-medium text-zinc-800 dark:text-zinc-200">
+                        {inv.invoiceNumber ?? "—"}
+                      </td>
+
+                      {/* Amount */}
+                      <td className="whitespace-nowrap px-2.5 py-2 text-right font-medium text-zinc-800 dark:text-zinc-200">
+                        {formatCurrency(inv.invoiceAmount)}
+                      </td>
+
+                      {/* Paid */}
+                      <td className="whitespace-nowrap px-2.5 py-2 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(inv.paidAmount || 0)}
+                      </td>
+
+                      {/* TDS */}
+                      <td className="whitespace-nowrap px-2.5 py-2 text-center font-medium">
+                        {Number(
+                          inv.tdsDeducted ||
+                            inv.tdsDeductedAmount ||
+                            inv.tdsAmount ||
+                            0,
+                        ) > 0 ? (
+                          <div className="inline-flex flex-col items-center">
+                            <span className="text-zinc-800 dark:text-zinc-200">
+                              {formatCurrency(
+                                inv.tdsDeducted ||
+                                  inv.tdsDeductedAmount ||
+                                  inv.tdsAmount,
+                              )}
+                            </span>
+                            <span
+                              className={`rounded px-1.5 py-0.2 text-[9px] font-bold ${
+                                inv.isTdsVerified
+                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                                  : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                              }`}
+                            >
+                              {inv.isTdsVerified ? "Verified" : "Pending"}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-zinc-400">—</span>
+                        )}
+                      </td>
+
+                      {/* Outstanding */}
+                      <td className="whitespace-nowrap px-2.5 py-2 text-right font-semibold text-rose-600 dark:text-rose-400">
+                        {formatCurrency(inv.outstandingAmount || 0)}
+                      </td>
+
+                      {/* Due Date */}
+                      <td className="whitespace-nowrap px-2.5 py-2 text-center text-zinc-700 dark:text-zinc-300">
+                        {formattedDate}
+                      </td>
+
+                      {/* Status */}
+                      <td className="whitespace-nowrap px-2.5 py-2 text-center">
+                        <div className="inline-flex flex-col items-center gap-0.5">
                           <span
-                            className={`rounded px-1.5 py-0.2 text-[9px] font-bold ${
-                              inv.isTdsVerified
+                            className={`inline-flex items-center justify-center min-w-[70px] px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
+                              inv.status === "paid"
                                 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                                : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                                : inv.status === "partial"
+                                  ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                                  : inv.status === "overdue"
+                                    ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
+                                    : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
                             }`}
                           >
-                            {inv.isTdsVerified ? "Verified" : "Pending"}
+                            {inv.status}
                           </span>
+
+                          {inv.status !== "paid" &&
+                            inv.dueDays !== undefined && (
+                              <span className="text-[10px] text-zinc-400">
+                                {inv.dueDays > 0
+                                  ? `${inv.dueDays}d`
+                                  : inv.dueDays < 0
+                                    ? `In ${Math.abs(inv.dueDays)}d`
+                                    : "Today"}
+                              </span>
+                            )}
                         </div>
-                      ) : (
-                        <span className="text-zinc-400">—</span>
-                      )}
-                    </div>
+                      </td>
 
-                    {/* Due */}
-                    <div className="font-medium text-center text-red-600 whitespace-nowrap dark:text-red-400">
-                      {formatCurrency(inv.outstandingAmount || 0)}
-                    </div>
-
-                    {/* Due Date */}
-                    <div className="text-center text-zinc-700 whitespace-nowrap dark:text-zinc-300">
-                      {formattedDate}
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span
-                        className={`inline-flex items-center justify-center min-w-[76px] px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
-                          inv.status === "paid"
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                            : inv.status === "partial"
-                              ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
-                              : inv.status === "overdue"
-                                ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
-                                : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                      {/* Actions (Sticky Right Column) */}
+                      <td
+                        className={`whitespace-nowrap px-3 py-2 text-center sticky right-0 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)] transition-colors ${
+                          isSelected
+                            ? "bg-blue-50 dark:bg-blue-950"
+                            : "bg-white group-hover:bg-zinc-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800"
                         }`}
                       >
-                        {inv.status}
-                      </span>
-
-                      {inv.status !== "paid" && inv.dueDays !== undefined && (
-                        <span className="text-[10px] text-zinc-400">
-                          {inv.dueDays > 0
-                            ? `${inv.dueDays}d`
-                            : inv.dueDays < 0
-                              ? `In ${Math.abs(inv.dueDays)}d`
-                              : "Today"}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-center gap-1.5">
-                      <Link
-                        href={`/invoices/${inv.id}`}
-                        className="h-7 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900"
-                      >
-                        View
-                      </Link>
-                      <Link
-                        href={`/invoices/${inv.id}/edit`}
-                        className="h-7 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                      >
-                        Edit
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="p-10 text-center text-xs text-zinc-400">
-                No invoices found.
-              </div>
-            )}
-          </div>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Link
+                            href={`/invoices/${inv.id}`}
+                            className="h-6.5 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900 shadow-2xs"
+                          >
+                            View
+                          </Link>
+                          <Link
+                            href={`/invoices/${inv.id}/edit`}
+                            className="h-6.5 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 shadow-2xs"
+                          >
+                            Edit
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan={11}
+                    className="p-10 text-center text-xs text-zinc-400"
+                  >
+                    No invoices found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

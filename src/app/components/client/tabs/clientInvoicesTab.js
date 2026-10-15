@@ -8,16 +8,6 @@ import { formatDateDisplay } from "@/lib/date-parser";
 export default function ClientInvoicesTab({ clientId, invoices = [] }) {
   return (
     <div className="space-y-4">
-      {/* ===================================== */}
-      {/* HEADER */}
-      {/* ===================================== */}
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center justify-end gap-2">
-          <ExportInvoices clientId={clientId} />
-        </div>
-      </div>
-
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="overflow-x-auto [scrollbar-width:thin]">
           <table className="w-full min-w-[760px] table-auto border-collapse">
@@ -61,7 +51,9 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                 invoices.map((invoice) => {
                   const isOpening =
                     Boolean(invoice.isOpeningBalance) ||
-                    String(invoice.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+                    String(invoice.invoiceNumber || "")
+                      .toUpperCase()
+                      .startsWith("OPENING");
                   const outstanding = Number(invoice.outstandingAmount || 0);
                   const tdsVal = isOpening
                     ? 0
@@ -71,7 +63,8 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                           invoice.tdsAmount ||
                           0,
                       );
-                  const isVerified = !isOpening && Boolean(invoice.isTdsVerified);
+                  const isVerified =
+                    !isOpening && Boolean(invoice.isTdsVerified);
 
                   return (
                     <tr

@@ -61,7 +61,7 @@ export default function TdsVerifyButton({ invoice }) {
       <button
         type="button"
         onClick={handleOpen}
-        className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold shadow-2xs transition ${
+        className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold shadow-2xs transition ${
           isVerified
             ? "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
             : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
@@ -79,7 +79,7 @@ export default function TdsVerifyButton({ invoice }) {
         ) : (
           <>
             <Clock size={14} className="text-amber-600 dark:text-amber-400" />
-            <span>TDS Pending</span>
+            <span>TDS Pending (₹{currentTds.toLocaleString("en-IN")})</span>
           </>
         )}
       </button>

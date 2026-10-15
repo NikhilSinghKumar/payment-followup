@@ -22,201 +22,257 @@ export default function InvoiceSummary({ data }) {
     })}`;
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-      {/* TOP BAR: BREADCRUMB / BACK LINK */}
-      <div className="mb-3">
-        <Link
-          href="/invoices"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-800 transition dark:text-zinc-400 dark:hover:text-zinc-200"
-        >
-          <ArrowLeft size={13} />
-          <span>Back to Invoices</span>
-        </Link>
-      </div>
+    <div className="rounded-xl border border-zinc-200 bg-white p-2.5 sm:p-3 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
+      {/* TOP HEADER: NAVIGATION, COMPANY INFO & ACTIONS IN ONE COMPACT BAR */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        {/* Left: Back Arrow + Company & Invoice Meta */}
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href="/invoices"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 shadow-2xs"
+            title="Back to Invoices"
+          >
+            <ArrowLeft size={13} />
+          </Link>
 
-      {/* HEADER SECTION: COMPANY INFO & ACTIONS */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* Company Avatar & Info */}
-        <div className="flex items-center gap-3.5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-lg font-bold text-white shadow-xs">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-xs font-bold text-white shadow-xs">
             {data.companyName?.charAt(0)?.toUpperCase() || "I"}
           </div>
 
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                {data.companyName || "Client"}
-              </h1>
-              {data.companyCode && (
-                <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                  {data.companyCode}
-                </span>
-              )}
-            </div>
-
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-              <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-                Invoice #{data.invoiceNumber}
+          <div className="min-w-0 flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
+            <h1 className="text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-100 truncate max-w-[200px] sm:max-w-xs">
+              {data.companyName || "Client"}
+            </h1>
+            {data.companyCode && (
+              <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                {data.companyCode}
               </span>
-              {data.financialYear && (
-                <>
-                  <span>•</span>
-                  <span>FY {data.financialYear}</span>
-                </>
-              )}
-              {data.invoiceDate && (
-                <>
-                  <span>•</span>
-                  <span>Date: {formatDateDisplay(data.invoiceDate)}</span>
-                </>
-              )}
-            </div>
+            )}
+            <span className="text-zinc-400 dark:text-zinc-500">•</span>
+            <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+              #{data.invoiceNumber}
+            </span>
+            {data.financialYear && (
+              <>
+                <span className="text-zinc-400 dark:text-zinc-500">•</span>
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  FY {data.financialYear}
+                </span>
+              </>
+            )}
+            {data.invoiceDate && (
+              <>
+                <span className="text-zinc-400 dark:text-zinc-500 hidden sm:inline">
+                  •
+                </span>
+                <span className="text-zinc-500 dark:text-zinc-400 hidden sm:inline">
+                  {formatDateDisplay(data.invoiceDate)}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Right Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
           <TdsVerifyButton invoice={data} />
           {due > 0 && <SendInvoiceReminderModal invoiceId={data.id} />}
           <Link
             href={`/invoices/${data.id}/edit`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+            className="inline-flex h-7 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
           >
-            <Edit3 size={13} className="text-zinc-500" />
-            <span>Edit Invoice</span>
+            <Edit3 size={11} className="text-zinc-500" />
+            <span>Edit</span>
           </Link>
         </div>
       </div>
 
-      {/* STATS METRIC CARDS: FULL WIDTH, CLEANLY SEPARATED */}
-      <div className="mt-5 border-t border-zinc-100 pt-4 dark:border-zinc-800/80">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
-          {/* 1. Invoice Amount */}
-          <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Invoice Amount
-            </div>
-            <div className="mt-1.5 text-base sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              {formatMoney(invoiceAmount)}
-            </div>
+      {/* COMPACT METRICS STRIP: SLEEK, UNCLUTTERED SINGLE ROW */}
+      <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5">
+        {/* 1. Invoice Amount */}
+        <div className="rounded-lg border border-zinc-100 bg-zinc-50/70 px-2.5 py-1.5 dark:border-zinc-800/80 dark:bg-zinc-800/40 min-w-0">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
+            Amount
           </div>
-
-          {/* 2. Net Payable */}
-          <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Net Payable
-            </div>
-            <div className="mt-1.5 text-base sm:text-lg font-bold tracking-tight text-blue-600 dark:text-blue-400">
-              {formatMoney(netPayable)}
-            </div>
+          <div
+            className="text-xs sm:text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 truncate mt-0.5"
+            title={formatMoney(invoiceAmount)}
+          >
+            {formatMoney(invoiceAmount)}
           </div>
+        </div>
 
-          {/* 3. Paid */}
-          <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Paid Amount
+        {/* 2. Net Payable */}
+        <div className="rounded-lg border border-zinc-100 bg-zinc-50/70 px-2.5 py-1.5 dark:border-zinc-800/80 dark:bg-zinc-800/40 min-w-0">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
+            Net Payable
+          </div>
+          <div
+            className="text-xs sm:text-sm font-bold tracking-tight text-blue-600 dark:text-blue-400 truncate mt-0.5"
+            title={formatMoney(netPayable)}
+          >
+            {formatMoney(netPayable)}
+          </div>
+        </div>
+
+        {/* 3. Paid */}
+        <div className="rounded-lg border border-zinc-100 bg-zinc-50/70 px-2.5 py-1.5 dark:border-zinc-800/80 dark:bg-zinc-800/40 min-w-0">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
+            Paid
+          </div>
+          <div
+            className={`text-xs sm:text-sm font-bold tracking-tight truncate mt-0.5 ${
+              paid > 0
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-zinc-700 dark:text-zinc-300"
+            }`}
+            title={formatMoney(paid)}
+          >
+            {formatMoney(paid)}
+          </div>
+        </div>
+
+        {/* 4. TDS */}
+        {!isOpening ? (
+          <div className="rounded-lg border border-zinc-100 bg-zinc-50/70 px-2.5 py-1.5 dark:border-zinc-800/80 dark:bg-zinc-800/40 min-w-0">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
+                TDS
+              </span>
+              <span
+                className={`rounded px-1 text-[8px] font-bold shrink-0 ${
+                  data.isTdsVerified
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                    : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                }`}
+              >
+                {data.isTdsVerified ? "Verified" : "Pending"}
+              </span>
             </div>
             <div
-              className={`mt-1.5 text-base sm:text-lg font-bold tracking-tight ${
-                paid > 0
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-zinc-700 dark:text-zinc-300"
-              }`}
+              className="text-xs sm:text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 truncate mt-0.5"
+              title={formatMoney(
+                data.tdsDeducted ||
+                  data.tdsDeductedAmount ||
+                  data.tdsAmount ||
+                  0,
+              )}
             >
-              {formatMoney(paid)}
+              {formatMoney(
+                data.tdsDeducted ||
+                  data.tdsDeductedAmount ||
+                  data.tdsAmount ||
+                  0,
+              )}
             </div>
           </div>
+        ) : (
+          <div className="rounded-lg border border-purple-200/80 bg-purple-50/50 px-2.5 py-1.5 dark:border-purple-900/40 dark:bg-purple-950/20 min-w-0">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-300 truncate">
+              Opening Bal
+            </div>
+            <div className="mt-0.5 text-xs text-purple-600 dark:text-purple-400 font-bold truncate">
+              TDS N/A
+            </div>
+          </div>
+        )}
 
-          {/* 4. TDS Deducted (Or Opening Balance Indicator) */}
-          {!isOpening ? (
-            <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  TDS Deducted
-                </span>
-                <span
-                  className={`rounded px-1.5 py-0.2 text-[9px] font-bold ${
-                    data.isTdsVerified
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                      : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
-                  }`}
-                >
-                  {data.isTdsVerified ? "Verified" : "Pending"}
-                </span>
-              </div>
-              <div className="mt-1.5 text-base sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                {formatMoney(
+        {/* 5. Balance Due */}
+        <div
+          className={`rounded-lg border px-2.5 py-1.5 min-w-0 ${
+            due > 0
+              ? "border-rose-200 bg-rose-50/50 dark:border-rose-900/50 dark:bg-rose-950/20"
+              : "border-zinc-100 bg-zinc-50/70 dark:border-zinc-800/80 dark:bg-zinc-800/40"
+          }`}
+        >
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
+            Due
+          </div>
+          <div
+            className={`text-xs sm:text-sm font-bold tracking-tight truncate mt-0.5 ${
+              due > 0
+                ? "text-rose-600 dark:text-rose-400"
+                : "text-emerald-600 dark:text-emerald-400"
+            }`}
+            title={formatMoney(due)}
+          >
+            {formatMoney(due)}
+          </div>
+        </div>
+
+        {/* 6. Status */}
+        <div className="rounded-lg border border-zinc-100 bg-zinc-50/70 px-2.5 py-1.5 dark:border-zinc-800/80 dark:bg-zinc-800/40 min-w-0 flex flex-col justify-between">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
+            Status
+          </div>
+          <div className="mt-0.5">
+            <StatusBadge status={isOverdue ? "overdue" : data.status} />
+          </div>
+        </div>
+
+        {/* 7. Due Date */}
+        <div className="rounded-lg border border-zinc-100 bg-zinc-50/70 px-2.5 py-1.5 dark:border-zinc-800/80 dark:bg-zinc-800/40 min-w-0">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
+            Due Date
+          </div>
+          <div className="text-xs sm:text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 truncate mt-0.5">
+            {data.dueDate ? formatDateDisplay(data.dueDate) : "-"}
+          </div>
+        </div>
+      </div>
+
+      {/* RECONCILIATION ONE-LINER: COMPACT & INLINE */}
+      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1 rounded-md border border-blue-100/80 bg-blue-50/40 px-2.5 py-1 text-[10px] sm:text-[11px] text-blue-900 dark:border-blue-950 dark:bg-blue-950/30 dark:text-blue-200">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-semibold text-blue-700 dark:text-blue-300">
+            Reconciliation:
+          </span>
+          <span>
+            Paid: <b>{formatMoney(paid)}</b> + TDS:{" "}
+            <b>
+              {formatMoney(
+                data.tdsDeducted ||
+                  data.tdsDeductedAmount ||
+                  data.tdsAmount ||
+                  0,
+              )}
+            </b>{" "}
+            ={" "}
+            <b>
+              {formatMoney(
+                paid +
+                  Number(
+                    data.tdsDeducted ||
+                      data.tdsDeductedAmount ||
+                      data.tdsAmount ||
+                      0,
+                  ),
+              )}
+            </b>{" "}
+            of {formatMoney(invoiceAmount)}
+          </span>
+        </div>
+
+        {Math.abs(
+          paid +
+            (isOpening
+              ? 0
+              : Number(
                   data.tdsDeducted ||
                     data.tdsDeductedAmount ||
                     data.tdsAmount ||
                     0,
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-purple-200/80 bg-purple-50/50 p-3 sm:p-3.5 dark:border-purple-900/40 dark:bg-purple-950/20">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-300">
-                Opening Balance
-              </div>
-              <div className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400 font-medium">
-                TDS Not Applicable
-              </div>
-            </div>
-          )}
-
-          {/* 5. Balance Due */}
-          <div
-            className={`rounded-xl border p-3 sm:p-3.5 ${
-              due > 0
-                ? "border-rose-200/80 bg-rose-50/40 dark:border-rose-900/50 dark:bg-rose-950/20"
-                : "border-zinc-200/80 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-800/40"
-            }`}
-          >
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Balance Due
-            </div>
-            <div
-              className={`mt-1.5 text-base sm:text-lg font-bold tracking-tight ${
-                due > 0
-                  ? "text-rose-600 dark:text-rose-400"
-                  : "text-emerald-600 dark:text-emerald-400"
-              }`}
-            >
-              {formatMoney(due)}
-            </div>
-          </div>
-
-          {/* 6. Status */}
-          <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40 flex flex-col justify-between">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Status
-            </div>
-            <div className="mt-1.5 flex items-center">
-              <StatusBadge status={isOverdue ? "overdue" : data.status} />
-            </div>
-          </div>
-
-          {/* 7. Due Date */}
-          <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Due Date
-            </div>
-            <div className="mt-1.5 text-base sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              {data.dueDate ? formatDateDisplay(data.dueDate) : "-"}
-            </div>
-            {data.dueDate && due > 0 && data.dueDaysText && (
-              <div
-                className={`mt-0.5 text-[11px] font-medium ${
-                  isOverdue
-                    ? "text-rose-600 dark:text-rose-400"
-                    : "text-zinc-500 dark:text-zinc-400"
-                }`}
-              >
-                {data.dueDaysText}
-              </div>
-            )}
-          </div>
-        </div>
+                )) -
+            invoiceAmount,
+        ) < 1 ? (
+          <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 px-1.5 py-0.2 text-[9px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+            ✓ Fully Settled
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.2 text-[9px] font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+            Due: {formatMoney(due)}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -262,9 +318,9 @@ function StatusBadge({ status }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${style.bg}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.2 text-[10px] font-semibold ${style.bg}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+      <span className={`h-1 w-1 rounded-full ${style.dot}`} />
       <span>{style.label}</span>
     </span>
   );

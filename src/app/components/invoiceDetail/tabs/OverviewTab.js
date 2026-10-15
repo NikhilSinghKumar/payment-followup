@@ -3,7 +3,9 @@ import { formatDateDisplay } from "@/lib/date-parser";
 export default function OverviewTab({ invoice }) {
   const isOpening =
     Boolean(invoice.isOpeningBalance) ||
-    String(invoice.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+    String(invoice.invoiceNumber || "")
+      .toUpperCase()
+      .startsWith("OPENING");
 
   const money = (value) =>
     `₹${Number(value || 0).toLocaleString("en-IN", {
@@ -12,20 +14,20 @@ export default function OverviewTab({ invoice }) {
     })}`;
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
         {/* ============================== */}
         {/* Left : Invoice Information */}
         {/* ============================== */}
 
         <section className="lg:col-span-2 rounded-xl border border-zinc-200 bg-white shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="border-b border-zinc-200 bg-zinc-50/80 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/50">
-            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
+          <div className="border-b border-zinc-200 bg-zinc-50/80 px-3.5 py-2 dark:border-zinc-800 dark:bg-zinc-800/50">
+            <h3 className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               Invoice Information
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 p-4 sm:p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 p-3 sm:p-3.5">
             <InfoItem label="Invoice Number" value={invoice.invoiceNumber} />
 
             <InfoItem label="Financial Year" value={invoice.financialYear} />
@@ -48,7 +50,13 @@ export default function OverviewTab({ invoice }) {
 
             <InfoItem
               label="TDS Applicable"
-              value={isOpening ? "No (Opening Bal)" : (invoice.tdsApplicableUsed ? "Yes" : "No")}
+              value={
+                isOpening
+                  ? "No (Opening Bal)"
+                  : invoice.tdsApplicableUsed
+                    ? "Yes"
+                    : "No"
+              }
             />
           </div>
         </section>
@@ -58,8 +66,8 @@ export default function OverviewTab({ invoice }) {
         {/* ============================== */}
 
         <section className="rounded-xl border border-zinc-200 bg-zinc-50/70 h-fit shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/60">
-          <div className="border-b border-zinc-200 bg-zinc-100/80 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/60">
-            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
+          <div className="border-b border-zinc-200 bg-zinc-100/80 px-3.5 py-2 dark:border-zinc-800 dark:bg-zinc-800/60">
+            <h3 className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               Invoice Amount Breakdown
             </h3>
           </div>
@@ -94,7 +102,11 @@ export default function OverviewTab({ invoice }) {
             />
 
             {!isOpening && (
-              <AmountRow label="TDS" value={money(invoice.tdsAmount)} negative />
+              <AmountRow
+                label="TDS"
+                value={money(invoice.tdsAmount)}
+                negative
+              />
             )}
 
             <AmountRow
@@ -125,12 +137,12 @@ export default function OverviewTab({ invoice }) {
 
 function InfoItem({ label, value }) {
   return (
-    <div className="rounded-lg border border-zinc-100 bg-zinc-50/60 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/30">
-      <div className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-medium">
+    <div className="rounded-lg border border-zinc-100 bg-zinc-50/60 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-800/30">
+      <div className="text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-medium">
         {label}
       </div>
 
-      <div className="mt-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+      <div className="mt-0.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate">
         {value || "-"}
       </div>
     </div>
@@ -140,21 +152,21 @@ function InfoItem({ label, value }) {
 function AmountRow({ label, value, positive, negative, total }) {
   return (
     <div
-      className={`flex items-center justify-between py-1 ${
-        total ? "text-base font-semibold" : "text-sm"
+      className={`flex items-center justify-between py-0.5 ${
+        total ? "text-sm font-semibold pt-1" : "text-xs"
       }`}
     >
-      <span className="text-zinc-700">{label}</span>
+      <span className="text-zinc-600 dark:text-zinc-400">{label}</span>
 
       <span
         className={
           total
-            ? "font-bold text-blue-600"
+            ? "font-bold text-blue-600 dark:text-blue-400"
             : positive
-              ? "text-emerald-600"
+              ? "text-emerald-600 dark:text-emerald-400 font-medium"
               : negative
-                ? "text-red-600"
-                : "text-zinc-800"
+                ? "text-rose-600 dark:text-rose-400 font-medium"
+                : "text-zinc-800 dark:text-zinc-200 font-medium"
         }
       >
         {positive}

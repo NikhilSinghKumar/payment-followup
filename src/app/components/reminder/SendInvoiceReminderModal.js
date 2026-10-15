@@ -219,7 +219,7 @@ export default function SendInvoiceReminderModal({
         onClick={handleOpen}
         className={
           buttonClassName ||
-          "inline-flex items-center gap-1.5 rounded-lg border border-blue-600 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-2xs transition hover:bg-blue-100 hover:text-blue-800 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900"
+          "inline-flex h-8 items-center gap-1.5 rounded-lg border border-blue-600 bg-blue-50 px-2.5 text-xs font-semibold text-blue-700 shadow-2xs transition hover:bg-blue-100 hover:text-blue-800 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900"
         }
       >
         <Mail size={13} />

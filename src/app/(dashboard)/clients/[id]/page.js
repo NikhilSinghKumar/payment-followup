@@ -22,6 +22,7 @@ import ClientLocationsTab from "@/app/components/client/tabs/clientLocationsTab"
 import ClientContactsTab from "@/app/components/client/tabs/clientContactsTab";
 import ClientPaymentsTab from "@/app/components/client/tabs/clientPaymentsTab";
 import ClientFollowupsTab from "@/app/components/client/tabs/clientFollowupsTab";
+import ExportInvoices from "@/app/components/invoice/ExportInvoices";
 import SendClientReminderModal from "@/app/components/reminder/SendClientReminderModal";
 import OpeningBalanceModal from "@/app/components/client/OpeningBalanceModal";
 import { getOpeningBalanceByClientId } from "@/app/actions/openingBalance";
@@ -176,120 +177,165 @@ export default async function ClientDetailPage({ params, searchParams }) {
         {/* SUMMARY CARDS */}
         {/* ===================================== */}
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
-          {/* Total Invoices */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Total Invoices
-            </p>
+        <div className="overflow-x-auto [scrollbar-width:none]">
+          <div className="grid grid-cols-9 min-w-[760px] gap-1.5 sm:gap-2">
+            {/* 1. Total Invoices */}
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+              <p
+                className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
+                title="Total Invoices"
+              >
+                Total Invoices
+              </p>
+              <h2 className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-zinc-800 dark:text-zinc-100 truncate">
+                {totalInvoices}
+              </h2>
+            </div>
 
-            <h2 className="mt-2 text-md font-semibold text-zinc-800 dark:text-zinc-100">
-              {totalInvoices}
-            </h2>
-          </div>
+            {/* 2. Invoice Amount */}
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+              <p
+                className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
+                title="Invoice Amount"
+              >
+                Invoice Amount
+              </p>
+              <h2
+                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-zinc-800 dark:text-zinc-100 truncate"
+                title={formatCurrency(totalAmount)}
+              >
+                {formatCurrency(totalAmount)}
+              </h2>
+            </div>
 
-          {/* Invoice Amount */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Invoice Amount
-            </p>
+            {/* 3. Net Receivable */}
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+              <p
+                className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
+                title="Net Receivable"
+              >
+                Net Receivable
+              </p>
+              <h2
+                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-blue-600 dark:text-blue-400 truncate"
+                title={formatCurrency(totalNetPayable)}
+              >
+                {formatCurrency(totalNetPayable)}
+              </h2>
+            </div>
 
-            <h2 className="mt-2 text-md font-semibold text-zinc-800 dark:text-zinc-100">
-              {formatCurrency(totalAmount)}
-            </h2>
-          </div>
+            {/* 4. Payments Received */}
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+              <p
+                className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
+                title="Received"
+              >
+                Received
+              </p>
+              <h2
+                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-emerald-600 dark:text-emerald-400 truncate"
+                title={formatCurrency(paymentsReceived)}
+              >
+                {formatCurrency(paymentsReceived)}
+              </h2>
+            </div>
 
-          {/* Net Payable */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Net Receivable
-            </p>
+            {/* 5. Verified TDS */}
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+              <p
+                className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
+                title="Verified TDS"
+              >
+                Verified TDS
+              </p>
+              <h2
+                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-emerald-700 dark:text-emerald-300 truncate"
+                title={formatCurrency(totalVerifiedTds || 0)}
+              >
+                {formatCurrency(totalVerifiedTds || 0)}
+              </h2>
+            </div>
 
-            <h2 className="mt-2 text-md font-semibold text-blue-600 dark:text-blue-400">
-              {formatCurrency(totalNetPayable)}
-            </h2>
-          </div>
+            {/* 6. Pending TDS */}
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+              <p
+                className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
+                title="Pending TDS"
+              >
+                Pending TDS
+              </p>
+              <h2
+                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-amber-600 dark:text-amber-400 truncate"
+                title={formatCurrency(totalPendingTds || 0)}
+              >
+                {formatCurrency(totalPendingTds || 0)}
+              </h2>
+            </div>
 
-          {/* Payments Received */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Received
-            </p>
+            {/* 7. Net Outstanding */}
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+              <p
+                className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
+                title="Outstanding"
+              >
+                Outstanding
+              </p>
+              <h2
+                className={`mt-1 text-xs sm:text-sm font-bold tracking-tight truncate ${
+                  netOutstanding > 0
+                    ? "text-orange-600 dark:text-orange-400"
+                    : "text-emerald-600 dark:text-emerald-400"
+                }`}
+                title={formatCurrency(netOutstanding)}
+              >
+                {formatCurrency(netOutstanding)}
+              </h2>
+            </div>
 
-            <h2 className="mt-2 text-md font-semibold text-emerald-600 dark:text-emerald-400">
-              {formatCurrency(paymentsReceived)}
-            </h2>
-          </div>
+            {/* 8. Credit Balance */}
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+              <p
+                className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
+                title="Credit Balance"
+              >
+                Credit Balance
+              </p>
+              <h2
+                className={`mt-1 text-xs sm:text-sm font-bold tracking-tight truncate ${
+                  creditBalance > 0
+                    ? "text-violet-600 dark:text-violet-400"
+                    : "text-zinc-500 dark:text-zinc-400"
+                }`}
+                title={formatCurrency(creditBalance)}
+              >
+                {formatCurrency(creditBalance)}
+              </h2>
+            </div>
 
-          {/* Verified TDS */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Verified TDS
-            </p>
-
-            <h2 className="mt-2 text-md font-semibold text-emerald-700 dark:text-emerald-300">
-              {formatCurrency(totalVerifiedTds || 0)}
-            </h2>
-          </div>
-
-          {/* Pending TDS */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Pending TDS
-            </p>
-
-            <h2 className="mt-2 text-md font-semibold text-amber-600 dark:text-amber-400">
-              {formatCurrency(totalPendingTds || 0)}
-            </h2>
-          </div>
-
-          {/* Net Outstanding (Net Payable - Payments Received) */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Outstanding
-            </p>
-
-            <h2
-              className={`mt-2 text-md font-semibold ${
-                netOutstanding > 0
-                  ? "text-orange-600 dark:text-orange-400"
-                  : "text-emerald-600 dark:text-emerald-400"
-              }`}
-            >
-              {formatCurrency(netOutstanding)}
-            </h2>
-          </div>
-
-          {/* Credit Balance (Only if Payments Received > Net Payable) */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Credit Balance
-            </p>
-
-            <h2
-              className={`mt-2 text-md font-semibold ${
-                creditBalance > 0
-                  ? "text-violet-600 dark:text-violet-400"
-                  : "text-zinc-500 dark:text-zinc-400"
-              }`}
-            >
-              {formatCurrency(creditBalance)}
-            </h2>
-          </div>
-
-          {/* Overdue */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Overdue
-            </p>
-
-            <h2 className="mt-2 text-md font-semibold text-red-500">
-              {overdueInvoices}
-            </h2>
+            {/* 9. Overdue */}
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+              <p
+                className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
+                title="Overdue"
+              >
+                Overdue
+              </p>
+              <h2 className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-red-500 truncate">
+                {overdueInvoices}
+              </h2>
+            </div>
           </div>
         </div>
 
-        <ClientTabs clientId={clientId} activeTab={activeTab} />
+        <ClientTabs
+          clientId={clientId}
+          activeTab={activeTab}
+          rightContent={
+            activeTab === "invoices" ? (
+              <ExportInvoices clientId={clientId} />
+            ) : null
+          }
+        />
 
         {/* ===================================== */}
         {/* TAB CONTENT */}

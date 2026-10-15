@@ -258,134 +258,136 @@ export default function TdsManagementClient({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-2.5 sm:gap-3">
       {/* Top Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
               TDS Management System
             </h1>
-            <span className="rounded-md bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-              Section 194C / 194J
-            </span>
           </div>
-          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-            Reconcile client TDS deductions against Form 26AS. Actual Payment +
-            Verified TDS totals to invoice amount.
-          </p>
         </div>
 
         {actionMessage && (
           <div className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 shadow-2xs dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300">
-            <CheckCircle2 size={14} />
+            <CheckCircle2 size={13} />
             <span>{actionMessage}</span>
           </div>
         )}
       </div>
 
-      {/* KPI METRICS OVERVIEW */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-        {/* Gross Invoiced */}
-        <div className="rounded-2xl border border-zinc-200 bg-white p-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Gross Invoiced
-          </p>
-          <p className="mt-1.5 text-lg font-bold text-zinc-900 dark:text-zinc-100">
-            {formatCurrency(summary.grossBilled)}
-          </p>
-          <p className="mt-0.5 text-[10px] text-zinc-400">
-            {summary.count} Invoice{summary.count !== 1 ? "s" : ""}
-          </p>
-        </div>
-
-        {/* Cash/Bank Received */}
-        <div className="rounded-2xl border border-zinc-200 bg-white p-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Payment Received
-          </p>
-          <p className="mt-1.5 text-lg font-bold text-emerald-600 dark:text-emerald-400">
-            {formatCurrency(summary.actualReceived)}
-          </p>
-          <p className="mt-0.5 text-[10px] text-zinc-400">Bank & Cash Inflow</p>
-        </div>
-
-        {/* Verified TDS */}
-        <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-3.5 shadow-xs dark:border-emerald-950 dark:bg-emerald-950/20">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-              Verified TDS
+      {/* KPI METRICS OVERVIEW - STRICTLY IN A LINE */}
+      <div className="overflow-x-auto [scrollbar-width:none]">
+        <div className="grid grid-cols-6 min-w-[760px] gap-1.5 sm:gap-2">
+          {/* Gross Invoiced */}
+          <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
+              Gross Invoiced
             </p>
-            <ShieldCheck
-              size={14}
-              className="text-emerald-600 dark:text-emerald-400"
-            />
-          </div>
-          <p className="mt-1.5 text-lg font-bold text-emerald-700 dark:text-emerald-300">
-            {formatCurrency(summary.verifiedTds)}
-          </p>
-          <p className="mt-0.5 text-[10px] text-emerald-700/80 dark:text-emerald-400">
-            Confirmed in Form 26AS
-          </p>
-        </div>
-
-        {/* Pending TDS */}
-        <div className="rounded-2xl border border-amber-200/80 bg-amber-50/40 p-3.5 shadow-xs dark:border-amber-950 dark:bg-amber-950/20">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-              Pending TDS
+            <p
+              className="mt-0.5 text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate"
+              title={formatCurrency(summary.grossBilled)}
+            >
+              {formatCurrency(summary.grossBilled)}
             </p>
-            <Clock size={14} className="text-amber-600 dark:text-amber-400" />
           </div>
-          <p className="mt-1.5 text-lg font-bold text-amber-700 dark:text-amber-300">
-            {formatCurrency(summary.pendingTds)}
-          </p>
-          <p className="mt-0.5 text-[10px] text-amber-700/80 dark:text-amber-400">
-            Awaiting 26AS Check
-          </p>
-        </div>
 
-        {/* Total Settled / Reconciled */}
-        <div className="rounded-2xl border border-blue-200/80 bg-blue-50/40 p-3.5 shadow-xs dark:border-blue-950 dark:bg-blue-950/20">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-800 dark:text-blue-300">
-            Total Reconciled
-          </p>
-          <p className="mt-1.5 text-lg font-bold text-blue-700 dark:text-blue-300">
-            {formatCurrency(summary.actualReceived + summary.verifiedTds)}
-          </p>
-          <p className="mt-0.5 text-[10px] text-blue-700/80 dark:text-blue-400">
-            Paid + Verified TDS
-          </p>
-        </div>
+          {/* Cash/Bank Received */}
+          <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
+              Payment Received
+            </p>
+            <p
+              className="mt-0.5 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 truncate"
+              title={formatCurrency(summary.actualReceived)}
+            >
+              {formatCurrency(summary.actualReceived)}
+            </p>
+          </div>
 
-        {/* Net Outstanding Balance */}
-        <div className="rounded-2xl border border-zinc-200 bg-white p-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Net Outstanding
-          </p>
-          <p
-            className={`mt-1.5 text-lg font-bold ${
-              summary.outstanding > 0
-                ? "text-rose-600 dark:text-rose-400"
-                : "text-emerald-600 dark:text-emerald-400"
-            }`}
-          >
-            {formatCurrency(summary.outstanding)}
-          </p>
-          <p className="mt-0.5 text-[10px] text-zinc-400">Remaining Balance</p>
+          {/* Verified TDS */}
+          <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/40 p-2 sm:p-2.5 shadow-2xs dark:border-emerald-950 dark:bg-emerald-950/20 min-w-0 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 truncate">
+                Verified TDS
+              </p>
+              <ShieldCheck
+                size={12}
+                className="text-emerald-600 dark:text-emerald-400 shrink-0"
+              />
+            </div>
+            <p
+              className="mt-0.5 text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300 truncate"
+              title={formatCurrency(summary.verifiedTds)}
+            >
+              {formatCurrency(summary.verifiedTds)}
+            </p>
+          </div>
+
+          {/* Pending TDS */}
+          <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-2 sm:p-2.5 shadow-2xs dark:border-amber-950 dark:bg-amber-950/20 min-w-0 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-300 truncate">
+                Pending TDS
+              </p>
+              <Clock
+                size={12}
+                className="text-amber-600 dark:text-amber-400 shrink-0"
+              />
+            </div>
+            <p
+              className="mt-0.5 text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-300 truncate"
+              title={formatCurrency(summary.pendingTds)}
+            >
+              {formatCurrency(summary.pendingTds)}
+            </p>
+          </div>
+
+          {/* Total Settled / Reconciled */}
+          <div className="rounded-xl border border-blue-200/80 bg-blue-50/40 p-2 sm:p-2.5 shadow-2xs dark:border-blue-950 dark:bg-blue-950/20 min-w-0 flex flex-col justify-between">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-blue-800 dark:text-blue-300 truncate">
+              Total Reconciled
+            </p>
+            <p
+              className="mt-0.5 text-xs sm:text-sm font-bold text-blue-700 dark:text-blue-300 truncate"
+              title={formatCurrency(
+                summary.actualReceived + summary.verifiedTds,
+              )}
+            >
+              {formatCurrency(summary.actualReceived + summary.verifiedTds)}
+            </p>
+          </div>
+
+          {/* Net Outstanding Balance */}
+          <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
+              Net Outstanding
+            </p>
+            <p
+              className={`mt-0.5 text-xs sm:text-sm font-bold truncate ${
+                summary.outstanding > 0
+                  ? "text-rose-600 dark:text-rose-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+              }`}
+              title={formatCurrency(summary.outstanding)}
+            >
+              {formatCurrency(summary.outstanding)}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* TOOLBAR CONTROLS: CLIENT PICKER, STATUS FILTER, SEARCH */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2.5">
+      <div className="flex flex-col gap-2 rounded-2xl border border-zinc-200 bg-white p-2 sm:px-3 sm:py-2 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Client Filter Dropdown */}
           <div className="flex items-center gap-1.5">
-            <Building2 size={14} className="text-zinc-400" />
+            <Building2 size={13} className="text-zinc-400" />
             <select
               value={selectedClientId}
               onChange={(e) => setSelectedClientId(e.target.value)}
-              className="h-8 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs font-semibold text-zinc-800 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              className="h-7.5 rounded-lg border border-zinc-200 bg-white px-2 text-xs font-semibold text-zinc-800 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             >
               <option value="ALL">All Clients ({initialClients.length})</option>
               {initialClients.map((c) => (
@@ -401,7 +403,7 @@ export default function TdsManagementClient({
             <button
               type="button"
               onClick={() => setStatusFilter("ALL")}
-              className={`rounded-md px-2.5 py-1 transition ${
+              className={`rounded-md px-2.5 py-1 text-xs transition cursor-pointer ${
                 statusFilter === "ALL"
                   ? "bg-white font-bold text-zinc-900 shadow-2xs dark:bg-zinc-900 dark:text-zinc-100"
                   : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
@@ -412,7 +414,7 @@ export default function TdsManagementClient({
             <button
               type="button"
               onClick={() => setStatusFilter("PENDING")}
-              className={`rounded-md px-2.5 py-1 transition ${
+              className={`rounded-md px-2.5 py-1 text-xs transition cursor-pointer ${
                 statusFilter === "PENDING"
                   ? "bg-amber-100 font-bold text-amber-800 shadow-2xs dark:bg-amber-950 dark:text-amber-200"
                   : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
@@ -423,7 +425,7 @@ export default function TdsManagementClient({
             <button
               type="button"
               onClick={() => setStatusFilter("VERIFIED")}
-              className={`rounded-md px-2.5 py-1 transition ${
+              className={`rounded-md px-2.5 py-1 text-xs transition cursor-pointer ${
                 statusFilter === "VERIFIED"
                   ? "bg-emerald-100 font-bold text-emerald-800 shadow-2xs dark:bg-emerald-950 dark:text-emerald-200"
                   : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
@@ -435,9 +437,9 @@ export default function TdsManagementClient({
         </div>
 
         {/* Search Input */}
-        <div className="relative min-w-[240px]">
+        <div className="relative min-w-[220px]">
           <Search
-            size={14}
+            size={13}
             className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
           />
           <input
@@ -445,20 +447,22 @@ export default function TdsManagementClient({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search invoice number or client..."
-            className="h-8 w-full rounded-lg border border-zinc-200 bg-white pl-8 pr-3 text-xs text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            className="h-7.5 w-full rounded-lg border border-zinc-200 bg-white pl-8 pr-3 text-xs text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
           />
         </div>
       </div>
 
       {/* BATCH ACTION BAR IF INVOICES ARE CHECKED */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between rounded-xl bg-blue-50 px-4 py-2 text-xs font-medium text-blue-900 dark:bg-blue-950/50 dark:text-blue-300">
+        <div className="flex items-center justify-between rounded-xl bg-blue-50 px-3.5 py-1.5 text-xs font-medium text-blue-900 dark:bg-blue-950/50 dark:text-blue-300">
           <div className="flex items-center gap-2">
-            <span>{selectedIds.length} invoices selected</span>
+            <span className="font-semibold">
+              {selectedIds.length} invoices selected
+            </span>
             <button
               type="button"
               onClick={() => setSelectedIds([])}
-              className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400"
+              className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 cursor-pointer"
             >
               Clear
             </button>
@@ -468,19 +472,19 @@ export default function TdsManagementClient({
               type="button"
               onClick={() => handleBulkVerify(true)}
               disabled={isPending}
-              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1 font-semibold text-white shadow-2xs hover:bg-emerald-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-2xs hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
             >
               <Check size={12} />
-              <span>Mark All as Verified</span>
+              <span>Mark as Verified</span>
             </button>
             <button
               type="button"
               onClick={() => handleBulkVerify(false)}
               disabled={isPending}
-              className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-white px-3 py-1 font-semibold text-amber-800 shadow-2xs hover:bg-amber-50 disabled:opacity-50 dark:border-amber-800 dark:bg-zinc-900 dark:text-amber-300"
+              className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-xs font-semibold text-amber-800 shadow-2xs hover:bg-amber-50 disabled:opacity-50 dark:border-amber-800 dark:bg-zinc-900 dark:text-amber-300 cursor-pointer"
             >
               <Clock size={12} />
-              <span>Mark All as Pending</span>
+              <span>Mark as Pending</span>
             </button>
           </div>
         </div>
@@ -489,10 +493,10 @@ export default function TdsManagementClient({
       {/* MAIN INTERACTIVE TDS TABLE */}
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
         <div className="overflow-x-auto [scrollbar-width:thin]">
-          <table className="w-full min-w-[1050px] table-auto border-collapse text-left text-xs">
+          <table className="w-full table-auto border-collapse text-left text-xs">
             <thead>
               <tr className="border-b border-zinc-200 bg-zinc-50 font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300">
-                <th className="w-10 px-3 py-3 text-center">
+                <th className="w-8 px-2.5 py-2 text-center">
                   <input
                     type="checkbox"
                     checked={
@@ -500,18 +504,34 @@ export default function TdsManagementClient({
                       selectedIds.length === filteredInvoices.length
                     }
                     onChange={toggleSelectAll}
-                    className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                    className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                   />
                 </th>
-                <th className="px-3 py-3">Client</th>
-                <th className="px-3 py-3">Invoice Details</th>
-                <th className="px-3 py-3 text-right">Invoice Total</th>
-                <th className="px-3 py-3 text-right">Payment Received</th>
-                <th className="px-3 py-3 text-right">TDS Deducted</th>
-                <th className="px-4 py-3 text-center">TDS Verified (26AS)</th>
-                <th className="px-3 py-3 text-right">Outstanding</th>
-                <th className="px-3 py-3 text-center">Reconciliation Status</th>
-                <th className="px-3 py-3 text-center">Actions</th>
+                <th className="px-2.5 py-2">Client</th>
+                <th className="whitespace-nowrap px-2.5 py-2">
+                  Invoice Details
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2 text-right">
+                  Invoice Total
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2 text-right">
+                  Payment Received
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2 text-right">
+                  TDS Deducted
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2 text-center">
+                  TDS
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2 text-right">
+                  Outstanding
+                </th>
+                <th className="whitespace-nowrap px-2.5 py-2 text-center">
+                  Reconciliation Status
+                </th>
+                <th className="whitespace-nowrap px-3 py-2 text-center sticky right-0 z-20 bg-zinc-50 dark:bg-zinc-800 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -539,12 +559,12 @@ export default function TdsManagementClient({
                   return (
                     <tr
                       key={inv.id}
-                      className={`transition-colors hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40 ${
-                        isChecked ? "bg-blue-50/40 dark:bg-blue-950/20" : ""
+                      className={`group transition-colors hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 ${
+                        isChecked ? "bg-blue-50/50 dark:bg-blue-950/30" : ""
                       }`}
                     >
                       {/* Checkbox for selection */}
-                      <td className="px-3 py-3 text-center">
+                      <td className="px-2.5 py-1.5 text-center">
                         <input
                           type="checkbox"
                           checked={isChecked}
@@ -555,72 +575,68 @@ export default function TdsManagementClient({
                                 : [...prev, inv.id],
                             )
                           }
-                          className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                          className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                         />
                       </td>
 
                       {/* Client info */}
-                      <td className="px-3 py-3">
+                      <td className="px-2.5 py-1.5 max-w-[180px]">
                         <Link
                           href={`/clients/${inv.clientId}`}
-                          className="font-semibold text-zinc-900 hover:text-blue-600 dark:text-zinc-100 dark:hover:text-blue-400"
+                          className="font-semibold text-zinc-900 hover:text-blue-600 dark:text-zinc-100 dark:hover:text-blue-400 block truncate"
+                          title={inv.clientName}
                         >
                           {inv.clientName}
                         </Link>
-                        {inv.clientCode && (
-                          <span className="ml-1 text-[10px] text-zinc-400">
-                            ({inv.clientCode})
-                          </span>
-                        )}
-                        <div className="text-[10px] text-zinc-400">
-                          Config TDS:{" "}
+                        <div className="text-[10px] text-zinc-400 truncate">
+                          {inv.clientCode ? `${inv.clientCode} • ` : ""}TDS{" "}
                           {Number(inv.tdsRateUsed || inv.clientTdsRate || 2)}%
                         </div>
                       </td>
 
                       {/* Invoice Details */}
-                      <td className="px-3 py-3">
+                      <td className="whitespace-nowrap px-2.5 py-1.5">
                         <Link
                           href={`/invoices/${inv.id}`}
-                          className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                          className="font-semibold text-blue-600 hover:underline dark:text-blue-400 block"
                         >
                           {inv.invoiceNumber}
                         </Link>
                         <div className="text-[10px] text-zinc-400">
-                          Date: {formatDateDisplay(inv.invoiceDate)}
+                          {formatDateDisplay(inv.invoiceDate)}
                         </div>
                       </td>
 
                       {/* Gross Invoice Total */}
-                      <td className="px-3 py-3 text-right font-medium text-zinc-900 dark:text-zinc-100">
+                      <td className="whitespace-nowrap px-2.5 py-1.5 text-right font-medium text-zinc-900 dark:text-zinc-100">
                         {formatCurrency(inv.grossInvoiceAmount)}
                       </td>
 
                       {/* Payment Received (cash/bank) */}
-                      <td className="px-3 py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400">
+                      <td className="whitespace-nowrap px-2.5 py-1.5 text-right font-semibold text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(inv.actualPaymentReceived)}
                       </td>
 
                       {/* TDS Deducted Amount (Overridable) */}
-                      <td className="px-3 py-3 text-right">
+                      <td className="whitespace-nowrap px-2.5 py-1.5 text-right">
                         <div className="font-semibold text-zinc-900 dark:text-zinc-100">
                           {formatCurrency(inv.tdsDeducted)}
                         </div>
                       </td>
 
-                      {/* TDS Verification Checkbox (The core requested checkbox!) */}
-                      <td className="px-4 py-3 text-center">
-                        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 shadow-2xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700">
+                      {/* TDS Verification Checkbox */}
+                      <td className="whitespace-nowrap px-2.5 py-1.5 text-center">
+                        <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-0.5 shadow-2xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700">
                           <input
                             type="checkbox"
                             checked={Boolean(inv.isVerified)}
                             onChange={() =>
                               handleToggleVerification(inv.id, inv.isVerified)
                             }
-                            className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                            className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                           />
                           <span
-                            className={`text-[11px] font-bold ${
+                            className={`text-[10px] font-bold ${
                               inv.isVerified
                                 ? "text-emerald-700 dark:text-emerald-300"
                                 : "text-amber-700 dark:text-amber-300"
@@ -632,7 +648,7 @@ export default function TdsManagementClient({
                       </td>
 
                       {/* Outstanding */}
-                      <td className="px-3 py-3 text-right">
+                      <td className="whitespace-nowrap px-2.5 py-1.5 text-right">
                         <div className="flex flex-col items-end">
                           <span
                             className={`font-semibold ${
@@ -645,137 +661,82 @@ export default function TdsManagementClient({
                           >
                             {formatCurrency(inv.outstandingAmount)}
                           </span>
-                          {inv.outstandingAmount > 0 &&
-                            !inv.isVerified &&
-                            isEquationMatched && (
-                              <span
-                                className="text-[10px] text-zinc-500 dark:text-zinc-400"
-                                title={`Pending TDS: ${formatCurrency(inv.tdsDeducted)}${
-                                  Math.abs(
-                                    inv.outstandingAmount - inv.tdsDeducted,
-                                  ) >= 0.01
-                                    ? ` | Round-off Diff: ${formatCurrency(
-                                        Math.abs(
-                                          inv.outstandingAmount -
-                                            inv.tdsDeducted,
-                                        ),
-                                      )}`
-                                    : ""
-                                }\nCash Due from Client: ₹0.00`}
-                              >
-                                TDS Pending
-                                {Math.abs(
-                                  inv.outstandingAmount - inv.tdsDeducted,
-                                ) >= 0.01 && (
-                                  <span className="ml-0.5 text-zinc-400 font-normal">
-                                    (
-                                    {inv.outstandingAmount > inv.tdsDeducted
-                                      ? "+"
-                                      : ""}
-                                    {(
-                                      inv.outstandingAmount - inv.tdsDeducted
-                                    ).toFixed(2)}
-                                    )
-                                  </span>
-                                )}
-                              </span>
-                            )}
                         </div>
                       </td>
 
-                      {/* Accounting Equation Check & Reconciliation Status */}
-                      <td className="px-3 py-3 text-center">
+                      {/* Accounting Equation Check & Reconciliation Status (Compact Single Pill) */}
+                      <td className="whitespace-nowrap px-2.5 py-1.5 text-center">
                         {isFullySettled ? (
-                          <div
-                            className="inline-flex flex-col items-center gap-0.5"
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full border border-emerald-200/90 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 shadow-2xs cursor-help"
                             title={`Reconciliation Status: 100% Settled & Closed\nPayment Received: ${formatCurrency(inv.actualPaymentReceived)}\n+ Verified TDS (26AS): ${formatCurrency(inv.tdsDeducted)}\n= Invoice Total: ${formatCurrency(inv.grossInvoiceAmount)}\nStatus: 100% Balanced & Verified in Form 26AS`}
                           >
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 shadow-2xs dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-300">
-                              <CheckCircle2
-                                size={12}
-                                className="text-emerald-600 dark:text-emerald-400"
-                              />
-                              Fully Reconciled
-                            </span>
-                            <span className="text-[10px] font-medium text-emerald-600/90 dark:text-emerald-400/90">
-                              100% Settled &bull; Verified in 26AS
-                            </span>
-                          </div>
+                            <CheckCircle2
+                              size={11}
+                              className="text-emerald-600 dark:text-emerald-400"
+                            />
+                            <span>Fully Reconciled</span>
+                          </span>
                         ) : isTdsPendingVerification ? (
-                          <div
-                            className="inline-flex flex-col items-center gap-0.5"
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full border border-amber-300/90 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 shadow-2xs cursor-help"
                             title={`Reconciliation Status: Payment Accounted, TDS Pending Settlement\nPayment Received: ${formatCurrency(inv.actualPaymentReceived)}\n+ TDS Deducted: ${formatCurrency(inv.tdsDeducted)} (Pending Form 26AS Verification)\n= Accounted Total: ${formatCurrency(totalAccounted)}\nInvoice Gross: ${formatCurrency(inv.grossInvoiceAmount)}${
                               Math.abs(diff) >= 0.01
                                 ? `\nRound-off Diff: ${formatCurrency(Math.abs(diff))}`
                                 : ""
                             }\nStatus: Cash payment received matches invoice minus client TDS deduction. Awaiting Form 26AS verification.`}
                           >
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/80 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800 shadow-2xs dark:border-amber-800/80 dark:bg-amber-950/40 dark:text-amber-300">
-                              <Clock
-                                size={12}
-                                className="text-amber-600 dark:text-amber-400"
-                              />
-                              TDS Pending (26AS)
-                            </span>
-                            <span className="text-[10px] font-medium text-amber-700/90 dark:text-amber-400/90">
-                              Cash Recvd &bull; TDS Unverified
-                              {Math.abs(diff) >= 0.01
-                                ? ` (±${formatCurrency(Math.abs(diff))})`
-                                : ""}
-                            </span>
-                          </div>
+                            <Clock
+                              size={11}
+                              className="text-amber-600 dark:text-amber-400"
+                            />
+                            <span>TDS Pending</span>
+                          </span>
                         ) : diff < -0.01 ? (
-                          <div
-                            className="inline-flex flex-col items-center gap-0.5"
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-700 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300 shadow-2xs cursor-help"
                             title={`Equation Breakdown:\nPayment Received: ${formatCurrency(inv.actualPaymentReceived)}\n+ TDS Deducted: ${formatCurrency(inv.tdsDeducted)}\n= Total Settled: ${formatCurrency(totalAccounted)}\nExceeds Invoice Total (${formatCurrency(inv.grossInvoiceAmount)}) by ${formatCurrency(Math.abs(diff))}`}
                           >
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200/80 bg-purple-50 px-2.5 py-0.5 text-[11px] font-semibold text-purple-700 shadow-2xs dark:border-purple-800/80 dark:bg-purple-950/40 dark:text-purple-300">
-                              <AlertCircle
-                                size={12}
-                                className="text-purple-600 dark:text-purple-400"
-                              />
-                              Excess Settled
-                            </span>
-                            <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400">
-                              +{formatCurrency(Math.abs(diff))} over total
-                            </span>
-                          </div>
+                            <AlertCircle
+                              size={11}
+                              className="text-purple-600 dark:text-purple-400"
+                            />
+                            <span>Excess Settled</span>
+                          </span>
                         ) : (
-                          <div
-                            className="inline-flex flex-col items-center gap-0.5"
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 shadow-2xs cursor-help"
                             title={`Equation Breakdown:\nPayment Received: ${formatCurrency(inv.actualPaymentReceived)}\n+ TDS Deducted: ${formatCurrency(inv.tdsDeducted)}\n= Accounted: ${formatCurrency(totalAccounted)}\nPending Balance: ${formatCurrency(diff)} of ${formatCurrency(inv.grossInvoiceAmount)}`}
                           >
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-800 shadow-2xs dark:border-amber-800/80 dark:bg-amber-950/40 dark:text-amber-300">
-                              <Clock
-                                size={12}
-                                className="text-amber-600 dark:text-amber-400"
-                              />
-                              Pending Balance
-                            </span>
-                            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                              {formatCurrency(diff)} remaining
-                            </span>
-                          </div>
+                            <Clock size={11} className="text-zinc-500" />
+                            <span>Pending Balance</span>
+                          </span>
                         )}
                       </td>
 
-                      {/* Actions */}
-                      <td className="px-3 py-3 text-center">
+                      {/* Actions (Sticky Right Column) */}
+                      <td
+                        className={`whitespace-nowrap px-3 py-1.5 text-center sticky right-0 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)] transition-colors ${
+                          isChecked
+                            ? "bg-blue-50 dark:bg-blue-950"
+                            : "bg-white group-hover:bg-zinc-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800"
+                        }`}
+                      >
                         <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"
                             onClick={() => openEditModal(inv)}
-                            className="rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800"
-                            title="Edit TDS"
+                            className="rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 cursor-pointer shadow-2xs transition"
+                            title="Edit TDS Settings"
                           >
-                            <FileText size={14} />
+                            <FileText size={13} />
                           </button>
                           <Link
                             href={`/invoices/${inv.id}`}
-                            className="rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800"
+                            className="rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 shadow-2xs transition"
                             title="View Invoice"
                           >
-                            <ExternalLink size={14} />
+                            <ExternalLink size={13} />
                           </Link>
                         </div>
                       </td>
