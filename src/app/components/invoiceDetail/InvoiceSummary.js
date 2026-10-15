@@ -7,7 +7,9 @@ import TdsVerifyButton from "./TdsVerifyButton";
 export default function InvoiceSummary({ data }) {
   const isOpening =
     Boolean(data.isOpeningBalance) ||
-    String(data.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+    String(data.invoiceNumber || "")
+      .toUpperCase()
+      .startsWith("OPENING");
   const invoiceAmount = Number(data.invoiceAmount || 0);
   const netPayable = Number(data.netPayableAmount || 0);
   const paid = Number(data.paid || 0);
@@ -143,7 +145,12 @@ export default function InvoiceSummary({ data }) {
                 </span>
               </div>
               <div className="mt-1.5 text-base sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                {formatMoney(data.tdsDeducted || data.tdsDeductedAmount || data.tdsAmount || 0)}
+                {formatMoney(
+                  data.tdsDeducted ||
+                    data.tdsDeductedAmount ||
+                    data.tdsAmount ||
+                    0,
+                )}
               </div>
             </div>
           ) : (
@@ -209,46 +216,6 @@ export default function InvoiceSummary({ data }) {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Reconciliation Equation Bar */}
-        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-2 text-xs text-blue-900 dark:border-blue-950 dark:bg-blue-950/30 dark:text-blue-200">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold">Accounting Reconciliation:</span>
-            {!isOpening ? (
-              <span>
-                Actual Payment Received: <b>{formatMoney(paid)}</b> + TDS ({data.isTdsVerified ? "Verified" : "Pending"}):{" "}
-                <b>{formatMoney(data.tdsDeducted || data.tdsDeductedAmount || data.tdsAmount || 0)}</b> ={" "}
-                <b>
-                  {formatMoney(
-                    paid +
-                      Number(
-                        data.tdsDeducted ||
-                          data.tdsDeductedAmount ||
-                          data.tdsAmount ||
-                          0,
-                      ),
-                  )}
-                </b>{" "}
-                of Total Invoice {formatMoney(invoiceAmount)}
-              </span>
-            ) : (
-              <span>
-                Actual Payment Received: <b>{formatMoney(paid)}</b> + Remaining Due: <b>{formatMoney(due)}</b> ={" "}
-                <b>{formatMoney(paid + due)}</b> of Total Opening Balance {formatMoney(invoiceAmount)}
-              </span>
-            )}
-          </div>
-
-          {Math.abs(paid + (isOpening ? 0 : Number(data.tdsDeducted || data.tdsDeductedAmount || data.tdsAmount || 0)) - invoiceAmount) < 1 ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-              ✓ Fully Settled
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-              Outstanding Balance: {formatMoney(due)}
-            </span>
-          )}
         </div>
       </div>
     </div>

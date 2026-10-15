@@ -2,18 +2,6 @@ import Link from "next/link";
 
 const tabs = [
   {
-    key: "sub-clients",
-    label: "Sub Clients",
-  },
-  {
-    key: "locations",
-    label: "Locations",
-  },
-  {
-    key: "contacts",
-    label: "Contacts",
-  },
-  {
     key: "invoices",
     label: "Invoices",
   },
@@ -24,6 +12,18 @@ const tabs = [
   {
     key: "followups",
     label: "Followups",
+  },
+  {
+    key: "sub-clients",
+    label: "Sub Clients",
+  },
+  {
+    key: "locations",
+    label: "Locations",
+  },
+  {
+    key: "contacts",
+    label: "Contacts",
   },
 ];
 

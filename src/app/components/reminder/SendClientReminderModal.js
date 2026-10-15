@@ -277,7 +277,7 @@ export default function SendClientReminderModal({
         }
       >
         <Mail size={13} />
-        <span>Send Statement / Reminder</span>
+        <span>Send Reminder</span>
       </button>
 
       {isOpen && (

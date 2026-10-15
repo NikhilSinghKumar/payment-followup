@@ -112,11 +112,7 @@ export default function OpeningBalanceModal({
         title="Manage opening balance"
       >
         <Coins className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-        <span>
-          {hasExisting
-            ? `Edit Opening (${existingOpeningBalance.type === "CREDIT" ? "Cr" : "Dr"}: ${formatCurrency(existingOpeningBalance.amount || existingOpeningBalance.invoiceAmount)})`
-            : "Set Opening Balance"}
-        </span>
+        <span>{hasExisting ? "Edit Opening" : "Set Opening Balance"}</span>
       </button>
 
       {isOpen && (

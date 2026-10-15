@@ -10,7 +10,7 @@ export default function KPICard({
       <div className="flex items-start justify-between gap-1.5">
         <div className="min-w-0 flex-1">
           <p
-            className="text-[11px] font-medium leading-tight text-zinc-500 dark:text-zinc-400 truncate"
+            className="text-[12px] font-medium leading-tight text-zinc-500 dark:text-zinc-400 truncate"
             title={title}
           >
             {title}

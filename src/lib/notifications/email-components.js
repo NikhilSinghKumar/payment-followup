@@ -1271,18 +1271,12 @@ export function ClientOutstandingInvoices({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatCurrency(Math.max(0, totals.outstandingAmount - resolvedUnallocated))}
-                  </td>
-                  <td
-                    colSpan={2}
-                    style={{
-                      padding: "11px 8px",
-                      color: hasAnyOverdue ? "#DC2626" : "#475569",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {hasAnyOverdue ? "Overdue" : "Current"}
+                    {formatCurrency(
+                      Math.max(
+                        0,
+                        totals.outstandingAmount - resolvedUnallocated,
+                      ),
+                    )}
                   </td>
                 </tr>
               </>
@@ -1304,7 +1298,7 @@ export function ClientOutstandingInvoices({
                     textAlign: "right",
                   }}
                 >
-                  Total Due:
+                  Total :
                 </td>
                 <td
                   style={{
@@ -1379,11 +1373,11 @@ export function AccountFinancialSummary({
   netOutstanding = null,
   onAccountAmount = null,
   unallocatedAmount = null,
-  overallLabel = "Net Payable Amount",
+  overallLabel = "Account Total",
   deductionLabel = "Payment Received",
   tdsLabel = "TDS Deducted",
   restLabel = "Rest Due Amount",
-  overallSubtext = "Total Net Payable",
+  overallSubtext = "",
   deductionSubtext = "Paid / Credited",
   tdsSubtext = "Tax Deducted (IT Act)",
   restSubtext = "Net Outstanding",
@@ -1434,7 +1428,9 @@ export function AccountFinancialSummary({
           ? restDueAmount
           : Math.max(
               0,
-              parsedOverall - parsedDeduction - (hasTdsCard && isTdsVerified ? parsedTds : 0),
+              parsedOverall -
+                parsedDeduction -
+                (hasTdsCard && isTdsVerified ? parsedTds : 0),
             ),
     ),
   );
@@ -1568,7 +1564,8 @@ export function AccountFinancialSummary({
               width={colWidth}
               valign="top"
               style={{
-                background: !isTdsVerified && parsedTds > 0 ? "#FFFBEB" : "#F5F3FF",
+                background:
+                  !isTdsVerified && parsedTds > 0 ? "#FFFBEB" : "#F5F3FF",
                 border: `1px solid ${!isTdsVerified && parsedTds > 0 ? "#FDE68A" : "#DDD6FE"}`,
                 borderRadius: "8px",
                 padding: "12px 10px",
@@ -1579,7 +1576,8 @@ export function AccountFinancialSummary({
                 style={{
                   fontSize: "11px",
                   fontWeight: 700,
-                  color: !isTdsVerified && parsedTds > 0 ? "#92400E" : "#6D28D9",
+                  color:
+                    !isTdsVerified && parsedTds > 0 ? "#92400E" : "#6D28D9",
                   textTransform: "uppercase",
                   letterSpacing: "0.03em",
                   marginBottom: "4px",
@@ -1591,7 +1589,8 @@ export function AccountFinancialSummary({
                 style={{
                   fontSize: "17px",
                   fontWeight: 800,
-                  color: !isTdsVerified && parsedTds > 0 ? "#D97706" : "#4F46E5",
+                  color:
+                    !isTdsVerified && parsedTds > 0 ? "#D97706" : "#4F46E5",
                   lineHeight: 1.25,
                   marginBottom: "4px",
                   wordBreak: "break-word",
@@ -1602,7 +1601,8 @@ export function AccountFinancialSummary({
               <div
                 style={{
                   fontSize: "11px",
-                  color: !isTdsVerified && parsedTds > 0 ? "#B45309" : "#7C3AED",
+                  color:
+                    !isTdsVerified && parsedTds > 0 ? "#B45309" : "#7C3AED",
                   fontWeight: 600,
                 }}
               >
@@ -1707,7 +1707,9 @@ export function SingleInvoiceDataTable({
   const parsedOverall =
     rawGross > 0
       ? rawGross
-      : Number(invoice.netPayableAmount || overallDue || invoice.overallDue || 0);
+      : Number(
+          invoice.netPayableAmount || overallDue || invoice.overallDue || 0,
+        );
 
   const parsedDeduction = Number(
     paymentDeduction !== undefined && paymentDeduction !== null
@@ -1728,8 +1730,7 @@ export function SingleInvoiceDataTable({
           : invoice.tdsStatus === "pending"
             ? false
             : Boolean(
-                invoice.tdsVerifiedAt ||
-                Number(invoice.verifiedTds || 0) > 0,
+                invoice.tdsVerifiedAt || Number(invoice.verifiedTds || 0) > 0,
               );
   const rawTds = Number(
     invoice.verifiedTds ??
@@ -1739,9 +1740,7 @@ export function SingleInvoiceDataTable({
       0,
   );
   const resolvedTds = Number(
-    tdsAmount !== null && tdsAmount !== undefined
-      ? tdsAmount
-      : rawTds,
+    tdsAmount !== null && tdsAmount !== undefined ? tdsAmount : rawTds,
   );
   const verifiedTds = isTdsVerified ? resolvedTds : 0;
   const pendingTds = !isTdsVerified ? resolvedTds : 0;
@@ -1763,8 +1762,15 @@ export function SingleInvoiceDataTable({
     } else {
       parsedRest = Number(restDueAmount);
     }
-  } else if (invoice.restDueAmount !== undefined && invoice.restDueAmount !== null) {
-    if (!isTdsVerified && pendingTds > 0 && Number(invoice.restDueAmount) === 0) {
+  } else if (
+    invoice.restDueAmount !== undefined &&
+    invoice.restDueAmount !== null
+  ) {
+    if (
+      !isTdsVerified &&
+      pendingTds > 0 &&
+      Number(invoice.restDueAmount) === 0
+    ) {
       parsedRest = Math.max(0, remainingDue);
     } else {
       parsedRest = Number(invoice.restDueAmount);
@@ -1775,8 +1781,15 @@ export function SingleInvoiceDataTable({
     } else {
       parsedRest = Number(invoice.due);
     }
-  } else if (invoice.outstandingAmount !== undefined && invoice.outstandingAmount !== null) {
-    if (!isTdsVerified && pendingTds > 0 && Number(invoice.outstandingAmount) === 0) {
+  } else if (
+    invoice.outstandingAmount !== undefined &&
+    invoice.outstandingAmount !== null
+  ) {
+    if (
+      !isTdsVerified &&
+      pendingTds > 0 &&
+      Number(invoice.outstandingAmount) === 0
+    ) {
       parsedRest = Math.max(0, remainingDue);
     } else {
       parsedRest = Number(invoice.outstandingAmount);
@@ -1786,7 +1799,8 @@ export function SingleInvoiceDataTable({
   }
 
   const isSettledFully = parsedRest <= 0 && (!pendingTds || isTdsVerified);
-  const isTdsPending = !isTdsVerified && pendingTds > 0 && parsedRest <= pendingTds;
+  const isTdsPending =
+    !isTdsVerified && pendingTds > 0 && parsedRest <= pendingTds;
 
   const awbText =
     Array.isArray(awbs) && awbs.length > 0
@@ -2353,7 +2367,10 @@ export function ClientPaymentSettlementTable({
     const verifiedTds = isInvTdsVerified ? tdsSettled : 0;
     const pendingTds = !isInvTdsVerified ? tdsSettled : 0;
 
-    if (invTotal <= 0 && (settled > 0 || (rem !== null && rem > 0) || tdsSettled > 0)) {
+    if (
+      invTotal <= 0 &&
+      (settled > 0 || (rem !== null && rem > 0) || tdsSettled > 0)
+    ) {
       invTotal = settled + (isInvTdsVerified ? tdsSettled : 0) + (rem || 0);
     }
 
@@ -2377,7 +2394,8 @@ export function ClientPaymentSettlementTable({
     }
 
     const isFullySettled = remaining <= 0 && (!pendingTds || isInvTdsVerified);
-    const isTdsPending = !isInvTdsVerified && pendingTds > 0 && remaining <= pendingTds;
+    const isTdsPending =
+      !isInvTdsVerified && pendingTds > 0 && remaining <= pendingTds;
 
     const netPayable =
       rawNet > 0
@@ -2441,17 +2459,21 @@ export function ClientPaymentSettlementTable({
         ? totals.pendingTdsNow === 0
         : true
       : paymentInfo?.isTdsVerified ||
-        paymentInfo?.tdsStatus === "verified" ||
-        (Number(paymentInfo?.totalVerifiedTds || 0) > 0),
+          paymentInfo?.tdsStatus === "verified" ||
+          Number(paymentInfo?.totalVerifiedTds || 0) > 0,
   );
 
   const effectiveVerifiedTds = isBatchTdsVerified
-    ? (totals.verifiedTdsNow > 0 ? totals.verifiedTdsNow : cardTdsValue)
+    ? totals.verifiedTdsNow > 0
+      ? totals.verifiedTdsNow
+      : cardTdsValue
     : totals.verifiedTdsNow;
 
   const effectivePendingTds = isBatchTdsVerified
     ? 0
-    : (totals.pendingTdsNow > 0 ? totals.pendingTdsNow : cardTdsValue);
+    : totals.pendingTdsNow > 0
+      ? totals.pendingTdsNow
+      : cardTdsValue;
 
   // 1. Payment Received = Settled against invoice(s) + unallocated amount (OR On Account)
   const settledAgainstInvoices =
@@ -2484,7 +2506,9 @@ export function ClientPaymentSettlementTable({
         : paymentInfo?.paymentAmount !== undefined &&
             paymentInfo?.paymentAmount !== null
           ? Math.max(
-              Number(String(paymentInfo.paymentAmount).replace(/[^0-9.-]+/g, "")),
+              Number(
+                String(paymentInfo.paymentAmount).replace(/[^0-9.-]+/g, ""),
+              ),
               computedPayment,
             )
           : computedPayment;
@@ -2987,14 +3011,18 @@ export function ClientPaymentSettlementTable({
                             <span
                               style={{
                                 fontWeight: 700,
-                                color: inv.isTdsVerified ? "#4F46E5" : "#D97706",
+                                color: inv.isTdsVerified
+                                  ? "#4F46E5"
+                                  : "#D97706",
                               }}
                             >
                               {formatCurrency(inv.tds)}
                             </span>
                           </div>
                         ) : (
-                          <span style={{ color: "#94A3B8" }}>{formatCurrency(0)}</span>
+                          <span style={{ color: "#94A3B8" }}>
+                            {formatCurrency(0)}
+                          </span>
                         )}
                       </td>
                       <td

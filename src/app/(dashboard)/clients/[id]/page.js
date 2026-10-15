@@ -15,7 +15,7 @@ import { enrichInvoices } from "@/lib/invoice-summary";
 import { fetchClientFinancialSummary } from "@/lib/client-summary";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import ClientTabs from "@/app/components/client/clientTabs";
-import ClientOverviewTab from "@/app/components/client/tabs/clientOverviewTab";
+// import ClientOverviewTab from "@/app/components/client/tabs/clientOverviewTab";
 import ClientSubClientsTab from "@/app/components/client/tabs/clientSubClientsTab";
 import ClientInvoicesTab from "@/app/components/client/tabs/clientInvoicesTab";
 import ClientLocationsTab from "@/app/components/client/tabs/clientLocationsTab";
@@ -40,7 +40,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
   const clientId = Number(id);
   const contacts = await getClientContactsByClientId(clientId);
 
-  const activeTab = resolvedSearchParams?.tab || "overview";
+  const activeTab = resolvedSearchParams?.tab || "invoices";
 
   let clientFollowups = [];
   let clientPayments = [];
@@ -294,10 +294,6 @@ export default async function ClientDetailPage({ params, searchParams }) {
         {/* ===================================== */}
         {/* TAB CONTENT */}
         {/* ===================================== */}
-
-        {activeTab === "overview" && (
-          <ClientOverviewTab client={client} invoices={normalizedInvoiceData} />
-        )}
 
         {activeTab === "sub-clients" && (
           <ClientSubClientsTab
