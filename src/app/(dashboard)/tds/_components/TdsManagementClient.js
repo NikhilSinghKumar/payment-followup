@@ -622,12 +622,22 @@ export default function TdsManagementClient({
 
                       {/* Invoice Details */}
                       <td className="whitespace-nowrap px-2.5 py-1.5">
-                        <Link
-                          href={`/invoices/${inv.id}`}
-                          className="font-semibold text-blue-600 hover:underline dark:text-blue-400 block"
-                        >
-                          {inv.invoiceNumber}
-                        </Link>
+                        <div className="flex items-center gap-1.5">
+                          <Link
+                            href={`/invoices/${inv.id}`}
+                            className="font-semibold text-blue-600 hover:underline dark:text-blue-400 block"
+                          >
+                            {inv.invoiceNumber}
+                          </Link>
+                          {(inv.isOpeningBalance ||
+                            String(inv.invoiceNumber || "")
+                              .toUpperCase()
+                              .startsWith("OPENING")) && (
+                            <span className="rounded bg-amber-50 border border-amber-200/80 px-1 py-0.5 text-[9px] font-semibold text-amber-700 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300">
+                              Opening Bal
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[10px] text-zinc-400">
                           {formatDateDisplay(inv.invoiceDate)}
                         </div>
@@ -762,14 +772,19 @@ export default function TdsManagementClient({
                         }`}
                       >
                         <div className="flex items-center justify-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(inv)}
-                            className="rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 cursor-pointer shadow-2xs transition"
-                            title="Edit TDS Settings"
-                          >
-                            <FileText size={13} />
-                          </button>
+                          {!inv.isOpeningBalance &&
+                            !String(inv.invoiceNumber || "")
+                              .toUpperCase()
+                              .startsWith("OPENING") && (
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(inv)}
+                                className="rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 cursor-pointer shadow-2xs transition"
+                                title="Edit TDS Settings"
+                              >
+                                <FileText size={13} />
+                              </button>
+                            )}
                           <Link
                             href={`/invoices/${inv.id}`}
                             className="rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 shadow-2xs transition"

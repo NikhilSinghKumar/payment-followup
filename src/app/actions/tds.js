@@ -41,12 +41,10 @@ export async function getTdsManagementData({
     .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
     .orderBy(clients.companyName);
 
-  // 2. Query invoices that have TDS or belong to clients with TDS (strictly excluding Opening Balance invoices)
+  // 2. Query invoices that have TDS or belong to clients with TDS (including Opening Balance invoices)
   const conditions = [
     eq(invoices.companyId, companyId),
     isNull(invoices.deletedAt),
-    eq(invoices.isOpeningBalance, false),
-    not(ilike(invoices.invoiceNumber, "OPENING%")),
   ];
 
   if (clientId && clientId !== "ALL") {
@@ -74,6 +72,7 @@ export async function getTdsManagementData({
       tdsRateUsed: invoices.tdsRateUsed,
       status: invoices.status,
       clientId: invoices.clientId,
+      isOpeningBalance: invoices.isOpeningBalance,
       clientName: clients.companyName,
       clientCode: clients.companyCode,
       clientTdsRate: clients.tdsRate,
@@ -85,18 +84,26 @@ export async function getTdsManagementData({
 
   // 3. Enrich invoices with TDS reconciliation metrics
   const enrichedInvoices = rawInvoices.map((inv) => {
+    const isOpening = Boolean(
+      inv.isOpeningBalance ||
+      String(inv.invoiceNumber || "")
+        .toUpperCase()
+        .startsWith("OPENING"),
+    );
+
     const grossInvoiceAmount = Number(inv.invoiceAmount || 0);
     const actualPaymentReceived = Number(inv.paidAmount || 0);
 
     // Calculated expected TDS based on rate and basic amount (rounded to nearest rupee per Sec 288B)
-    const rawExpected = Number(inv.tdsAmount || 0);
+    const rawExpected = isOpening ? 0 : Number(inv.tdsAmount || 0);
     const expectedTds = Math.round(rawExpected);
 
     // Actual deducted TDS (defaults to expected TDS if not explicitly entered)
-    let rawDeducted =
-      inv.tdsDeductedAmount !== null &&
-      inv.tdsDeductedAmount !== undefined &&
-      Number(inv.tdsDeductedAmount) > 0
+    let rawDeducted = isOpening
+      ? 0
+      : inv.tdsDeductedAmount !== null &&
+          inv.tdsDeductedAmount !== undefined &&
+          Number(inv.tdsDeductedAmount) > 0
         ? Number(inv.tdsDeductedAmount)
         : expectedTds;
 
@@ -107,6 +114,7 @@ export async function getTdsManagementData({
       (grossInvoiceAmount - actualPaymentReceived).toFixed(2),
     );
     if (
+      !isOpening &&
       actualPaymentReceived > 0 &&
       unpaidBalance > 0 &&
       rawDeducted > 0 &&
@@ -117,7 +125,7 @@ export async function getTdsManagementData({
 
     const tdsDeducted = rawDeducted;
     const hasTds = tdsDeducted > 0;
-    const isVerified = Boolean(inv.isTdsVerified);
+    const isVerified = !isOpening && Boolean(inv.isTdsVerified);
 
     const verifiedTds = hasTds && isVerified ? tdsDeducted : 0;
     const pendingTds = hasTds && !isVerified ? tdsDeducted : 0;

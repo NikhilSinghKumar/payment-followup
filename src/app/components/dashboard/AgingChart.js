@@ -72,7 +72,7 @@ export default function AgingChart({ data = [] }) {
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <div>
           <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Bill Aging
+            TOTAL OUTSTANDING
           </h2>
         </div>
 

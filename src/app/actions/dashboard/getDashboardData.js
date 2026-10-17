@@ -54,7 +54,7 @@ async function getAgingData(companyId) {
           SUM(
             CASE
               WHEN ${invoices.dueDate} >= ${today}::date
-              THEN ${invoices.invoiceAmount}
+              THEN ${invoices.outstandingAmount}
               ELSE 0
             END
           ),
@@ -69,7 +69,7 @@ async function getAgingData(companyId) {
               WHEN ${invoices.dueDate} < ${today}::date
                 AND ${invoices.dueDate} >=
                     (${today}::date - INTERVAL '30 days')
-              THEN ${invoices.invoiceAmount}
+              THEN ${invoices.outstandingAmount}
               ELSE 0
             END
           ),
@@ -85,7 +85,7 @@ async function getAgingData(companyId) {
                     (${today}::date - INTERVAL '30 days')
                 AND ${invoices.dueDate} >=
                     (${today}::date - INTERVAL '60 days')
-              THEN ${invoices.invoiceAmount}
+              THEN ${invoices.outstandingAmount}
               ELSE 0
             END
           ),
@@ -101,7 +101,7 @@ async function getAgingData(companyId) {
                     (${today}::date - INTERVAL '60 days')
                 AND ${invoices.dueDate} >=
                     (${today}::date - INTERVAL '90 days')
-              THEN ${invoices.invoiceAmount}
+              THEN ${invoices.outstandingAmount}
               ELSE 0
             END
           ),
@@ -115,7 +115,7 @@ async function getAgingData(companyId) {
             CASE
               WHEN ${invoices.dueDate} <
                     (${today}::date - INTERVAL '90 days')
-              THEN ${invoices.invoiceAmount}
+              THEN ${invoices.outstandingAmount}
               ELSE 0
             END
           ),
@@ -324,15 +324,32 @@ export async function getDashboardData({
   const today = getTodayIST();
 
   // ==========================================
-  // 1. TOTAL OUTSTANDING (INVOICE AMOUNT)
-  // CURRENT SNAPSHOT OF OUTSTANDING INVOICES
+  // 1. GROSS INVOICED (ALL INVOICES + OPENING BALANCES)
+  // TOTAL BILLED/INVOICED AMOUNT
+  // ==========================================
+
+  const [grossInvoicedResult] = await db
+    .select({
+      total: sql`
+        COALESCE(
+          SUM(${invoices.invoiceAmount}),
+          0
+        )
+      `,
+    })
+    .from(invoices)
+    .where(and(eq(invoices.companyId, companyId), isNull(invoices.deletedAt)));
+
+  // ==========================================
+  // 2. TOTAL OUTSTANDING (REMAINING UNPAID BALANCE)
+  // CURRENT SNAPSHOT OF UNPAID RECEIVABLES
   // ==========================================
 
   const [outstandingResult] = await db
     .select({
       total: sql`
         COALESCE(
-          SUM(${invoices.invoiceAmount}),
+          SUM(${invoices.outstandingAmount}),
           0
         )
       `,
@@ -347,7 +364,7 @@ export async function getDashboardData({
     );
 
   // ==========================================
-  // 2. 90+ DAYS OUTSTANDING (INVOICE AMOUNT)
+  // 3. 90+ DAYS OUTSTANDING (REMAINING UNPAID BALANCE)
   // CURRENT SNAPSHOT OF 90+ DAYS OVERDUE INVOICES
   // ==========================================
 
@@ -355,7 +372,7 @@ export async function getDashboardData({
     .select({
       total: sql`
         COALESCE(
-          SUM(${invoices.invoiceAmount}),
+          SUM(${invoices.outstandingAmount}),
           0
         )
       `,
@@ -621,6 +638,8 @@ export async function getDashboardData({
     agingData,
 
     summary: {
+      grossInvoiced: Number(grossInvoicedResult?.total || 0),
+
       outstanding: Number(outstandingResult.total || 0),
 
       outstanding90Days: Number(outstanding90Result.total || 0),
