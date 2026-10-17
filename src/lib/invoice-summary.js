@@ -21,7 +21,9 @@ export function enrichInvoice(invoice) {
 
   const isOpening =
     Boolean(invoice?.isOpeningBalance) ||
-    String(invoice?.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+    String(invoice?.invoiceNumber || "")
+      .toUpperCase()
+      .startsWith("OPENING");
 
   const rawTdsDeducted = Number(
     invoice?.tdsDeductedAmount !== undefined &&
@@ -43,6 +45,27 @@ export function enrichInvoice(invoice) {
   const netBilled = Math.max(0, grossInvoiceAmount - deductions);
   const paid = Number(invoice?.paidAmount ?? invoice?.paid ?? 0);
 
+  // Statutory Net Payable: what client owes after TDS deduction (before cash payments)
+  const statutoryNetPayable = isOpening
+    ? netBilled
+    : invoice?.netPayableAmount !== null &&
+        invoice?.netPayableAmount !== undefined &&
+        Number(invoice?.netPayableAmount) > 0
+      ? Number(invoice.netPayableAmount)
+      : Math.max(0, Number((netBilled - tdsDeducted).toFixed(2)));
+
+  // Remaining Net Payable to be paid via cash/bank payment
+  const netPayableDue = Math.max(
+    0,
+    Number((statutoryNetPayable - paid).toFixed(2)),
+  );
+
+  // Total Outstanding on the invoice: Outstanding = Net payable + TDS (if unverified)
+  const totalOutstanding = Math.max(
+    0,
+    Number((netBilled - paid - verifiedTds).toFixed(2)),
+  );
+
   return {
     ...invoice,
     creditDays,
@@ -50,6 +73,9 @@ export function enrichInvoice(invoice) {
     isTdsVerified,
     verifiedTds,
     pendingTds,
+    netPayableAmount: statutoryNetPayable,
+    netPayableDue,
+    totalOutstanding,
 
     ...calculateInvoiceStatus({
       netPayable: netBilled,

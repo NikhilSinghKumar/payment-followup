@@ -64,7 +64,9 @@ export default function TdsVerifyButton({ invoice }) {
         className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold shadow-2xs transition ${
           isVerified
             ? "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-            : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+            : currentTds <= 0
+              ? "border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+              : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
         }`}
         title="Verify or update TDS deduction"
       >
@@ -75,6 +77,10 @@ export default function TdsVerifyButton({ invoice }) {
               className="text-emerald-600 dark:text-emerald-400"
             />
             <span>TDS Verified (₹{currentTds.toLocaleString("en-IN")})</span>
+          </>
+        ) : currentTds <= 0 ? (
+          <>
+            <span className="text-zinc-600 dark:text-zinc-400">TDS N/A</span>
           </>
         ) : (
           <>

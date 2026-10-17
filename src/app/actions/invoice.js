@@ -206,12 +206,21 @@ export async function createInvoice(formData) {
   });
 
   // =====================================
-  // INVOICE STATUS
+  // INVOICE STATUS & OUTSTANDING
   // =====================================
 
+  const grossInvoiceAmount = Number(calculatedInvoice.invoiceAmount || 0);
+  const deductions =
+    Number(calculatedInvoice.deductionAmount || 0) +
+    Number(calculatedInvoice.otherCharges || 0);
+  const netBilled = Math.max(0, grossInvoiceAmount - deductions);
+
+  // On a new invoice with no payments and unverified TDS,
+  // the client owes the full net billed amount until payment or TDS verification.
   const invoiceStatus = calculateInvoiceStatus({
-    netPayable: calculatedInvoice.netPayableAmount,
+    netPayable: netBilled,
     paid: 0,
+    verifiedTds: 0,
     dueDate,
   });
 
@@ -276,6 +285,9 @@ export async function createInvoice(formData) {
       igstAmount: calculatedInvoice.igstAmount,
 
       tdsAmount: calculatedInvoice.tdsAmount,
+      tdsDeductedAmount: calculatedInvoice.tdsAmount
+        ? String(calculatedInvoice.tdsAmount)
+        : "0.00",
 
       deductionAmount: calculatedInvoice.deductionAmount,
 
@@ -295,7 +307,7 @@ export async function createInvoice(formData) {
 
       paidAmount: "0",
 
-      outstandingAmount: calculatedInvoice.netPayableAmount,
+      outstandingAmount: netBilled.toFixed(2),
 
       status: invoiceStatus?.status || "pending",
 
@@ -304,6 +316,9 @@ export async function createInvoice(formData) {
     .returning({
       id: invoices.id,
     });
+
+  // Synchronize financials using single source of truth
+  await updateInvoiceFinancials(invoice.id);
 
   // =====================================
   // PROCESS NOTIFICATIONS

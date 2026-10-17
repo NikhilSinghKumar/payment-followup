@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { invoices, payments, paymentAllocations } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/auth";
-import { and, eq, isNull, gt, sql } from "drizzle-orm";
+import { and, eq, isNull, gt, sql, not, ilike } from "drizzle-orm";
 
 const TIME_ZONE = "Asia/Kolkata";
 
@@ -565,7 +565,7 @@ export async function getDashboardData({
           SUM(
             CASE
               WHEN ${invoices.isTdsVerified} = true
-              THEN COALESCE(${invoices.tdsDeductedAmount}, ${invoices.tdsAmount}, 0)
+              THEN COALESCE(NULLIF(${invoices.tdsDeductedAmount}, 0), ${invoices.tdsAmount}, 0)
               ELSE 0
             END
           ),
@@ -574,7 +574,14 @@ export async function getDashboardData({
       `,
     })
     .from(invoices)
-    .where(and(eq(invoices.companyId, companyId), isNull(invoices.deletedAt)));
+    .where(
+      and(
+        eq(invoices.companyId, companyId),
+        isNull(invoices.deletedAt),
+        eq(invoices.isOpeningBalance, false),
+        not(ilike(invoices.invoiceNumber, "OPENING%")),
+      ),
+    );
 
   const [pendingTdsResult] = await db
     .select({
@@ -584,7 +591,7 @@ export async function getDashboardData({
             CASE
               WHEN (${invoices.isTdsVerified} = false OR ${invoices.isTdsVerified} IS NULL)
                 AND (${invoices.tdsApplicableUsed} = true OR ${invoices.tdsAmount} > 0 OR ${invoices.tdsDeductedAmount} > 0)
-              THEN COALESCE(${invoices.tdsDeductedAmount}, ${invoices.tdsAmount}, 0)
+              THEN COALESCE(NULLIF(${invoices.tdsDeductedAmount}, 0), ${invoices.tdsAmount}, 0)
               ELSE 0
             END
           ),
@@ -593,7 +600,14 @@ export async function getDashboardData({
       `,
     })
     .from(invoices)
-    .where(and(eq(invoices.companyId, companyId), isNull(invoices.deletedAt)));
+    .where(
+      and(
+        eq(invoices.companyId, companyId),
+        isNull(invoices.deletedAt),
+        eq(invoices.isOpeningBalance, false),
+        not(ilike(invoices.invoiceNumber, "OPENING%")),
+      ),
+    );
 
   // ==========================================
   // RETURN

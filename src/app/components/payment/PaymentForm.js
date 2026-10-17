@@ -61,42 +61,114 @@ export default function PaymentForm({
     return invoices.filter((inv) => Number(inv.subClientId) === targetSubId);
   }, [invoices, filterSubClientId]);
 
-  // Calculate selected total due
-  const selectedInvoicesList = invoices.filter((inv) =>
-    selectedInvoiceIds.includes(inv.id),
-  );
+  // Helper to calculate remaining Net Payable to be paid via this payment
+  // (Accounting rule: Outstanding = Net Payable + TDS)
+  function getInvoiceNetPayable(inv) {
+    if (!inv) return 0;
+    const isOpening =
+      inv.isOpeningBalance ||
+      String(inv.invoiceNumber || "")
+        .toUpperCase()
+        .startsWith("OPENING");
+    if (isOpening) {
+      const gross = Number(inv.invoiceAmount || inv.netPayableAmount || 0);
+      const paid = Number(inv.paidAmount ?? inv.paid ?? 0);
+      return Math.max(0, Number((gross - paid).toFixed(2)));
+    }
 
-  const selectedInvoicesDueSum = selectedInvoicesList.reduce(
-    (sum, inv) => sum + Number(inv.due || 0),
-    0,
-  );
+    const gross = Number(inv.invoiceAmount || 0);
+    const deductions =
+      Number(inv.deductionAmount || 0) + Number(inv.otherCharges || 0);
+    const netBilled = Math.max(0, gross - deductions);
+    const paid = Number(inv.paidAmount ?? inv.paid ?? 0);
+
+    const currentTds =
+      tdsState[inv.id]?.amount !== undefined &&
+      tdsState[inv.id]?.amount !== null &&
+      tdsState[inv.id]?.amount !== ""
+        ? Number(tdsState[inv.id].amount)
+        : Number(
+            inv.tdsDeductedAmount && Number(inv.tdsDeductedAmount) > 0
+              ? inv.tdsDeductedAmount
+              : inv.tdsAmount || 0,
+          );
+
+    const netPayable = Math.max(0, Number((netBilled - currentTds).toFixed(2)));
+    return Math.max(0, Number((netPayable - paid).toFixed(2)));
+  }
+
+  function getInvoiceTds(inv) {
+    if (!inv) return 0;
+    const isOpening =
+      inv.isOpeningBalance ||
+      String(inv.invoiceNumber || "")
+        .toUpperCase()
+        .startsWith("OPENING");
+    if (isOpening) return 0;
+    return tdsState[inv.id]?.amount !== undefined &&
+      tdsState[inv.id]?.amount !== null &&
+      tdsState[inv.id]?.amount !== ""
+      ? Number(tdsState[inv.id].amount)
+      : Number(
+          inv.tdsDeductedAmount && Number(inv.tdsDeductedAmount) > 0
+            ? inv.tdsDeductedAmount
+            : inv.tdsAmount || 0,
+        );
+  }
+
+  function getInvoiceTotalOutstanding(inv) {
+    return Number(
+      (
+        getInvoiceNetPayable(inv) +
+        (inv?.isTdsVerified ? 0 : getInvoiceTds(inv))
+      ).toFixed(2),
+    );
+  }
+
+  // Calculate selected total Net Payable
+  const selectedInvoicesList = useMemo(() => {
+    return invoices.filter((inv) => selectedInvoiceIds.includes(inv.id));
+  }, [invoices, selectedInvoiceIds]);
+
+  const selectedInvoicesNetPayableSum = useMemo(() => {
+    return selectedInvoicesList.reduce(
+      (sum, inv) => sum + getInvoiceNetPayable(inv),
+      0,
+    );
+  }, [selectedInvoicesList, tdsState]);
 
   // Compute allocations based on selected invoices and payment amount
-  // If payment amount is specified, we allocate up to payment amount across selected invoices
-  // If payment amount is empty or matches selected due, each checked invoice receives its due amount
+  // When allocating payment amount, invoices receive up to their Net Payable amount
   const allocations = useMemo(() => {
     const allocMap = {};
     if (selectedInvoiceIds.length === 0) return allocMap;
 
-    let available = paymentAmount > 0 ? paymentAmount : selectedInvoicesDueSum;
+    let available =
+      paymentAmount > 0 ? paymentAmount : selectedInvoicesNetPayableSum;
 
     for (const inv of invoices) {
       if (!selectedInvoiceIds.includes(inv.id)) continue;
-      const due = Number(inv.due || 0);
-      if (due <= 0) continue;
+      const payable = getInvoiceNetPayable(inv);
+      if (payable <= 0) continue;
 
       if (paymentAmount > 0) {
-        const allocated = Math.min(due, available);
+        const allocated = Math.min(payable, available);
         if (allocated > 0) {
           allocMap[inv.id] = allocated;
           available -= allocated;
         }
       } else {
-        allocMap[inv.id] = due;
+        allocMap[inv.id] = payable;
       }
     }
     return allocMap;
-  }, [selectedInvoiceIds, paymentAmount, invoices, selectedInvoicesDueSum]);
+  }, [
+    selectedInvoiceIds,
+    paymentAmount,
+    invoices,
+    selectedInvoicesNetPayableSum,
+    tdsState,
+  ]);
 
   const totalAllocated = useMemo(() => {
     return Object.values(allocations).reduce(
@@ -197,11 +269,14 @@ export default function PaymentForm({
         ? current.filter((id) => id !== invoiceId)
         : [...current, invoiceId];
 
-      // If user hasn't explicitly entered a payment amount yet, auto-fill with the selected sum
-      if (!values.amount || Number(values.amount) === selectedInvoicesDueSum) {
+      // Auto-pick Net Payable amount when user selects/deselects invoice
+      if (
+        !values.amount ||
+        Number(values.amount) === selectedInvoicesNetPayableSum
+      ) {
         const nextList = invoices.filter((inv) => next.includes(inv.id));
         const nextSum = nextList.reduce(
-          (sum, inv) => sum + Number(inv.due || 0),
+          (sum, inv) => sum + getInvoiceNetPayable(inv),
           0,
         );
         setValues((prev) => ({
@@ -221,7 +296,7 @@ export default function PaymentForm({
         : invoices;
     const allIds = targetList.map((inv) => inv.id);
     setSelectedInvoiceIds(allIds);
-    const sum = targetList.reduce((s, inv) => s + Number(inv.due || 0), 0);
+    const sum = targetList.reduce((s, inv) => s + getInvoiceNetPayable(inv), 0);
     setValues((prev) => ({
       ...prev,
       amount: sum > 0 ? String(sum) : prev.amount,
@@ -248,10 +323,10 @@ export default function PaymentForm({
 
     for (const inv of targetInvoices) {
       if (remaining <= 0) break;
-      const due = Number(inv.due || 0);
-      if (due <= 0) continue;
+      const payable = getInvoiceNetPayable(inv);
+      if (payable <= 0) continue;
       selected.push(inv.id);
-      remaining -= Math.min(due, remaining);
+      remaining -= Math.min(payable, remaining);
     }
     setSelectedInvoiceIds(selected);
   }
@@ -324,10 +399,14 @@ export default function PaymentForm({
 
         {/* Hidden Allocation Form Inputs */}
         {Object.entries(allocations).map(([invId, allocAmt]) => {
-          const invObj = invoices.find((inv) => String(inv.id) === String(invId));
+          const invObj = invoices.find(
+            (inv) => String(inv.id) === String(invId),
+          );
           const isOpening =
             invObj?.isOpeningBalance ||
-            String(invObj?.invoiceNumber || "").toUpperCase().startsWith("OPENING");
+            String(invObj?.invoiceNumber || "")
+              .toUpperCase()
+              .startsWith("OPENING");
           const currentTds = !isOpening
             ? tdsState[invId] || {
                 amount: 0,
@@ -698,170 +777,220 @@ export default function PaymentForm({
                           : "bg-white hover:bg-zinc-50/70 dark:bg-zinc-900 dark:hover:bg-zinc-800/40"
                       }`}
                     >
-                    {/* Checkbox */}
-                    <div
-                      className="shrink-0"
-                      title={isSelected ? "Deselect invoice" : "Select invoice"}
-                    >
-                      {isSelected ? (
-                        <div className="flex h-4 w-4 items-center justify-center rounded bg-blue-600 text-white shadow-2xs">
-                          <Check size={11} />
-                        </div>
-                      ) : (
-                        <div className="h-4 w-4 rounded border border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-600 dark:bg-zinc-800" />
-                      )}
-                    </div>
-
-                    {/* Invoice Info & Sub-client */}
-                    <div className="w-[180px] shrink-0 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                          {invoice.invoiceNumber}
-                        </span>
-                        {invoice.isOpeningBalance && (
-                          <span className="shrink-0 rounded bg-purple-100 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:bg-purple-950/70 dark:text-purple-300">
-                            Opening Bal
-                          </span>
-                        )}
-                        {invoice.isOverdue && !invoice.isOpeningBalance && (
-                          <span className="shrink-0 rounded bg-red-100 px-1 py-0.2 text-[9px] font-bold uppercase text-red-700 dark:bg-red-950/70 dark:text-red-300">
-                            Overdue
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-400">
-                        {invoice.subClientName && (
-                          <span
-                            className="inline-block max-w-[95px] truncate rounded bg-purple-50 px-1 py-0.2 font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300"
-                            title={invoice.subClientName}
-                          >
-                            {invoice.subClientName}
-                          </span>
-                        )}
-                        <span>Due: {formatDate(invoice.dueDate)}</span>
-                      </div>
-                    </div>
-
-                    {/* AWB Information Section */}
-                    <div className="flex-1 min-w-[150px]">
-                      <AwbDetailsPopover
-                        awbs={invoice.awbs}
-                        invoiceNumber={invoice.invoiceNumber}
-                      />
-                    </div>
-
-                    {/* Financial Values */}
-                    <div className="w-[120px] shrink-0 text-right">
-                      <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                        {formatCurrency(invoice.due || 0)}
-                      </div>
-                      <div className="text-[10px] text-zinc-400">
-                        Total: {formatCurrency(invoice.invoiceAmount || 0)}
-                      </div>
-                    </div>
-
-                    {/* Allocation Status Badge */}
-                    <div className="w-[130px] shrink-0 text-right">
-                      {isSelected ? (
-                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                          <Check size={11} />
-                          Settling: {formatCurrency(currentAllocation)}
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-zinc-400 font-normal">
-                          Click to settle
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Inline TDS Control Strip when invoice is selected */}
-                  {isSelected && (
-                    invoice.isOpeningBalance ||
-                    String(invoice.invoiceNumber || "").toUpperCase().startsWith("OPENING") ? (
+                      {/* Checkbox */}
                       <div
-                        key={`tds-strip-${invoice.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="flex flex-wrap items-center justify-between gap-3 border-t border-purple-100 bg-purple-50/50 px-4 py-2 text-xs text-purple-800 dark:border-purple-900/40 dark:bg-purple-950/30 dark:text-purple-300"
+                        className="shrink-0"
+                        title={
+                          isSelected ? "Deselect invoice" : "Select invoice"
+                        }
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">Brought-Forward Opening Balance:</span>
-                          <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                            TDS is not applicable to opening balances. Settle directly through payment.
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        key={`tds-strip-${invoice.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="flex flex-wrap items-center justify-between gap-3 border-t border-blue-100 bg-blue-50/50 px-4 py-2 text-xs dark:border-blue-900/40 dark:bg-blue-950/30"
-                      >
-                        <div className="flex flex-wrap items-center gap-4">
-                          {/* TDS Verification Checkbox */}
-                          <label className="flex items-center gap-2 cursor-pointer font-medium text-zinc-700 dark:text-zinc-200">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(tdsState[invoice.id]?.isVerified)}
-                              onChange={() => handleTdsVerifiedToggle(invoice.id)}
-                              className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span>TDS Verified (Form 26AS)</span>
-                          </label>
-
-                          {/* Status Badge */}
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                              tdsState[invoice.id]?.isVerified
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                                : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                            }`}
-                          >
-                            {tdsState[invoice.id]?.isVerified
-                              ? "Verified TDS"
-                              : "Pending TDS"}
-                          </span>
-
-                          {/* Editable TDS Deducted Amount Input */}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-zinc-500 text-[11px]">
-                              TDS Deducted: ₹
-                            </span>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              placeholder="0.00"
-                              value={tdsState[invoice.id]?.amount ?? ""}
-                              onChange={(e) =>
-                                handleTdsAmountChange(invoice.id, e.target.value)
-                              }
-                              className="h-7 w-28 rounded border border-zinc-300 bg-white px-2 text-xs font-semibold text-zinc-800 shadow-2xs focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                            />
+                        {isSelected ? (
+                          <div className="flex h-4 w-4 items-center justify-center rounded bg-blue-600 text-white shadow-2xs">
+                            <Check size={11} />
                           </div>
-                        </div>
+                        ) : (
+                          <div className="h-4 w-4 rounded border border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-600 dark:bg-zinc-800" />
+                        )}
+                      </div>
 
-                        {/* Reconciliation Math feedback */}
-                        <div className="flex items-center gap-2 text-[11px] text-zinc-600 dark:text-zinc-300">
-                          <span>
-                            Paid: <b>₹{Number(currentAllocation).toLocaleString("en-IN")}</b> + TDS:{" "}
-                            <b>₹{Number(tdsState[invoice.id]?.amount || 0).toLocaleString("en-IN")}</b> ={" "}
-                            <b className="text-blue-700 dark:text-blue-300">
-                              ₹{(Number(currentAllocation) + Number(tdsState[invoice.id]?.amount || 0)).toLocaleString("en-IN")}
-                            </b>
+                      {/* Invoice Info & Sub-client */}
+                      <div className="w-[180px] shrink-0 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                            {invoice.invoiceNumber}
                           </span>
-                          {(Number(currentAllocation) + Number(tdsState[invoice.id]?.amount || 0)) >= Number(invoice.invoiceAmount || 0) && (
-                            <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 px-1.5 py-0.2 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                              <Check size={10} /> Full Match
+                          {invoice.isOpeningBalance && (
+                            <span className="shrink-0 rounded bg-purple-100 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:bg-purple-950/70 dark:text-purple-300">
+                              Opening Bal
+                            </span>
+                          )}
+                          {invoice.isOverdue && !invoice.isOpeningBalance && (
+                            <span className="shrink-0 rounded bg-red-100 px-1 py-0.2 text-[9px] font-bold uppercase text-red-700 dark:bg-red-950/70 dark:text-red-300">
+                              Overdue
                             </span>
                           )}
                         </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-400">
+                          {invoice.subClientName && (
+                            <span
+                              className="inline-block max-w-[95px] truncate rounded bg-purple-50 px-1 py-0.2 font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300"
+                              title={invoice.subClientName}
+                            >
+                              {invoice.subClientName}
+                            </span>
+                          )}
+                          <span>Due: {formatDate(invoice.dueDate)}</span>
+                        </div>
                       </div>
-                    )
-                  )}
-                </div>
-              );
-            })}
+
+                      {/* AWB Information Section */}
+                      <div className="flex-1 min-w-[150px]">
+                        <AwbDetailsPopover
+                          awbs={invoice.awbs}
+                          invoiceNumber={invoice.invoiceNumber}
+                        />
+                      </div>
+
+                      {/* Financial Values */}
+                      <div className="w-[140px] shrink-0 text-right">
+                        <div className="text-xs font-bold text-blue-700 dark:text-blue-400">
+                          {formatCurrency(getInvoiceNetPayable(invoice))}
+                        </div>
+                        <div className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+                          Net Payable
+                        </div>
+                        <div className="text-[10px] text-zinc-400">
+                          Outstanding:{" "}
+                          {formatCurrency(getInvoiceTotalOutstanding(invoice))}
+                        </div>
+                      </div>
+
+                      {/* Allocation Status Badge */}
+                      <div className="w-[130px] shrink-0 text-right">
+                        {isSelected ? (
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            <Check size={11} />
+                            Settling: {formatCurrency(currentAllocation)}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-zinc-400 font-normal">
+                            Click to settle
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Inline TDS Control Strip when invoice is selected */}
+                    {isSelected &&
+                      (invoice.isOpeningBalance ||
+                      String(invoice.invoiceNumber || "")
+                        .toUpperCase()
+                        .startsWith("OPENING") ? (
+                        <div
+                          key={`tds-strip-${invoice.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex flex-wrap items-center justify-between gap-3 border-t border-purple-100 bg-purple-50/50 px-4 py-2 text-xs text-purple-800 dark:border-purple-900/40 dark:bg-purple-950/30 dark:text-purple-300"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">
+                              Brought-Forward Opening Balance:
+                            </span>
+                            <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                              TDS is not applicable to opening balances. Settle
+                              directly through payment.
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          key={`tds-strip-${invoice.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex flex-wrap items-center justify-between gap-3 border-t border-blue-100 bg-blue-50/50 px-4 py-2 text-xs dark:border-blue-900/40 dark:bg-blue-950/30"
+                        >
+                          <div className="flex flex-wrap items-center gap-4">
+                            {/* TDS Verification Checkbox */}
+                            <label className="flex items-center gap-2 cursor-pointer font-medium text-zinc-700 dark:text-zinc-200">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(
+                                  tdsState[invoice.id]?.isVerified,
+                                )}
+                                onChange={() =>
+                                  handleTdsVerifiedToggle(invoice.id)
+                                }
+                                className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span>TDS Verified (Form 26AS)</span>
+                            </label>
+
+                            {/* Status Badge */}
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                tdsState[invoice.id]?.isVerified
+                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                  : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                              }`}
+                            >
+                              {tdsState[invoice.id]?.isVerified
+                                ? "Verified TDS"
+                                : "Pending TDS"}
+                            </span>
+
+                            {/* Editable TDS Deducted Amount Input */}
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-zinc-500 text-[11px]">
+                                TDS Deducted: ₹
+                              </span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                value={tdsState[invoice.id]?.amount ?? ""}
+                                onChange={(e) =>
+                                  handleTdsAmountChange(
+                                    invoice.id,
+                                    e.target.value,
+                                  )
+                                }
+                                className="h-7 w-28 rounded border border-zinc-300 bg-white px-2 text-xs font-semibold text-zinc-800 shadow-2xs focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Reconciliation Math feedback: Outstanding = Net Payable + TDS */}
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-600 dark:text-zinc-300">
+                            <span>
+                              Net Payable:{" "}
+                              <b className="text-zinc-900 dark:text-zinc-100">
+                                ₹
+                                {Number(currentAllocation).toLocaleString(
+                                  "en-IN",
+                                  {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  },
+                                )}
+                              </b>{" "}
+                              + TDS:{" "}
+                              <b className="text-zinc-900 dark:text-zinc-100">
+                                ₹
+                                {Number(
+                                  tdsState[invoice.id]?.amount || 0,
+                                ).toLocaleString("en-IN", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </b>{" "}
+                              ={" "}
+                              <span className="font-semibold text-zinc-600 dark:text-zinc-400">
+                                Total Outstanding:
+                              </span>{" "}
+                              <b className="text-blue-700 dark:text-blue-300">
+                                ₹
+                                {(
+                                  Number(currentAllocation) +
+                                  Number(tdsState[invoice.id]?.amount || 0)
+                                ).toLocaleString("en-IN", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </b>
+                            </span>
+                            {Number(currentAllocation) +
+                              Number(tdsState[invoice.id]?.amount || 0) >=
+                              getInvoiceTotalOutstanding(invoice) - 0.99 &&
+                              getInvoiceTotalOutstanding(invoice) > 0 && (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 px-1.5 py-0.2 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                  <Check size={10} /> Full Match
+                                </span>
+                              )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                );
+              })}
             </div>
           )}
 

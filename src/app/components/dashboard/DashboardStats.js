@@ -10,11 +10,12 @@ import {
 
 import KPICard from "./KPICard";
 
-const formatCurrency = (amount) =>
+const formatCurrency = (amount, decimals = 0) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   }).format(amount);
 
 export default function DashboardStats({ summary }) {
@@ -63,7 +64,7 @@ export default function DashboardStats({ summary }) {
       {/* VERIFIED TDS */}
       <KPICard
         title="Verified TDS"
-        value={formatCurrency(summary.verifiedTds || 0)}
+        value={formatCurrency(summary.verifiedTds)}
         icon={CheckCircle2}
         iconBg="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
       />
@@ -71,7 +72,7 @@ export default function DashboardStats({ summary }) {
       {/* PENDING TDS */}
       <KPICard
         title="Pending TDS"
-        value={formatCurrency(summary.pendingTds || 0)}
+        value={formatCurrency(summary.pendingTds)}
         icon={Clock}
         iconBg="bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
       />

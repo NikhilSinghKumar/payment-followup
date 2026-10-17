@@ -54,10 +54,16 @@ export default function TdsManagementClient({
       }
 
       // Status filter
-      if (statusFilter === "PENDING" && inv.isVerified) {
+      if (
+        statusFilter === "PENDING" &&
+        (inv.isVerified || Number(inv.tdsDeducted || 0) <= 0)
+      ) {
         return false;
       }
-      if (statusFilter === "VERIFIED" && !inv.isVerified) {
+      if (
+        statusFilter === "VERIFIED" &&
+        (!inv.isVerified || Number(inv.tdsDeducted || 0) <= 0)
+      ) {
         return false;
       }
 
@@ -221,10 +227,16 @@ export default function TdsManagementClient({
 
   // Bulk actions
   function toggleSelectAll() {
-    if (selectedIds.length === filteredInvoices.length) {
+    const selectableInvoices = filteredInvoices.filter(
+      (inv) => Number(inv.tdsDeducted || 0) > 0,
+    );
+    if (
+      selectedIds.length === selectableInvoices.length &&
+      selectableInvoices.length > 0
+    ) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredInvoices.map((inv) => inv.id));
+      setSelectedIds(selectableInvoices.map((inv) => inv.id));
     }
   }
 
@@ -500,8 +512,13 @@ export default function TdsManagementClient({
                   <input
                     type="checkbox"
                     checked={
-                      filteredInvoices.length > 0 &&
-                      selectedIds.length === filteredInvoices.length
+                      filteredInvoices.some(
+                        (inv) => Number(inv.tdsDeducted || 0) > 0,
+                      ) &&
+                      selectedIds.length ===
+                        filteredInvoices.filter(
+                          (inv) => Number(inv.tdsDeducted || 0) > 0,
+                        ).length
                     }
                     onChange={toggleSelectAll}
                     className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
@@ -551,10 +568,11 @@ export default function TdsManagementClient({
                     (inv.grossInvoiceAmount - totalAccounted).toFixed(2),
                   );
                   const isEquationMatched = Math.abs(diff) < 1;
+                  const hasTds = Number(inv.tdsDeducted || 0) > 0;
                   const isFullySettled =
-                    isEquationMatched && Boolean(inv.isVerified);
+                    isEquationMatched && (!hasTds || Boolean(inv.isVerified));
                   const isTdsPendingVerification =
-                    isEquationMatched && !inv.isVerified;
+                    isEquationMatched && hasTds && !inv.isVerified;
 
                   return (
                     <tr
@@ -565,18 +583,24 @@ export default function TdsManagementClient({
                     >
                       {/* Checkbox for selection */}
                       <td className="px-2.5 py-1.5 text-center">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() =>
-                            setSelectedIds((prev) =>
-                              prev.includes(inv.id)
-                                ? prev.filter((id) => id !== inv.id)
-                                : [...prev, inv.id],
-                            )
-                          }
-                          className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                        />
+                        {hasTds ? (
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() =>
+                              setSelectedIds((prev) =>
+                                prev.includes(inv.id)
+                                  ? prev.filter((id) => id !== inv.id)
+                                  : [...prev, inv.id],
+                              )
+                            }
+                            className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          />
+                        ) : (
+                          <span className="text-[10px] text-zinc-300 dark:text-zinc-600">
+                            —
+                          </span>
+                        )}
                       </td>
 
                       {/* Client info */}
@@ -589,8 +613,10 @@ export default function TdsManagementClient({
                           {inv.clientName}
                         </Link>
                         <div className="text-[10px] text-zinc-400 truncate">
-                          {inv.clientCode ? `${inv.clientCode} • ` : ""}TDS{" "}
-                          {Number(inv.tdsRateUsed || inv.clientTdsRate || 2)}%
+                          {inv.clientCode ? `${inv.clientCode} • ` : ""}
+                          {!hasTds && !inv.tdsApplicableUsed
+                            ? "No TDS"
+                            : `TDS ${Number(inv.tdsRateUsed || inv.clientTdsRate || 2)}%`}
                         </div>
                       </td>
 
@@ -624,27 +650,36 @@ export default function TdsManagementClient({
                         </div>
                       </td>
 
-                      {/* TDS Verification Checkbox */}
+                      {/* TDS Verification Column */}
                       <td className="whitespace-nowrap px-2.5 py-1.5 text-center">
-                        <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-0.5 shadow-2xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(inv.isVerified)}
-                            onChange={() =>
-                              handleToggleVerification(inv.id, inv.isVerified)
-                            }
-                            className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                          />
+                        {!hasTds ? (
                           <span
-                            className={`text-[10px] font-bold ${
-                              inv.isVerified
-                                ? "text-emerald-700 dark:text-emerald-300"
-                                : "text-amber-700 dark:text-amber-300"
-                            }`}
+                            className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                            title="TDS is not applicable to this client or invoice"
                           >
-                            {inv.isVerified ? "Verified ✓" : "Pending"}
+                            N/A
                           </span>
-                        </label>
+                        ) : (
+                          <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-0.5 shadow-2xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(inv.isVerified)}
+                              onChange={() =>
+                                handleToggleVerification(inv.id, inv.isVerified)
+                              }
+                              className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            />
+                            <span
+                              className={`text-[10px] font-bold ${
+                                inv.isVerified
+                                  ? "text-emerald-700 dark:text-emerald-300"
+                                  : "text-amber-700 dark:text-amber-300"
+                              }`}
+                            >
+                              {inv.isVerified ? "Verified ✓" : "Pending"}
+                            </span>
+                          </label>
+                        )}
                       </td>
 
                       {/* Outstanding */}
@@ -669,7 +704,11 @@ export default function TdsManagementClient({
                         {isFullySettled ? (
                           <span
                             className="inline-flex items-center gap-1 rounded-full border border-emerald-200/90 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 shadow-2xs cursor-help"
-                            title={`Reconciliation Status: 100% Settled & Closed\nPayment Received: ${formatCurrency(inv.actualPaymentReceived)}\n+ Verified TDS (26AS): ${formatCurrency(inv.tdsDeducted)}\n= Invoice Total: ${formatCurrency(inv.grossInvoiceAmount)}\nStatus: 100% Balanced & Verified in Form 26AS`}
+                            title={
+                              !hasTds
+                                ? `Reconciliation Status: 100% Fully Settled\nPayment Received: ${formatCurrency(inv.actualPaymentReceived)}\nInvoice Total: ${formatCurrency(inv.grossInvoiceAmount)}\nTDS: Not Applicable\nStatus: 100% Paid & Settled in Full`
+                                : `Reconciliation Status: 100% Settled & Closed\nPayment Received: ${formatCurrency(inv.actualPaymentReceived)}\n+ Verified TDS (26AS): ${formatCurrency(inv.tdsDeducted)}\n= Invoice Total: ${formatCurrency(inv.grossInvoiceAmount)}\nStatus: 100% Balanced & Verified in Form 26AS`
+                            }
                           >
                             <CheckCircle2
                               size={11}

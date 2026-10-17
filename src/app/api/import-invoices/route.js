@@ -271,9 +271,16 @@ export async function POST(req) {
           otherCharges,
         });
 
+        const grossInvoiceAmount = Number(calculatedInvoice.invoiceAmount || 0);
+        const deductions =
+          Number(calculatedInvoice.deductionAmount || 0) +
+          Number(calculatedInvoice.otherCharges || 0);
+        const netBilled = Math.max(0, grossInvoiceAmount - deductions);
+
         const invoiceStatus = calculateInvoiceStatus({
-          netPayable: calculatedInvoice.netPayableAmount,
+          netPayable: netBilled,
           paid: 0,
+          verifiedTds: 0,
           dueDate,
         });
 
@@ -308,6 +315,9 @@ export async function POST(req) {
           igstAmount: calculatedInvoice.igstAmount,
 
           tdsAmount: calculatedInvoice.tdsAmount,
+          tdsDeductedAmount: calculatedInvoice.tdsAmount
+            ? String(calculatedInvoice.tdsAmount)
+            : "0.00",
 
           deductionAmount: calculatedInvoice.deductionAmount,
 
@@ -315,7 +325,7 @@ export async function POST(req) {
 
           netPayableAmount: calculatedInvoice.netPayableAmount,
           paidAmount: "0",
-          outstandingAmount: calculatedInvoice.netPayableAmount,
+          outstandingAmount: netBilled.toFixed(2),
 
           gstNumberUsed: calculatedInvoice.gstNumberUsed,
 

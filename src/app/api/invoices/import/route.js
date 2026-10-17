@@ -161,6 +161,12 @@ export async function POST(req) {
         csvInvoiceNumbers.add(invoiceNumber);
         existingInvoiceNumbers.add(invoiceNumber);
 
+        const grossInvoiceAmount = Number(summary.invoiceAmount || 0);
+        const deductions =
+          Number(summary.deductionAmount || 0) +
+          Number(summary.otherCharges || 0);
+        const netBilled = Math.max(0, grossInvoiceAmount - deductions);
+
         invoicesToInsert.push({
           companyId: clientRecord.companyId,
           clientId,
@@ -174,9 +180,14 @@ export async function POST(req) {
           sgstAmount: summary.sgstAmount,
           igstAmount: summary.igstAmount,
           tdsAmount: summary.tdsAmount,
+          tdsDeductedAmount: summary.tdsAmount
+            ? String(summary.tdsAmount)
+            : "0.00",
           deductionAmount: summary.deductionAmount,
           otherCharges: summary.otherCharges,
           netPayableAmount: summary.netPayableAmount,
+          paidAmount: "0",
+          outstandingAmount: netBilled.toFixed(2),
           gstNumberUsed: summary.gstNumberUsed,
           tdsApplicableUsed: summary.tdsApplicableUsed,
           tdsRateUsed: String(

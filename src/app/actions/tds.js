@@ -103,7 +103,9 @@ export async function getTdsManagementData({
     // Under Section 288B of Indian Income Tax Act, deductors round TDS to whole rupees.
     // If client paid invoice and the unpaid balance matches TDS within round-off tolerance (<= ₹1.00),
     // align to the exact balance withheld by the client so there is zero points difference.
-    const unpaidBalance = Number((grossInvoiceAmount - actualPaymentReceived).toFixed(2));
+    const unpaidBalance = Number(
+      (grossInvoiceAmount - actualPaymentReceived).toFixed(2),
+    );
     if (
       actualPaymentReceived > 0 &&
       unpaidBalance > 0 &&
@@ -114,17 +116,19 @@ export async function getTdsManagementData({
     }
 
     const tdsDeducted = rawDeducted;
+    const hasTds = tdsDeducted > 0;
     const isVerified = Boolean(inv.isTdsVerified);
 
-    const verifiedTds = isVerified ? tdsDeducted : 0;
-    const pendingTds = !isVerified ? tdsDeducted : 0;
+    const verifiedTds = hasTds && isVerified ? tdsDeducted : 0;
+    const pendingTds = hasTds && !isVerified ? tdsDeducted : 0;
 
     // Reconciliation check: Actual Payment + TDS (Verified or Pending)
     const totalReconciled = actualPaymentReceived + tdsDeducted;
     const difference = grossInvoiceAmount - totalReconciled;
     const isFullyMatched = Math.abs(difference) < 1;
-    const isFullySettled = isFullyMatched && isVerified;
-    const isTdsPendingSettlement = isFullyMatched && !isVerified;
+    // When TDS is not applicable (hasTds === false), the invoice is fully settled as soon as payment matches gross
+    const isFullySettled = isFullyMatched && (!hasTds || isVerified);
+    const isTdsPendingSettlement = isFullyMatched && hasTds && !isVerified;
     const roundOffDifference = Number(difference.toFixed(2));
 
     return {
@@ -133,6 +137,7 @@ export async function getTdsManagementData({
       actualPaymentReceived,
       expectedTds,
       tdsDeducted,
+      hasTds,
       isVerified,
       verifiedTds,
       pendingTds,
@@ -238,7 +243,9 @@ export async function toggleTdsVerification(invoiceId, isVerified) {
 
   if (
     existing.isOpeningBalance ||
-    String(existing.invoiceNumber || "").toUpperCase().startsWith("OPENING")
+    String(existing.invoiceNumber || "")
+      .toUpperCase()
+      .startsWith("OPENING")
   ) {
     throw new Error("TDS does not apply to Opening Balance invoices.");
   }
@@ -315,7 +322,9 @@ export async function updateInvoiceTds({
 
   if (
     existing.isOpeningBalance ||
-    String(existing.invoiceNumber || "").toUpperCase().startsWith("OPENING")
+    String(existing.invoiceNumber || "")
+      .toUpperCase()
+      .startsWith("OPENING")
   ) {
     throw new Error("TDS does not apply to Opening Balance invoices.");
   }

@@ -151,7 +151,9 @@ export default function AllocatePaymentModal({
 
     for (const inv of targetInvoices) {
       if (fundsLeft <= 0) break;
-      const due = Number(inv.due || inv.outstandingAmount || 0);
+      const due = Number(
+        inv.netPayableDue ?? inv.due ?? inv.outstandingAmount ?? 0,
+      );
       if (due <= 0) continue;
 
       const allocateForThis = Math.min(due, fundsLeft);
@@ -568,7 +570,9 @@ export default function AllocatePaymentModal({
           ) : (
             <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
               {displayedInvoices.map((inv) => {
-                const due = Number(inv.due || inv.outstandingAmount || 0);
+                const due = Number(
+                  inv.netPayableDue ?? inv.due ?? inv.outstandingAmount ?? 0,
+                );
                 const currentAlloc = Number(allocations[inv.id] || 0);
                 const isSettling = currentAlloc > 0;
                 const remainingAfter = Math.max(
