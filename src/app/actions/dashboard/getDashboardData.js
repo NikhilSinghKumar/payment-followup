@@ -627,6 +627,26 @@ export async function getDashboardData({
     );
 
   // ==========================================
+  // PAYMENT RECEIVED & TOTAL RECONCILED
+  // (MATCHING TDS MANAGEMENT SYSTEM EXACTLY)
+  // ==========================================
+  const [invoicePaidResult] = await db
+    .select({
+      total: sql`
+        COALESCE(
+          SUM(${invoices.paidAmount}),
+          0
+        )
+      `,
+    })
+    .from(invoices)
+    .where(and(eq(invoices.companyId, companyId), isNull(invoices.deletedAt)));
+
+  const paymentReceived = Number(invoicePaidResult?.total || 0);
+  const verifiedTds = Number(verifiedTdsResult?.total || 0);
+  const totalReconciled = Number((paymentReceived + verifiedTds).toFixed(2));
+
+  // ==========================================
   // RETURN
   // ==========================================
 
@@ -652,15 +672,17 @@ export async function getDashboardData({
 
       totalCollection: Number(totalCollectionResult.total || 0),
 
+      paymentReceived,
+
+      totalReconciled,
+
       unallocatedPayments: Number(unallocatedResult.total || 0),
 
-      verifiedTds: Number(verifiedTdsResult?.total || 0),
+      verifiedTds,
 
       pendingTds: Number(pendingTdsResult?.total || 0),
 
-      totalTds:
-        Number(verifiedTdsResult?.total || 0) +
-        Number(pendingTdsResult?.total || 0),
+      totalTds: verifiedTds + Number(pendingTdsResult?.total || 0),
     },
 
     collectionTrend,

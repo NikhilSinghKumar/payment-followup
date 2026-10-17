@@ -7,10 +7,15 @@ export default function KPICard({
   valueColor = "text-zinc-900 dark:text-zinc-100",
   cardBg = "border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900",
   titleColor = "text-zinc-500 dark:text-zinc-400",
+  tooltip,
 }) {
   return (
     <div
       className={`rounded-xl border p-2 sm:p-2.5 shadow-2xs min-w-0 flex flex-col justify-between ${cardBg}`}
+      title={
+        tooltip ||
+        (typeof value === "string" ? `${title}: ${value}` : undefined)
+      }
     >
       <div className="flex items-center justify-between gap-1">
         <p

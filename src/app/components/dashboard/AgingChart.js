@@ -11,6 +11,8 @@ import {
   Cell,
 } from "recharts";
 
+import { formatCurrency } from "@/lib/formatCurrency";
+
 const AGING_COLORS = {
   "Not Due": "#38BDF8", // Sky 400
   "1–30 Days": "#60A5FA", // Blue 400
@@ -18,13 +20,6 @@ const AGING_COLORS = {
   "61–90 Days": "#2563EB", // Blue 600
   "90+ Days": "#EF4444", // Rose/Red 500 for critical aging
 };
-
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(Number(value || 0));
 
 const formatCompactCurrency = (value) => {
   const amount = Number(value || 0);
@@ -72,7 +67,7 @@ export default function AgingChart({ data = [] }) {
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <div>
           <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            TOTAL OUTSTANDING
+            Bill Aging
           </h2>
         </div>
 
@@ -133,13 +128,13 @@ export default function AgingChart({ data = [] }) {
                 fontSize: "12px",
                 padding: "6px 10px",
               }}
-              formatter={(value) => [formatCurrency(value), "Invoice Amount"]}
+              formatter={(value) => [formatCurrency(value), "Outstanding Due"]}
               labelFormatter={(label) => `Bucket: ${label}`}
             />
 
             <Bar
               dataKey="amount"
-              name="Invoice Amount"
+              name="Outstanding Due"
               radius={[0, 4, 4, 0]}
               barSize={18}
             >

@@ -8,21 +8,13 @@ import {
   ShieldCheck,
   Clock,
 } from "lucide-react";
-
+import { formatCurrency } from "@/lib/formatCurrency";
 import KPICard from "./KPICard";
-
-const formatCurrency = (amount, decimals = 0) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(amount);
 
 export default function DashboardStats({ summary }) {
   return (
     <div className="overflow-x-auto [scrollbar-width:none]">
-      <div className="grid grid-cols-8 min-w-[960px] gap-1.5 sm:gap-2">
+      <div className="grid grid-cols-8 min-w-[1060px] gap-1.5 sm:gap-2">
         {/* GROSS INVOICED */}
         <KPICard
           title="Gross Invoiced"
@@ -76,13 +68,18 @@ export default function DashboardStats({ summary }) {
           valueColor="text-violet-600 dark:text-violet-400"
         />
 
-        {/* TOTAL COLLECTION */}
+        {/* TOTAL RECONCILED (EXACT MATCH TO TDS MANAGEMENT) */}
         <KPICard
-          title="Total Collection"
-          value={formatCurrency(summary.totalCollection)}
+          title="Total Reconciled"
+          value={formatCurrency(
+            summary.totalReconciled ?? summary.paymentReceived,
+          )}
           icon={HandCoins}
-          iconBg="text-indigo-500 dark:text-indigo-400"
-          valueColor="text-indigo-600 dark:text-indigo-400"
+          iconBg="text-blue-600 dark:text-blue-400"
+          cardBg="border-blue-200/80 bg-blue-50/40 dark:border-blue-950 dark:bg-blue-950/20"
+          titleColor="text-blue-800 dark:text-blue-300"
+          valueColor="text-blue-700 dark:text-blue-300"
+          tooltip={`Total Reconciled: ${formatCurrency(summary.totalReconciled)} (Payments: ${formatCurrency(summary.paymentReceived)} + Verified TDS: ${formatCurrency(summary.verifiedTds)}) | Total Bank Collection: ${formatCurrency(summary.totalCollection)} (includes ${formatCurrency(summary.unallocatedPayments)} unallocated advance)`}
         />
 
         {/* VERIFIED TDS */}
