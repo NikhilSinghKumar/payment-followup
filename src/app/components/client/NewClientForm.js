@@ -1,80 +1,205 @@
 "use client";
 import { useActionState, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/app/actions/client";
 import Alert from "@/app/components/ui/Alert";
+import { Building2, CheckCircle2, ArrowRight, Plus, Users } from "lucide-react";
 
 export default function NewClientForm() {
-  const [state, formAction] = useActionState(createClient, {});
+  const [state, formAction, isPending] = useActionState(createClient, null);
   const [tdsEnabled, setTdsEnabled] = useState(false);
   const [tdsRate, setTdsRate] = useState("2.00");
   const [openingType, setOpeningType] = useState("DEBIT");
+  const [resetKey, setResetKey] = useState(0);
 
-  return (
-    <div className="bg-zinc-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        {/* Card */}
-        <div className="w-full max-w-xl bg-white/80 backdrop-blur-md rounded-2xl shadow-md border border-zinc-200 p-6">
-          {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold text-zinc-800">
-              Add New Client
+  if (state?.success) {
+    return (
+      <div className="bg-zinc-50 flex items-center justify-center p-4 min-h-[500px]">
+        <div className="w-full max-w-lg bg-white rounded-2xl shadow-md border border-zinc-200 p-8 text-center space-y-6">
+          <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-xs border border-emerald-100">
+            <CheckCircle2 className="w-9 h-9" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-zinc-800">
+              Client Created Successfully!
             </h2>
-            <p className="text-sm text-zinc-500 mt-1">
-              Enter client details to create a new record
+            <p className="text-sm text-zinc-500">
+              <span className="font-semibold text-zinc-700">
+                {state.companyName || "The new client"}
+              </span>{" "}
+              has been added to your database.
             </p>
           </div>
 
-          <Alert
-            key={state?.success || state?.error}
-            success={state?.success ? "Client created successfully." : null}
-            error={state?.error}
-          />
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+            {state.clientId && (
+              <Link
+                href={`/clients/${state.clientId}`}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium shadow-md hover:shadow-lg transition-all"
+              >
+                View Client Profile <ArrowRight className="w-4 h-4" />
+              </Link>
+            )}
+
+            <Link
+              href="/clients"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-zinc-300 bg-white text-zinc-700 text-sm font-medium hover:bg-zinc-50 transition"
+            >
+              <Users className="w-4 h-4" /> Clients List
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => {
+                setResetKey((prev) => prev + 1);
+                window.location.reload();
+              }}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-dashed border-zinc-300 text-zinc-600 text-sm font-medium hover:bg-zinc-50 transition"
+            >
+              <Plus className="w-4 h-4" /> Add Another
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      key={resetKey}
+      className="bg-zinc-50 flex items-center justify-center p-4"
+    >
+      <div className="w-full max-w-xl">
+        {/* Card */}
+        <div className="w-full bg-white/90 backdrop-blur-md rounded-2xl shadow-md border border-zinc-200 p-6 sm:p-8">
+          {/* Header */}
+          <div className="mb-6 flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-blue-600 font-medium text-xs uppercase tracking-wider mb-1">
+                <Building2 className="w-4 h-4" /> Client Management
+              </div>
+              <h2 className="text-2xl font-semibold text-zinc-800">
+                Add New Client
+              </h2>
+              <p className="text-sm text-zinc-500 mt-1">
+                Enter client details to create a new billing and follow-up
+                record
+              </p>
+            </div>
+            <Link
+              href="/clients"
+              className="text-xs text-zinc-500 hover:text-zinc-800 border border-zinc-200 rounded-lg px-2.5 py-1.5 transition"
+            >
+              Back to List
+            </Link>
+          </div>
+
+          <Alert key={state?.error} error={state?.error} />
 
           {/* Form */}
           <form action={formAction} className="space-y-4">
-            {/* Company Name */}
-            <div>
-              <label className="text-sm text-zinc-600 mb-1 block">
-                Company Name *
-              </label>
-              <input
-                name="companyName"
-                placeholder="e.g. ABC Pvt Ltd"
-                required
-                className="input-primary focus:ring-blue-500 caret-blue-500"
-              />
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Company Name */}
+              <div className="sm:col-span-2">
+                <label className="text-sm font-medium text-zinc-700 mb-1 block">
+                  Company Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name="companyName"
+                  placeholder="e.g. ABC Pvt Ltd"
+                  required
+                  className="input-primary focus:ring-blue-500 caret-blue-500"
+                />
+              </div>
 
-            {/* Company Code */}
-            <div>
-              <label className="text-sm text-zinc-600 mb-1 block">
-                Company Code *
-              </label>
-              <input
-                name="companyCode"
-                placeholder="e.g. ABC123"
-                required
-                style={{ textTransform: "uppercase" }}
-                className="input-primary focus:ring-blue-500 caret-blue-500"
-              />
-            </div>
+              {/* Company Code */}
+              <div>
+                <label className="text-sm font-medium text-zinc-700 mb-1 block">
+                  Company Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name="companyCode"
+                  placeholder="e.g. ABC123"
+                  required
+                  style={{ textTransform: "uppercase" }}
+                  className="input-primary focus:ring-blue-500 caret-blue-500 font-mono text-sm"
+                />
+                <p className="text-[11px] text-zinc-400 mt-1">
+                  Unique client identifier
+                </p>
+              </div>
 
-            {/* GST Number */}
-            <div>
-              <label className="text-sm text-zinc-600 mb-1 block">
-                GST Number.
-              </label>
-              <input
-                name="gstNumber"
-                placeholder="e.g. 07ABCDE1234F1Z5"
-                className="input-primary focus:ring-blue-500 caret-blue-500"
-                maxLength={15}
-                style={{ textTransform: "uppercase" }}
-              />
+              {/* GST Number (Optional) */}
+              <div>
+                <label className="text-sm font-medium text-zinc-700 mb-1 flex items-center justify-between">
+                  <span>GST Number</span>
+                  <span className="text-xs font-normal text-zinc-400">
+                    Optional
+                  </span>
+                </label>
+                <input
+                  name="gstNumber"
+                  placeholder="e.g. 07ABCDE1234F1Z5"
+                  className="input-primary focus:ring-blue-500 caret-blue-500 font-mono text-sm"
+                  maxLength={15}
+                  style={{ textTransform: "uppercase" }}
+                />
+                <p className="text-[11px] text-zinc-400 mt-1">
+                  15-digit GSTIN (if registered)
+                </p>
+              </div>
+
+              {/* Email (Optional) */}
+              <div>
+                <label className="text-sm font-medium text-zinc-700 mb-1 flex items-center justify-between">
+                  <span>Billing / Contact Email</span>
+                  <span className="text-xs font-normal text-zinc-400">
+                    Optional
+                  </span>
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="accounts@client.com"
+                  className="input-primary focus:ring-blue-500 caret-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Phone (Optional) */}
+              <div>
+                <label className="text-sm font-medium text-zinc-700 mb-1 flex items-center justify-between">
+                  <span>Contact Phone</span>
+                  <span className="text-xs font-normal text-zinc-400">
+                    Optional
+                  </span>
+                </label>
+                <input
+                  name="phone"
+                  type="tel"
+                  placeholder="e.g. +91 9876543210"
+                  className="input-primary focus:ring-blue-500 caret-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Address (Optional) */}
+              <div className="sm:col-span-2">
+                <label className="text-sm font-medium text-zinc-700 mb-1 flex items-center justify-between">
+                  <span>Registered Address</span>
+                  <span className="text-xs font-normal text-zinc-400">
+                    Optional
+                  </span>
+                </label>
+                <input
+                  name="address"
+                  placeholder="e.g. Suite 402, Business Bay, Mumbai"
+                  className="input-primary focus:ring-blue-500 caret-blue-500 text-sm"
+                />
+              </div>
             </div>
 
             {/* TDS Applicable & Rate */}
-            <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50/50 p-3.5">
+            <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50/70 p-3.5 mt-2">
               <div className="flex items-center gap-3">
                 <input
                   id="tdsApplicable"
@@ -86,9 +211,9 @@ export default function NewClientForm() {
                 />
                 <label
                   htmlFor="tdsApplicable"
-                  className="text-sm font-medium text-zinc-700 cursor-pointer"
+                  className="text-sm font-medium text-zinc-700 cursor-pointer select-none"
                 >
-                  Is TDS Applicable?
+                  Is TDS Applicable for this Client?
                 </label>
               </div>
 
@@ -127,7 +252,7 @@ export default function NewClientForm() {
                   Opening Balance (Optional)
                 </span>
                 <span className="text-[11px] text-zinc-400">
-                  Historical debt or initial credit
+                  Historical debt or initial advance
                 </span>
               </div>
 
@@ -136,7 +261,7 @@ export default function NewClientForm() {
                 <label
                   className={`flex items-center justify-center gap-2 p-2 rounded-lg border text-xs font-medium cursor-pointer transition ${
                     openingType === "DEBIT"
-                      ? "bg-white border-purple-300 text-purple-700 shadow-2xs"
+                      ? "bg-white border-purple-300 text-purple-700 shadow-2xs font-semibold"
                       : "bg-purple-100/40 border-transparent text-zinc-600 hover:bg-white/60"
                   }`}
                 >
@@ -154,7 +279,7 @@ export default function NewClientForm() {
                 <label
                   className={`flex items-center justify-center gap-2 p-2 rounded-lg border text-xs font-medium cursor-pointer transition ${
                     openingType === "CREDIT"
-                      ? "bg-white border-emerald-300 text-emerald-700 shadow-2xs"
+                      ? "bg-white border-emerald-300 text-emerald-700 shadow-2xs font-semibold"
                       : "bg-purple-100/40 border-transparent text-zinc-600 hover:bg-white/60"
                   }`}
                 >
@@ -172,7 +297,7 @@ export default function NewClientForm() {
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs text-zinc-600 mb-1 block">
+                  <label className="text-xs font-medium text-zinc-600 mb-1 block">
                     {openingType === "CREDIT"
                       ? "Initial Credit (₹)"
                       : "Opening Balance (₹)"}
@@ -188,7 +313,7 @@ export default function NewClientForm() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-zinc-600 mb-1 block">
+                  <label className="text-xs font-medium text-zinc-600 mb-1 block">
                     As of Date
                   </label>
                   <input
@@ -201,7 +326,7 @@ export default function NewClientForm() {
               </div>
 
               <div>
-                <label className="text-xs text-zinc-600 mb-1 block">
+                <label className="text-xs font-medium text-zinc-600 mb-1 block">
                   Notes / Reference
                 </label>
                 <input
@@ -216,13 +341,22 @@ export default function NewClientForm() {
               </div>
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className=" w-full h-[40px] mb-4 px-4 py-2 rounded-lg text-white text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.02]"
-            >
-              Save Client
-            </button>
+            {/* Submit & Cancel Buttons */}
+            <div className="pt-2 flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={isPending}
+                className="flex-1 h-[42px] px-4 py-2 rounded-xl text-white text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isPending ? "Saving Client..." : "Save Client"}
+              </button>
+              <Link
+                href="/clients"
+                className="h-[42px] px-5 flex items-center justify-center rounded-xl text-zinc-600 text-sm font-medium border border-zinc-200 hover:bg-zinc-100 transition"
+              >
+                Cancel
+              </Link>
+            </div>
           </form>
         </div>
       </div>

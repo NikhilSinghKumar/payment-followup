@@ -8,14 +8,17 @@ import { getCurrentUser } from "@/lib/auth/auth";
 import { getFinancialYear } from "@/lib/financial-year";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { parseImportDate } from "@/lib/date-parser";
+import { setOrUpdateClientOpeningBalance } from "@/lib/client-opening-balance";
 
 // Create client
 export async function createClient(prevState, formData) {
-  const companyName = formData.get("companyName");
+  const companyName = formData.get("companyName")?.trim();
   const companyCode = formData.get("companyCode")?.trim().toUpperCase();
-  const email = formData.get("email");
-  const phone = formData.get("phone");
-  const gstNumber = formData.get("gstNumber")?.trim().toUpperCase();
+  const email = formData.get("email")?.trim() || null;
+  const phone = formData.get("phone")?.trim() || null;
+  const address = formData.get("address")?.trim() || null;
+  const rawGst = formData.get("gstNumber")?.trim().toUpperCase();
+  const gstNumber = rawGst && rawGst.length > 0 ? rawGst : null;
 
   const tdsApplicable = formData.get("tdsApplicable") === "on";
   const rawTdsRate = formData.get("tdsRate");
@@ -33,13 +36,13 @@ export async function createClient(prevState, formData) {
 
   const currentUser = await getCurrentUser();
 
-  if (!currentUser.user) {
+  if (!currentUser?.user) {
     return {
       error: "Unauthorized",
     };
   }
 
-  if (!currentUser.companyId) {
+  if (!currentUser?.companyId) {
     return {
       error: "User is not associated with a company.",
     };
@@ -53,11 +56,18 @@ export async function createClient(prevState, formData) {
     return { error: "Company code is required" };
   }
 
-  if (!gstNumber) {
-    return { error: "GST No. is required" };
-  }
-
   try {
+    // Check for duplicate company code
+    const existingCode = await db.query.clients.findFirst({
+      where: eq(clients.companyCode, companyCode),
+    });
+
+    if (existingCode) {
+      return {
+        error: `A client with Company Code "${companyCode}" already exists (${existingCode.companyName}). Please use a unique code.`,
+      };
+    }
+
     const [newClient] = await db
       .insert(clients)
       .values({
@@ -66,6 +76,7 @@ export async function createClient(prevState, formData) {
         companyCode,
         email,
         phone,
+        address,
         gstNumber,
         tdsApplicable,
         tdsRate: tdsApplicable ? tdsRate : "2.00",
@@ -79,73 +90,30 @@ export async function createClient(prevState, formData) {
       const parsedDate = parseImportDate(openingBalanceDateStr);
       const validDate = parsedDate || new Date();
 
-      if (openingBalanceType === "CREDIT") {
-        // Create initial credit / advance payment record
-        await db.insert(payments).values({
-          companyId: currentUser.companyId,
-          clientId: newClient.id,
-          subClientId: null,
-          amount: openingBalance.toFixed(2),
-          paymentDate: validDate,
-          receiptNumber: `RCPT-OPENING-${newClient.id}`,
-          method: "adjustment",
-          reference: "OPENING-ADVANCE",
-          notes:
-            openingBalanceNotes ||
-            "Opening Balance (Credit) / Advance Carried Forward",
-          isOpeningBalance: true,
-        });
-      } else {
-        // Create opening balance virtual invoice (Debit)
-        const financialYear = getFinancialYear(validDate);
-        const invoiceNumber = `OPENING-BAL`;
-
-        const statusResult = calculateInvoiceStatus({
-          netPayable: openingBalance,
-          paid: 0,
-          dueDate: validDate,
-        });
-
-        await db.insert(invoices).values({
-          companyId: currentUser.companyId,
-          clientId: newClient.id,
-          subClientId: null,
-          financialYear,
-          invoiceNumber,
-          invoiceDate: validDate,
-          dueDate: validDate,
-          paymentTerms: 0,
-          invoiceAmount: openingBalance.toFixed(2),
-          basicAmount: openingBalance.toFixed(2),
-          cgstAmount: "0.00",
-          sgstAmount: "0.00",
-          igstAmount: "0.00",
-          tdsAmount: "0.00",
-          tdsDeductedAmount: "0.00",
-          deductionAmount: "0.00",
-          otherCharges: "0.00",
-          netPayableAmount: openingBalance.toFixed(2),
-          paidAmount: "0.00",
-          outstandingAmount: openingBalance.toFixed(2),
-          gstNumberUsed: gstNumber || null,
-          tdsApplicableUsed: false,
-          tdsRateUsed: "0.00",
-          isTdsVerified: false,
-          status: statusResult.status,
-          isOpeningBalance: true,
-          notes: openingBalanceNotes,
-        });
-      }
+      await setOrUpdateClientOpeningBalance({
+        companyId: currentUser.companyId,
+        clientId: newClient.id,
+        amount: openingBalance,
+        type: openingBalanceType,
+        asOfDate: validDate,
+        notes: openingBalanceNotes,
+        gstNumber,
+        tdsApplicable,
+        tdsRate: tdsApplicable ? tdsRate : "2.00",
+      });
     }
 
     revalidatePath("/clients");
-    return { success: true };
+    return { success: true, clientId: newClient.id, companyName };
   } catch (err) {
-    console.error("Create Client Error:");
-    console.error(err);
-
+    console.error("Create Client Error:", err);
+    if (err.message && err.message.includes("clients_company_code_unique")) {
+      return {
+        error: `Company Code "${companyCode}" is already in use by another client.`,
+      };
+    }
     return {
-      error: err.message,
+      error: err.message || "Failed to create client",
     };
   }
 }

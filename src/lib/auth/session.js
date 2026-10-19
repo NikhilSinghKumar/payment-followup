@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 import { db } from "@/db";
-import { sessions, companyUsers } from "@/db/schema";
+import { sessions, companyUsers, companies } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
 import { SESSION_DURATION_DAYS, SESSION_TOKEN_BYTES } from "./constants";
@@ -98,9 +98,17 @@ export async function validateSession(sessionToken) {
     ),
   });
 
+  let companyId = companyUser?.companyId ?? null;
+  if (!companyId) {
+    const defaultCompany = await db.query.companies.findFirst({
+      where: eq(companies.isActive, true),
+    });
+    companyId = defaultCompany?.id ?? null;
+  }
+
   return {
     session,
     user: session.user,
-    companyId: companyUser?.companyId ?? null,
+    companyId,
   };
 }
