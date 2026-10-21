@@ -188,6 +188,7 @@ export async function getNotificationAuditLogs({
         createdAt: notificationLogs.createdAt,
         clientId: notificationLogs.clientId,
         invoiceId: notificationLogs.invoiceId,
+        metadata: notificationLogs.metadata,
         clientName: clients.companyName,
         invoiceNumber: invoices.invoiceNumber,
       })

@@ -909,21 +909,27 @@ export async function sendBulkGroupedReminders({
           errors.push(`${companyName} (${email}): ${errorMsg}`);
         }
 
-        // Log notification in DB for this client and each invoice
+        // Log one record per actual email attempt, not one record per invoice.
+        // Keep the included invoice IDs/numbers in metadata for audit traceability.
         try {
-          for (const inv of groupInvoices) {
-            await db.insert(notificationLogs).values({
-              companyId: currentUser.companyId,
-              clientId,
-              invoiceId: inv.id,
-              channel: "EMAIL",
-              recipient: email,
-              subject,
-              status: emailSuccess ? "DELIVERED" : "FAILED",
-              errorMessage: errorMsg,
-              sentAt: new Date(),
-            });
-          }
+          await db.insert(notificationLogs).values({
+            companyId: currentUser.companyId,
+            clientId,
+            invoiceId: null,
+            channel: "EMAIL",
+            recipient: email,
+            subject,
+            status: emailSuccess ? "DELIVERED" : "FAILED",
+            errorMessage: errorMsg,
+            sentAt: new Date(),
+            metadata: {
+              source: "bulk_invoice_reminder",
+              reminderType,
+              invoiceCount: groupInvoices.length,
+              invoiceIds: groupInvoices.map((inv) => inv.id),
+              invoiceNumbers: groupInvoices.map((inv) => inv.invoiceNumber),
+            },
+          });
         } catch (logErr) {
           console.error("Failed to write notification log:", logErr);
         }

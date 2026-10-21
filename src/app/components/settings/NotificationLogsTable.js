@@ -202,7 +202,15 @@ export default function NotificationLogsTable() {
                             Inv #{log.invoiceNumber}
                           </Link>
                         )}
-                        {!log.clientName && !log.invoiceNumber && (
+                        {!log.invoiceId && log.metadata?.source === "bulk_invoice_reminder" && (
+                          <span
+                            className="block text-[10px] text-zinc-400"
+                            title={(log.metadata.invoiceNumbers || []).join(", ")}
+                          >
+                            {log.metadata.invoiceCount || log.metadata.invoiceNumbers?.length || 0} invoice(s) included
+                          </span>
+                        )}
+                        {!log.clientName && !log.invoiceNumber && !log.metadata?.source && (
                           <span>—</span>
                         )}
                       </div>
