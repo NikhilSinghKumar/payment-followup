@@ -1,9 +1,11 @@
 import path from "path";
 import fs from "fs";
 import { transporter } from "./transporter";
+import { DEFAULT_CC } from "./email-constants";
 
 import {
   buildFromAddress,
+  buildReplyToAddress,
   normalizeRecipients,
   validateEmailOptions,
 } from "./email-utils";
@@ -16,7 +18,9 @@ import {
  * @param {string} options.subject
  * @param {string} [options.html]
  * @param {string} [options.text]
- * @param {string|string[]} [options.cc]
+ * @param {string|string[]} [options.from] - Custom from address or default to accounts@pafex.in
+ * @param {string|string[]} [options.replyTo] - Custom reply-to address or default to muskan@pafex.in
+ * @param {string|string[]} [options.cc] - Optional CC recipients
  * @param {string|string[]} [options.bcc]
  * @param {Array} [options.attachments]
  *
@@ -44,10 +48,29 @@ export async function sendEmail(options) {
     }
   }
 
+  // Construct deduplicated CC list (only explicit CC recipients)
+  const ccSet = new Set();
+  if (options.cc) {
+    const rawCc = Array.isArray(options.cc) ? options.cc : [options.cc];
+    for (const item of rawCc) {
+      if (!item) continue;
+      String(item)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((e) => ccSet.add(e));
+    }
+  }
+
+  if (options.includeDefaultCc && DEFAULT_CC) {
+    ccSet.add(DEFAULT_CC);
+  }
+
   const mailOptions = {
-    from: buildFromAddress(),
+    from: buildFromAddress(options.from),
+    replyTo: buildReplyToAddress(options.replyTo),
     to: normalizeRecipients(options.to),
-    cc: normalizeRecipients(options.cc),
+    cc: normalizeRecipients(Array.from(ccSet)),
     bcc: normalizeRecipients(options.bcc),
     subject: options.subject,
     html: options.html,

@@ -289,7 +289,7 @@ const mockStore: Record<string, any[]> = {
       autoSendSuspensionNotice: false,
       sendInternalSuspensionAlert: true,
       sendInvoicePdf: true,
-      ccAccountsEmail: "accounts@pafex.com",
+      ccAccountsEmail: "accounts@pafex.in",
       ccSalesEmail: "sales@pafex.com",
       notifyManager: false,
       businessStartHour: 9,

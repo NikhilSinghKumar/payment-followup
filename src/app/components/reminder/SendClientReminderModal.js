@@ -598,9 +598,11 @@ export default function SendClientReminderModal({
                         }
                         recipientEmails={selectedEmails}
                         senderCompany={
-                          company?.companyName || "PAFEX Logistics"
+                          company?.companyName || "PAFEX Accounts"
                         }
-                        senderEmail={company?.email || ""}
+                        senderEmail="accounts@pafex.in"
+                        replyTo="muskan@pafex.in"
+                        ccEmails={[]}
                         reminderType={reminderType}
                       />
                     ))}

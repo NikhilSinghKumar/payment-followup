@@ -19,8 +19,10 @@ export default function LiveEmailModalPreview({
   errorMessage = null,
   subject = "",
   recipientEmails = [],
-  senderCompany = "PAFEX Logistics",
-  senderEmail = "",
+  ccEmails = [],
+  senderCompany = "PAFEX Accounts",
+  senderEmail = "accounts@pafex.in",
+  replyTo = "muskan@pafex.in",
   reminderType = "OVERDUE",
 }) {
   const [deviceMode, setDeviceMode] = useState("desktop"); // desktop | mobile
@@ -163,6 +165,34 @@ export default function LiveEmailModalPreview({
               )}
             </div>
           </div>
+
+          {replyTo && (
+            <div className="flex items-center gap-2">
+              <span className="w-14 font-bold text-zinc-400">Reply-To:</span>
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-purple-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-purple-700 dark:bg-purple-950/70 dark:text-purple-300">
+                {replyTo}
+                <span className="font-sans text-[10px] font-normal text-purple-600/80 dark:text-purple-400/80">
+                  (Client replies route here)
+                </span>
+              </span>
+            </div>
+          )}
+
+          {ccEmails && ccEmails.length > 0 && (
+            <div className="flex items-start gap-2">
+              <span className="w-14 font-bold text-zinc-400 pt-0.5">Cc:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {ccEmails.map((email) => (
+                  <span
+                    key={email}
+                    className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 font-mono text-[11px] font-medium text-amber-700 dark:bg-amber-950/70 dark:text-amber-300"
+                  >
+                    {email}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-start gap-2">
             <span className="w-14 font-bold text-zinc-400 pt-0.5">

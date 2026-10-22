@@ -596,6 +596,8 @@ export function Signature({
       Warm Regards,
       <br />
       <br />
+      <strong>PAFEX Accounts & Collections Team</strong>
+      <br />
       <strong>{senderCompany || "Prakash Air Freight India Pvt Ltd"}</strong>
       <br />
       Email: {senderEmail || "accounts@pafex.in"}

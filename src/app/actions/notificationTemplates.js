@@ -30,7 +30,7 @@ const MOCK_DATA = {
   paymentMethod: "Bank Transfer / RTGS (UTR: HDFC892184918)",
   referenceNumber: "UTR-HDFC892184918",
   senderCompany: "PAFEX Logistics",
-  senderEmail: "accounts@pafex.in",
+  senderEmail: "muskan@pafex.in",
   senderPhone: "+91 9289901837",
   senderLogo: "/pafex_logo.png",
   totalAccountOutstanding: 125000,

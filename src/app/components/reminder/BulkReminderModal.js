@@ -684,9 +684,11 @@ export default function BulkReminderModal({
                       }
                       recipientEmails={previewGroup.selectedEmails || []}
                       senderCompany={
-                        previewData?.company?.companyName || "PAFEX Logistics"
+                        previewData?.company?.companyName || "PAFEX Accounts"
                       }
-                      senderEmail={previewData?.company?.email || ""}
+                      senderEmail="accounts@pafex.in"
+                      replyTo="muskan@pafex.in"
+                      ccEmails={[]}
                       reminderType={reminderType}
                     />
                   )}

@@ -273,7 +273,7 @@ export async function sendBulkPaymentConfirmationEmails({
       .limit(1);
 
     const senderCompany = company?.companyName || "PAFEX Logistics";
-    const senderEmail = company?.email || "billing@pafex.in";
+    const senderEmail = process.env.SMTP_FROM_EMAIL || "muskan@pafex.in";
 
     let totalDispatched = 0;
     let totalFailed = 0;
