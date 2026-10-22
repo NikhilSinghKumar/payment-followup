@@ -578,12 +578,12 @@ export async function sendBulkPaymentConfirmationEmails({
             ? Number(clientSummary.totalInvoicedAmount)
             : resolvedTotalNetPayable;
 
-      // Rest Due Amount should strictly be netOutstanding matching clients/[id]/page.js
+      // Rest Due Amount = Account total - Total payment received so far
       const resolvedNetOutstanding =
         clientSummary?.netOutstanding !== undefined &&
         clientSummary?.netOutstanding !== null
           ? Number(clientSummary.netOutstanding)
-          : Math.max(0, resolvedTotalNetPayable - totalBatchAmount);
+          : Math.max(0, resolvedTotalInvoiceAmount - resolvedPaymentsReceived);
 
       const resolvedPaymentsReceived =
         clientSummary?.paymentsReceived !== undefined &&

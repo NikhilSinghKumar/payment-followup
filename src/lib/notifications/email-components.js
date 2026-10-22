@@ -2612,60 +2612,11 @@ export function ClientPaymentSettlementTable({
         ? derivedFromRemaining
         : invoiceBatchTotal;
 
-  // 2. "Rest Due Amount" is netOutstanding from clients/[id]/page.js
-  let parsedRemaining = null;
-  if (hasInvoices) {
-    parsedRemaining = totals.remainingBalance;
-  } else if (
-    paymentInfo?.netOutstanding !== null &&
-    paymentInfo?.netOutstanding !== undefined
-  ) {
-    const rawVal = Number(
-      String(paymentInfo.netOutstanding).replace(/[^0-9.-]+/g, ""),
-    );
-    parsedRemaining =
-      !isBatchTdsVerified && effectivePendingTds > 0 && rawVal === 0
-        ? effectivePendingTds
-        : rawVal;
-  } else if (
-    paymentInfo?.restDueAmount !== null &&
-    paymentInfo?.restDueAmount !== undefined
-  ) {
-    const rawVal = Number(
-      String(paymentInfo.restDueAmount).replace(/[^0-9.-]+/g, ""),
-    );
-    parsedRemaining =
-      !isBatchTdsVerified && effectivePendingTds > 0 && rawVal === 0
-        ? effectivePendingTds
-        : rawVal;
-  } else if (
-    paymentInfo?.clientSummary?.netOutstanding !== null &&
-    paymentInfo?.clientSummary?.netOutstanding !== undefined
-  ) {
-    const rawVal = Number(
-      String(paymentInfo.clientSummary.netOutstanding).replace(
-        /[^0-9.-]+/g,
-        "",
-      ),
-    );
-    parsedRemaining =
-      !isBatchTdsVerified && effectivePendingTds > 0 && rawVal === 0
-        ? effectivePendingTds
-        : rawVal;
-  } else if (rawAccountRemaining !== null) {
-    parsedRemaining = rawAccountRemaining;
-  } else {
-    parsedRemaining = Math.max(
-      0,
-      netPayableAmount - rawCashPayment - effectiveVerifiedTds,
-    );
-  }
-
   // Card metrics:
-  // Card 1: Total Outstanding (Overall all invoice amount + open balance if exists)
-  // Card 2: Payment Received (Settled against invoices + unallocated amount)
+  // Card 1: Total Outstanding / Account Total (Overall all invoice amount + open balance if exists)
+  // Card 2: Payment Received (Settled against invoices + unallocated amount in this notification)
   // Card 3: TDS Deducted (TDS Card - Verified or Pending)
-  // Card 4: Rest Due Amount (netOutstanding including unverified TDS)
+  // Card 4: Rest Due Amount (Account total - Total payment received so far)
   const card1Value =
     paymentInfo?.totalOutstanding !== null &&
     paymentInfo?.totalOutstanding !== undefined
@@ -2722,7 +2673,25 @@ export function ClientPaymentSettlementTable({
           : "Tax Deducted (IT Act)"
       : "Nil / No TDS";
 
-  const card3Value = parsedRemaining;
+  // Total payment received so far across the account
+  const totalPaymentReceivedSoFar =
+    paymentInfo?.clientSummary?.paymentsReceived !== undefined &&
+    paymentInfo?.clientSummary?.paymentsReceived !== null
+      ? Number(paymentInfo.clientSummary.paymentsReceived)
+      : paymentInfo?.paymentsReceived !== undefined &&
+          paymentInfo?.paymentsReceived !== null
+        ? Number(paymentInfo.paymentsReceived)
+        : Number(card2Value || rawCashPayment || 0);
+
+  // Card 4: Rest Due Amount = Account total - Total payment received so far
+  const card3Value =
+    paymentInfo?.clientSummary?.netOutstanding !== undefined &&
+    paymentInfo?.clientSummary?.netOutstanding !== null
+      ? Number(paymentInfo.clientSummary.netOutstanding)
+      : Math.max(
+          0,
+          Number((card1Value - totalPaymentReceivedSoFar).toFixed(2)),
+        );
   const card3Label = "Rest Due Amount";
   const card3Subtext = hasPendingTds ? "" : "";
 
@@ -3171,7 +3140,7 @@ export function ClientPaymentSettlementTable({
       )}
 
       {/* 4. Dynamic Ledger Position Note */}
-      {parsedRemaining > 0 ? (
+      {card3Value > 0 ? (
         <div
           style={{
             background: hasPendingTds ? "#FFFBEB" : "#EFF6FF",
