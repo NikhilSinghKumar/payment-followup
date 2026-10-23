@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
   Plus,
+  Search,
 } from "lucide-react";
 import {
   getBulkInvoicesReminderPreview,
@@ -36,6 +37,7 @@ export default function BulkReminderModal({
   const [clientGroups, setClientGroups] = useState([]);
   const [reminderType, setReminderType] = useState("STATEMENT");
   const [customNote, setCustomNote] = useState("");
+  const [groupSearch, setGroupSearch] = useState("");
   const [activeTab, setActiveTab] = useState("groups"); // groups | preview
   const [previewClientIndex, setPreviewClientIndex] = useState(0);
   const [expandedClient, setExpandedClient] = useState(null);
@@ -397,8 +399,53 @@ export default function BulkReminderModal({
                       Review Clients & Recipient Emails
                     </label>
 
+                    <div className="relative mb-3">
+                      <Search
+                        size={15}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+                      />
+                      <input
+                        type="search"
+                        value={groupSearch}
+                        onChange={(e) => setGroupSearch(e.target.value)}
+                        placeholder="Search client name, company code, or email..."
+                        aria-label="Search client groups"
+                        className="h-10 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-3 text-xs text-zinc-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                      />
+                    </div>
+
                     <div className="space-y-3">
-                      {clientGroups.map((group) => {
+                      {clientGroups.filter((group) => {
+                        const query = groupSearch.trim().toLowerCase();
+                        if (!query) return true;
+                        return [group.companyName, group.companyCode, ...(group.selectedEmails || [])]
+                          .filter(Boolean)
+                          .some((value) => String(value).toLowerCase().includes(query));
+                      }).length === 0 && (
+                        <p className="rounded-xl border border-dashed border-zinc-300 px-4 py-8 text-center text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+                          No client groups match “{groupSearch}”.
+                        </p>
+                      )}
+                      {clientGroups
+                        .filter((group) => {
+                          const query = groupSearch.trim().toLowerCase();
+                          if (!query) return true;
+                          return [
+                            group.companyName,
+                            group.companyCode,
+                            ...(group.selectedEmails || []),
+                            ...(group.contacts || []).flatMap((contact) =>
+                              (contact.emails || []).map((email) =>
+                                typeof email === "string" ? email : email.email,
+                              ),
+                            ),
+                          ]
+                            .filter(Boolean)
+                            .some((value) =>
+                              String(value).toLowerCase().includes(query),
+                            );
+                        })
+                        .map((group) => {
                         const isExpanded = expandedClient === group.clientId;
                         const isEnabled = group.enabled !== false;
 
