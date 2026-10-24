@@ -596,7 +596,7 @@ export function Signature({
       Warm Regards,
       <br />
       <br />
-      <strong>PAFEX Accounts & Collections Team</strong>
+      <strong>PAFEX Accounts</strong>
       <br />
       <strong>{senderCompany || "Prakash Air Freight India Pvt Ltd"}</strong>
       <br />
@@ -3156,7 +3156,7 @@ export function ClientPaymentSettlementTable({
         >
           {hasPendingTds ? (
             <>
-              <strong>⚠️ Notice on TDS Deduction:</strong> TDS of{" "}
+              <strong>⚠️ TDS Deduction:</strong> TDS of{" "}
               <strong>{formatCurrency(effectivePendingTds)}</strong> is pending
               verification (Form 16A / 26AS). Until verified by accounts, this
               amount remains included in the Rest Due Amount.
