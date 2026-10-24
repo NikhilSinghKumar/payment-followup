@@ -134,9 +134,21 @@ export default function BulkReminderModal({
       return;
     }
 
+    // Send only the selected invoice IDs and recipient preferences. The full
+    // clientGroups contain invoice details, contacts, summaries, and AWBs, which
+    // can exceed the Server Actions request-body limit for large batches.
+    const clientSelections = clientGroups.map((group) => ({
+      clientId: group.clientId,
+      enabled: group.enabled !== false,
+      selectedEmails: Array.isArray(group.selectedEmails)
+        ? group.selectedEmails.filter((email) => typeof email === "string")
+        : [],
+    }));
+
     startTransition(async () => {
       const res = await sendBulkGroupedReminders({
-        clientGroups,
+        invoiceIds: selectedInvoiceIds,
+        clientSelections,
         reminderType,
         customNote,
         channel: "EMAIL",

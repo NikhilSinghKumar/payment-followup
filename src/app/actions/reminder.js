@@ -787,7 +787,8 @@ export async function getBulkInvoicesReminderPreview(invoiceIds = []) {
  * Dispatch bulk grouped reminders (1 consolidated statement per client)
  */
 export async function sendBulkGroupedReminders({
-  clientGroups = [],
+  invoiceIds = [],
+  clientSelections = [],
   reminderType = "STATEMENT",
   customNote = "",
   channel = "EMAIL",
@@ -798,9 +799,46 @@ export async function sendBulkGroupedReminders({
       return { success: false, error: "Unauthorized" };
     }
 
+    if (!Array.isArray(invoiceIds) || invoiceIds.length === 0) {
+      return { success: false, error: "No invoices selected." };
+    }
+
+    // Re-fetch invoice/client data on the server rather than trusting a large
+    // client-supplied object. getBulkInvoicesReminderPreview scopes invoices to
+    // the authenticated user's company and returns the authoritative email data.
+    const preview = await getBulkInvoicesReminderPreview(invoiceIds);
+    if (preview?.error) {
+      return { success: false, error: preview.error };
+    }
+
+    const selectionByClientId = new Map(
+      (Array.isArray(clientSelections) ? clientSelections : []).map((selection) => [
+        String(selection.clientId),
+        selection,
+      ]),
+    );
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const clientGroups = (preview.clientGroups || []).map((group) => {
+      const selection = selectionByClientId.get(String(group.clientId));
+      const selectedEmails = Array.isArray(selection?.selectedEmails)
+        ? [...new Set(
+            selection.selectedEmails
+              .filter((email) => typeof email === "string")
+              .map((email) => email.trim())
+              .filter((email) => emailPattern.test(email))
+          )]
+        : [];
+
+      return {
+        ...group,
+        enabled: selection?.enabled === true,
+        selectedEmails,
+      };
+    });
+
     const activeGroups = clientGroups.filter(
-      (g) =>
-        g.enabled !== false && g.selectedEmails && g.selectedEmails.length > 0,
+      (g) => g.enabled && g.selectedEmails.length > 0,
     );
 
     if (!activeGroups.length) {

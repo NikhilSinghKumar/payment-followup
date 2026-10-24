@@ -600,7 +600,7 @@ export function Signature({
       <br />
       <strong>{senderCompany || "Prakash Air Freight India Pvt Ltd"}</strong>
       <br />
-      Email: {senderEmail || "accounts@pafex.in"}
+      Email: {senderEmail || "muskan@pafex.in"}
       <br />
       Mobile: {senderPhone || "9289901837"}
       <br />
