@@ -122,7 +122,10 @@ export default function BulkReminderModal({
   function handleSendBulk() {
     const active = clientGroups.filter(
       (g) =>
-        g.enabled !== false && g.selectedEmails && g.selectedEmails.length > 0,
+        g.enabled !== false &&
+        ((g.selectedEmails && g.selectedEmails.length > 0) ||
+          (g.contacts && g.contacts.some((c) => c.emails?.length > 0)) ||
+          g.clientEmail),
     );
 
     if (!active.length) {
@@ -134,21 +137,64 @@ export default function BulkReminderModal({
       return;
     }
 
-    // Send only the selected invoice IDs and recipient preferences. The full
-    // clientGroups contain invoice details, contacts, summaries, and AWBs, which
-    // can exceed the Server Actions request-body limit for large batches.
-    const clientSelections = clientGroups.map((group) => ({
-      clientId: group.clientId,
-      enabled: group.enabled !== false,
-      selectedEmails: Array.isArray(group.selectedEmails)
-        ? group.selectedEmails.filter((email) => typeof email === "string")
-        : [],
-    }));
-
     startTransition(async () => {
+      const sanitizedGroups = active.map((g) => {
+        const resolvedEmails = (
+          Array.isArray(g.selectedEmails) && g.selectedEmails.length > 0
+            ? g.selectedEmails
+            : (g.contacts?.flatMap((c) => (c.emails || []).map((e) => e.email)) || [g.clientEmail])
+        ).filter(Boolean);
+
+        return {
+          clientId: g.clientId,
+          companyName: g.companyName,
+          companyCode: g.companyCode,
+          enabled: true,
+          selectedEmails: resolvedEmails,
+          recipientEmails: resolvedEmails,
+          clientEmail: g.clientEmail,
+          totalDue: Number(g.totalDue || 0),
+          totalNetPayable: Number(g.totalNetPayable || 0),
+          netOutstanding: Number(g.netOutstanding || 0),
+          paymentsReceived: Number(g.paymentsReceived || 0),
+          overdueCount: Number(g.overdueCount || 0),
+          clientSummary: g.clientSummary,
+          invoices: (g.invoices || []).map((inv) => ({
+            id: inv.id,
+            invoiceNumber: inv.invoiceNumber,
+            financialYear: inv.financialYear,
+            invoiceDate: inv.invoiceDate,
+            dueDate: inv.dueDate,
+            creditDays: Number(inv.creditDays || 0),
+            invoiceAmount: inv.invoiceAmount,
+            netPayableAmount: inv.netPayableAmount,
+            paidAmount: inv.paidAmount,
+            paid: inv.paid,
+            paymentDeduction: inv.paymentDeduction,
+            deductionAmount: inv.deductionAmount,
+            otherCharges: inv.otherCharges,
+            isTdsVerified: inv.isTdsVerified,
+            tdsDeductedAmount: inv.tdsDeductedAmount,
+            verifiedTds: inv.verifiedTds,
+            outstandingAmount: inv.outstandingAmount,
+            due: inv.due,
+            status: inv.status,
+            isOverdue: inv.isOverdue,
+            isDueToday: inv.isDueToday,
+            isDueSoon: inv.isDueSoon,
+            dueDays: inv.dueDays,
+            dueDaysText: inv.dueDaysText,
+            agingDays: inv.agingDays ?? inv.dueDays,
+            agingStatus: inv.agingStatus,
+            agingColor: inv.agingColor,
+            awbs: inv.awbs || [],
+          })),
+        };
+      });
+
       const res = await sendBulkGroupedReminders({
-        invoiceIds: selectedInvoiceIds,
-        clientSelections,
+        clientGroups: sanitizedGroups,
+        groups: sanitizedGroups,
         reminderType,
         customNote,
         channel: "EMAIL",
@@ -178,8 +224,52 @@ export default function BulkReminderModal({
     if (!previewGroup) return;
     setLoadingPreview(true);
     setPreviewError(null);
+
+    const sanitizedGroup = {
+      clientId: previewGroup.clientId,
+      companyName: previewGroup.companyName,
+      companyCode: previewGroup.companyCode,
+      selectedEmails: previewGroup.selectedEmails,
+      totalDue: Number(previewGroup.totalDue || 0),
+      totalNetPayable: Number(previewGroup.totalNetPayable || 0),
+      netOutstanding: Number(previewGroup.netOutstanding || 0),
+      paymentsReceived: Number(previewGroup.paymentsReceived || 0),
+      overdueCount: Number(previewGroup.overdueCount || 0),
+      clientSummary: previewGroup.clientSummary,
+      invoices: (previewGroup.invoices || []).map((inv) => ({
+        id: inv.id,
+        invoiceNumber: inv.invoiceNumber,
+        financialYear: inv.financialYear,
+        invoiceDate: inv.invoiceDate,
+        dueDate: inv.dueDate,
+        creditDays: Number(inv.creditDays || 0),
+        invoiceAmount: inv.invoiceAmount,
+        netPayableAmount: inv.netPayableAmount,
+        paidAmount: inv.paidAmount,
+        paid: inv.paid,
+        paymentDeduction: inv.paymentDeduction,
+        deductionAmount: inv.deductionAmount,
+        otherCharges: inv.otherCharges,
+        isTdsVerified: inv.isTdsVerified,
+        tdsDeductedAmount: inv.tdsDeductedAmount,
+        verifiedTds: inv.verifiedTds,
+        outstandingAmount: inv.outstandingAmount,
+        due: inv.due,
+        status: inv.status,
+        isOverdue: inv.isOverdue,
+        isDueToday: inv.isDueToday,
+        isDueSoon: inv.isDueSoon,
+        dueDays: inv.dueDays,
+        dueDaysText: inv.dueDaysText,
+        agingDays: inv.agingDays ?? inv.dueDays,
+        agingStatus: inv.agingStatus,
+        agingColor: inv.agingColor,
+        awbs: inv.awbs || [],
+      })),
+    };
+
     getBulkStatementPreviewHtml({
-      group: previewGroup,
+      group: sanitizedGroup,
       reminderType,
       customNote,
     })
@@ -635,6 +725,7 @@ export default function BulkReminderModal({
                                         <tr>
                                           <th className="p-1.5">Invoice</th>
                                           <th className="p-1.5">Due Date</th>
+                                          <th className="p-1.5">Aging / Status</th>
                                           <th className="p-1.5">AWBs</th>
                                           <th className="p-1.5 text-right">
                                             Balance
@@ -655,6 +746,22 @@ export default function BulkReminderModal({
                                                     inv.dueDate,
                                                   ).toLocaleDateString("en-IN")
                                                 : "—"}
+                                            </td>
+                                            <td className="p-1.5 whitespace-nowrap">
+                                              <span
+                                                className={`font-semibold ${
+                                                  inv.isOverdue
+                                                    ? "text-red-600 dark:text-red-400"
+                                                    : inv.isDueToday
+                                                      ? "text-amber-600 dark:text-amber-400"
+                                                      : "text-emerald-600 dark:text-emerald-400"
+                                                }`}
+                                              >
+                                                {inv.agingStatus ||
+                                                  (inv.isOverdue
+                                                    ? `${inv.dueDays || 0}d Overdue`
+                                                    : "Current")}
+                                              </span>
                                             </td>
                                             <td className="p-1.5 font-mono text-[10px] text-zinc-500">
                                               {inv.awbs?.length

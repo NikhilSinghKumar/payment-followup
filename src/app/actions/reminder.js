@@ -13,7 +13,7 @@ import {
   notificationLogs,
 } from "@/db/schema";
 
-import { and, eq, inArray, isNull, sql, desc } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql, desc, ne } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/auth";
 import { calculateInvoiceStatus } from "@/lib/invoice-status";
 import { enrichInvoices } from "@/lib/invoice-summary";
@@ -21,6 +21,7 @@ import {
   calculateClientSummary,
   fetchClientFinancialSummary,
 } from "@/lib/client-summary";
+import { generateClientLedgerPdf } from "@/lib/pdf/generateLedgerPdf";
 import { sendEmail } from "@/lib/email";
 import {
   renderManualSingleInvoiceReminderEmail,
@@ -291,9 +292,11 @@ export async function getClientReminderData(clientId) {
 
   const company = companyRows[0] || {};
 
+  const { normalizedInvoices, ...compactClientSummary } = clientSummary;
+
   return {
     client,
-    clientSummary,
+    clientSummary: compactClientSummary,
     invoices: invoicesWithAwbs,
     contacts,
     company,
@@ -539,7 +542,31 @@ export async function sendClientReminder({
       company,
       reminderType,
       customNote,
+      actionUrl: `/clients/${client.id}`,
     });
+
+    // Generate official statement PDF attachment so recipient gets full itemized ledger
+    const attachments = [];
+    try {
+      const { buffer, filename } = await generateClientLedgerPdf({
+        clientId: client.id,
+        statementDate: new Date(),
+      });
+      if (buffer) {
+        attachments.push({
+          filename:
+            filename ||
+            `Statement_Account_${client.companyCode || client.id}.pdf`,
+          content: buffer,
+          contentType: "application/pdf",
+        });
+      }
+    } catch (pdfErr) {
+      console.warn(
+        "Could not generate statement PDF attachment:",
+        pdfErr?.message,
+      );
+    }
 
     // Send email sequentially to each recipient to avoid parallel SMTP auth flooding
     for (const email of recipientEmails) {
@@ -551,6 +578,7 @@ export async function sendClientReminder({
           to: email,
           subject,
           html: htmlBody,
+          attachments,
         });
         emailSuccess = Boolean(
           sendResult?.success ||
@@ -623,6 +651,13 @@ export async function getBulkInvoicesReminderPreview(invoiceIds = []) {
         netPayableAmount: invoices.netPayableAmount,
         paidAmount: invoices.paidAmount,
         outstandingAmount: invoices.outstandingAmount,
+        deductionAmount: invoices.deductionAmount,
+        otherCharges: invoices.otherCharges,
+        tdsAmount: invoices.tdsAmount,
+        tdsDeductedAmount: invoices.tdsDeductedAmount,
+        isTdsVerified: invoices.isTdsVerified,
+        isOpeningBalance: invoices.isOpeningBalance,
+        status: invoices.status,
         clientId: invoices.clientId,
         companyName: clients.companyName,
         companyCode: clients.companyCode,
@@ -695,7 +730,11 @@ export async function getBulkInvoicesReminderPreview(invoiceIds = []) {
     const clientFinancialsMap = {};
     for (const cId of clientIds) {
       try {
-        clientFinancialsMap[cId] = await fetchClientFinancialSummary(cId);
+        const fullSummary = await fetchClientFinancialSummary(cId);
+        if (fullSummary) {
+          const { normalizedInvoices, ...compactSummary } = fullSummary;
+          clientFinancialsMap[cId] = compactSummary;
+        }
       } catch (err) {
         console.error(
           "Failed to fetch client financials for bulk reminder:",
@@ -755,14 +794,50 @@ export async function getBulkInvoicesReminderPreview(invoiceIds = []) {
         };
       }
 
+      let dueDays = Number(inv.dueDays ?? inv.agingDays ?? 0);
+      if (!dueDays && inv.dueDate) {
+        const dueD = new Date(inv.dueDate);
+        if (!isNaN(dueD.getTime())) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          dueD.setHours(0, 0, 0, 0);
+          const diff = Math.floor(
+            (today.getTime() - dueD.getTime()) / (1000 * 60 * 60 * 24),
+          );
+          if (diff > 0) dueDays = diff;
+        }
+      }
+
+      const isOverdue = Boolean(inv.isOverdue || dueDays > 0);
+      const isDueToday = Boolean(
+        inv.isDueToday || (inv.dueDate && !isOverdue && dueDays === 0),
+      );
+      const agingStatus =
+        inv.agingStatus ||
+        (isOverdue
+          ? `${dueDays}d Overdue`
+          : isDueToday
+            ? "Due Today"
+            : "Current");
+      const agingColor =
+        inv.agingColor ||
+        (isOverdue ? "#DC2626" : isDueToday ? "#D97706" : "#16A34A");
+
       const invoiceWithAwbs = {
         ...inv,
+        dueDays,
+        agingDays: dueDays,
+        agingStatus,
+        agingColor,
+        isOverdue,
+        isDueToday,
+        creditDays: Number(inv.creditDays || 0),
         awbs: awbMap[inv.id] || [],
       };
 
       clientMap[cId].invoices.push(invoiceWithAwbs);
       clientMap[cId].totalDue += Number(inv.due || 0);
-      if (inv.isOverdue) {
+      if (isOverdue) {
         clientMap[cId].overdueCount += 1;
       }
     }
@@ -785,66 +860,39 @@ export async function getBulkInvoicesReminderPreview(invoiceIds = []) {
 
 /**
  * Dispatch bulk grouped reminders (1 consolidated statement per client)
+ * Supports both call conventions:
+ * 1. sendBulkGroupedReminders({ clientGroups, groups, reminderType, customNote, channel })
+ * 2. sendBulkGroupedReminders(clientGroupsArray, reminderType, customNote, channel)
  */
-export async function sendBulkGroupedReminders({
-  invoiceIds = [],
-  clientSelections = [],
-  reminderType = "STATEMENT",
-  customNote = "",
-  channel = "EMAIL",
-}) {
+export async function sendBulkGroupedReminders(arg1, arg2, arg3, arg4) {
   try {
     const currentUser = await getCurrentUser();
     if (!currentUser?.companyId) {
       return { success: false, error: "Unauthorized" };
     }
 
-    if (!Array.isArray(invoiceIds) || invoiceIds.length === 0) {
-      return { success: false, error: "No invoices selected." };
+    let rawGroups = [];
+    let reminderType = "STATEMENT";
+    let customNote = "";
+    let channel = "EMAIL";
+
+    if (Array.isArray(arg1)) {
+      rawGroups = arg1;
+      if (typeof arg2 === "string") reminderType = arg2;
+      if (typeof arg3 === "string") customNote = arg3;
+      if (typeof arg4 === "string") channel = arg4;
+    } else if (arg1 && typeof arg1 === "object") {
+      rawGroups =
+        arg1.clientGroups || arg1.groups || arg1.sanitizedGroups || [];
+      reminderType = arg1.reminderType || "STATEMENT";
+      customNote = arg1.customNote || "";
+      channel = arg1.channel || "EMAIL";
     }
 
-    // Re-fetch invoice/client data on the server rather than trusting a large
-    // client-supplied object. getBulkInvoicesReminderPreview scopes invoices to
-    // the authenticated user's company and returns the authoritative email data.
-    const preview = await getBulkInvoicesReminderPreview(invoiceIds);
-    if (preview?.error) {
-      return { success: false, error: preview.error };
-    }
-
-    const selectionByClientId = new Map(
-      (Array.isArray(clientSelections) ? clientSelections : []).map((selection) => [
-        String(selection.clientId),
-        selection,
-      ]),
-    );
-
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const clientGroups = (preview.clientGroups || []).map((group) => {
-      const selection = selectionByClientId.get(String(group.clientId));
-      const selectedEmails = Array.isArray(selection?.selectedEmails)
-        ? [...new Set(
-            selection.selectedEmails
-              .filter((email) => typeof email === "string")
-              .map((email) => email.trim())
-              .filter((email) => emailPattern.test(email))
-          )]
-        : [];
-
-      return {
-        ...group,
-        enabled: selection?.enabled === true,
-        selectedEmails,
-      };
-    });
-
-    const activeGroups = clientGroups.filter(
-      (g) => g.enabled && g.selectedEmails.length > 0,
-    );
-
-    if (!activeGroups.length) {
+    if (!Array.isArray(rawGroups) || rawGroups.length === 0) {
       return {
         success: false,
-        error: "No active clients with recipient emails configured.",
+        error: "No clients selected for bulk statement reminders.",
       };
     }
 
@@ -856,6 +904,267 @@ export async function sendBulkGroupedReminders({
       .limit(1);
 
     const company = companyRows[0] || {};
+
+    // Filter and normalize active groups
+    const activeGroups = [];
+
+    for (const group of rawGroups) {
+      if (!group) continue;
+
+      // If explicitly disabled by unchecked box, skip
+      if (
+        group.enabled === false ||
+        group.enabled === "false" ||
+        group.selected === false
+      ) {
+        continue;
+      }
+
+      const clientId = group.clientId || group.id;
+      if (!clientId) continue;
+
+      // Resolve recipient emails from all possible sources
+      const rawEmails = [];
+
+      // 1. Array or string or map of selectedEmails
+      if (Array.isArray(group.selectedEmails)) {
+        for (const e of group.selectedEmails) {
+          if (typeof e === "string" && e.trim() && e.includes("@")) {
+            rawEmails.push(e.trim());
+          } else if (
+            e &&
+            typeof e === "object" &&
+            typeof e.email === "string" &&
+            e.email.includes("@")
+          ) {
+            rawEmails.push(e.email.trim());
+          }
+        }
+      } else if (
+        typeof group.selectedEmails === "string" &&
+        group.selectedEmails.includes("@")
+      ) {
+        rawEmails.push(
+          ...group.selectedEmails
+            .split(",")
+            .map((s) => s.trim())
+            .filter((s) => s.includes("@")),
+        );
+      } else if (
+        group.selectedEmails &&
+        typeof group.selectedEmails === "object"
+      ) {
+        for (const k of Object.keys(group.selectedEmails)) {
+          if (group.selectedEmails[k] && typeof k === "string" && k.includes("@")) {
+            rawEmails.push(k.trim());
+          }
+        }
+      }
+
+      // 2. recipientEmails
+      if (Array.isArray(group.recipientEmails)) {
+        for (const e of group.recipientEmails) {
+          if (typeof e === "string" && e.trim() && e.includes("@")) {
+            rawEmails.push(e.trim());
+          } else if (
+            e?.email &&
+            typeof e.email === "string" &&
+            e.email.includes("@")
+          ) {
+            rawEmails.push(e.email.trim());
+          }
+        }
+      }
+
+      // 3. emails or recipients
+      if (Array.isArray(group.emails)) {
+        for (const e of group.emails) {
+          if (typeof e === "string" && e.trim() && e.includes("@"))
+            rawEmails.push(e.trim());
+          else if (e?.email) rawEmails.push(e.email.trim());
+        }
+      }
+      if (Array.isArray(group.recipients)) {
+        for (const e of group.recipients) {
+          if (typeof e === "string" && e.trim() && e.includes("@"))
+            rawEmails.push(e.trim());
+          else if (e?.email) rawEmails.push(e.email.trim());
+        }
+      }
+
+      // 4. contacts embedded on group
+      if (Array.isArray(group.contacts)) {
+        for (const c of group.contacts) {
+          for (const em of c.emails || []) {
+            const emStr = typeof em === "string" ? em : em?.email;
+            if (emStr && emStr.includes("@")) {
+              rawEmails.push(emStr.trim());
+            }
+          }
+        }
+      }
+
+      // 5. clientEmail
+      if (
+        group.clientEmail &&
+        typeof group.clientEmail === "string" &&
+        group.clientEmail.includes("@")
+      ) {
+        rawEmails.push(group.clientEmail.trim());
+      }
+
+      // 6. Database fallback if still empty: fetch contact emails from DB
+      if (rawEmails.length === 0) {
+        try {
+          const dbContacts = await db.query.clientContacts.findMany({
+            where: and(
+              eq(clientContacts.clientId, clientId),
+              isNull(clientContacts.deletedAt),
+            ),
+            with: {
+              emails: {
+                where: isNull(clientContactEmails.deletedAt),
+              },
+            },
+          });
+
+          for (const c of dbContacts) {
+            for (const em of c.emails || []) {
+              if (em.email && em.email.includes("@")) {
+                rawEmails.push(em.email.trim());
+              }
+            }
+          }
+
+          if (rawEmails.length === 0) {
+            const clientRow = await db.query.clients.findFirst({
+              where: eq(clients.id, clientId),
+            });
+            if (clientRow?.email && clientRow.email.includes("@")) {
+              rawEmails.push(clientRow.email.trim());
+            }
+          }
+        } catch (dbErr) {
+          console.error(
+            "Failed to fetch fallback emails for client:",
+            clientId,
+            dbErr,
+          );
+        }
+      }
+
+      const selectedEmails = [
+        ...new Set(rawEmails.map((e) => e.toLowerCase())),
+      ];
+
+      if (selectedEmails.length === 0) {
+        console.warn(
+          `[sendBulkGroupedReminders] Skipping client ${group.companyName || clientId} - no email recipients found.`,
+        );
+        continue;
+      }
+
+      // Resolve invoices if not supplied
+      let groupInvoices = Array.isArray(group.invoices) ? group.invoices : [];
+      if (groupInvoices.length === 0) {
+        try {
+          const dbInvoices = await db.query.invoices.findMany({
+            where: and(
+              eq(invoices.clientId, clientId),
+              isNull(invoices.deletedAt),
+              ne(invoices.status, "PAID"),
+            ),
+            orderBy: [desc(invoices.invoiceDate)],
+          });
+          groupInvoices = enrichInvoices(dbInvoices);
+        } catch (invErr) {
+          console.error(
+            "Failed to fetch fallback invoices for client:",
+            clientId,
+            invErr,
+          );
+        }
+      }
+
+      // Ensure every invoice has complete aging attributes populated
+      const enrichedGroupInvoices = groupInvoices.map((inv) => {
+        let dueDays = Number(inv.dueDays ?? inv.agingDays ?? 0);
+        if (!dueDays && inv.dueDate) {
+          const dueD = new Date(inv.dueDate);
+          if (!isNaN(dueD.getTime())) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            dueD.setHours(0, 0, 0, 0);
+            const diff = Math.floor(
+              (today.getTime() - dueD.getTime()) / (1000 * 60 * 60 * 24),
+            );
+            if (diff > 0) dueDays = diff;
+          }
+        }
+        const isOverdue = Boolean(inv.isOverdue || dueDays > 0);
+        const isDueToday = Boolean(
+          inv.isDueToday || (inv.dueDate && !isOverdue && dueDays === 0),
+        );
+        const agingStatus =
+          inv.agingStatus ||
+          (isOverdue
+            ? `${dueDays}d Overdue`
+            : isDueToday
+              ? "Due Today"
+              : "Current");
+        const agingColor =
+          inv.agingColor ||
+          (isOverdue ? "#DC2626" : isDueToday ? "#D97706" : "#16A34A");
+
+        return {
+          ...inv,
+          dueDays,
+          agingDays: dueDays,
+          agingStatus,
+          agingColor,
+          isOverdue,
+          isDueToday,
+          creditDays: Number(inv.creditDays || 0),
+        };
+      });
+
+      // Resolve company name if missing
+      let companyName = group.companyName;
+      let companyCode = group.companyCode;
+      if (!companyName) {
+        try {
+          const clientRow = await db.query.clients.findFirst({
+            where: eq(clients.id, clientId),
+          });
+          if (clientRow) {
+            companyName = clientRow.companyName;
+            companyCode = clientRow.companyCode;
+          }
+        } catch (_) {}
+      }
+
+      activeGroups.push({
+        ...group,
+        clientId,
+        companyName: companyName || "Valued Client",
+        companyCode: companyCode || "",
+        selectedEmails,
+        invoices: enrichedGroupInvoices,
+        totalDue: Number(group.totalDue || 0),
+        overdueCount: Number(
+          group.overdueCount ||
+            enrichedGroupInvoices.filter((i) => i.isOverdue).length ||
+            0,
+        ),
+      });
+    }
+
+    if (!activeGroups.length) {
+      return {
+        success: false,
+        error: "No active clients with recipient emails configured.",
+      };
+    }
 
     let totalEmailsSent = 0;
     let totalInvoicesCovered = 0;
@@ -912,7 +1221,30 @@ export async function sendBulkGroupedReminders({
         customNote,
         totalDue: group.netOutstanding || totalDue || 0,
         overdueCount,
+        actionUrl: `/clients/${clientId}`,
       });
+
+      // Generate client statement PDF attachment so recipient gets full itemized ledger
+      const attachments = [];
+      try {
+        const { buffer, filename } = await generateClientLedgerPdf({
+          clientId,
+          statementDate: new Date(),
+        });
+        if (buffer) {
+          attachments.push({
+            filename:
+              filename || `Statement_Account_${group.companyCode || clientId}.pdf`,
+            content: buffer,
+            contentType: "application/pdf",
+          });
+        }
+      } catch (pdfErr) {
+        console.warn(
+          `Could not generate statement PDF for client ${companyName}:`,
+          pdfErr?.message,
+        );
+      }
 
       // Send to each contact recipient for this client
       for (const email of selectedEmails) {
@@ -924,6 +1256,7 @@ export async function sendBulkGroupedReminders({
             to: email,
             subject,
             html: htmlBody,
+            attachments,
           });
           emailSuccess = Boolean(
             sendResult?.success ||
@@ -1109,9 +1442,51 @@ export async function getBulkStatementPreviewHtml({
       if (companyRows.length > 0) company = companyRows[0];
     }
 
+    const rawInvoices = group.invoices || [];
+    const enrichedGroupInvoices = rawInvoices.map((inv) => {
+      let dueDays = Number(inv.dueDays ?? inv.agingDays ?? 0);
+      if (!dueDays && inv.dueDate) {
+        const dueD = new Date(inv.dueDate);
+        if (!isNaN(dueD.getTime())) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          dueD.setHours(0, 0, 0, 0);
+          const diff = Math.floor(
+            (today.getTime() - dueD.getTime()) / (1000 * 60 * 60 * 24),
+          );
+          if (diff > 0) dueDays = diff;
+        }
+      }
+      const isOverdue = Boolean(inv.isOverdue || dueDays > 0);
+      const isDueToday = Boolean(
+        inv.isDueToday || (inv.dueDate && !isOverdue && dueDays === 0),
+      );
+      const agingStatus =
+        inv.agingStatus ||
+        (isOverdue
+          ? `${dueDays}d Overdue`
+          : isDueToday
+            ? "Due Today"
+            : "Current");
+      const agingColor =
+        inv.agingColor ||
+        (isOverdue ? "#DC2626" : isDueToday ? "#D97706" : "#16A34A");
+
+      return {
+        ...inv,
+        dueDays,
+        agingDays: dueDays,
+        agingStatus,
+        agingColor,
+        isOverdue,
+        isDueToday,
+        creditDays: Number(inv.creditDays || 0),
+      };
+    });
+
     const html = renderManualBulkInvoicesReminderEmail({
       client: { companyName: group.companyName },
-      groupInvoices: group.invoices || [],
+      groupInvoices: enrichedGroupInvoices,
       company,
       reminderType,
       customNote,

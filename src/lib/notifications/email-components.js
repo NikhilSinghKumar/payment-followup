@@ -596,11 +596,11 @@ export function Signature({
       Warm Regards,
       <br />
       <br />
-      <strong>PAFEX Accounts</strong>
+      <strong>PAFEX Accounts & Collections Team</strong>
       <br />
       <strong>{senderCompany || "Prakash Air Freight India Pvt Ltd"}</strong>
       <br />
-      Email: {senderEmail || "muskan@pafex.in"}
+      Email: {senderEmail || "accounts@pafex.in"}
       <br />
       Mobile: {senderPhone || "9289901837"}
       <br />
@@ -641,6 +641,8 @@ export function ClientOutstandingInvoices({
   onAccountAmount = null,
   clientSummary = null,
   showSummaryCards = true,
+  maxInvoicesToShow = 8,
+  actionUrl = "",
 }) {
   const invoiceList = Array.isArray(invoices) ? invoices : [];
 
@@ -697,11 +699,42 @@ export function ClientOutstandingInvoices({
             ? Number(invoice.restDueAmount)
             : Math.max(0, invRemainingDue);
 
+    let invDueDays = Number(invoice.dueDays ?? invoice.agingDays ?? 0);
+    if (!invDueDays && invoice.dueDate) {
+      const dueD = new Date(invoice.dueDate);
+      if (!isNaN(dueD.getTime())) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dueD.setHours(0, 0, 0, 0);
+        const diff = Math.floor(
+          (today.getTime() - dueD.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        if (diff > 0) invDueDays = diff;
+      }
+    }
+
     const isInvOverdue = Boolean(
       invoice.isOverdue ||
-      Number(invoice.dueDays || invoice.agingDays || 0) > 0 ||
+      invDueDays > 0 ||
       invoice.agingStatus?.toLowerCase().includes("overdue"),
     );
+
+    const isDueToday = Boolean(
+      invoice.isDueToday ||
+      (invoice.dueDate && !isInvOverdue && invDueDays === 0),
+    );
+
+    const agingStatus =
+      invoice.agingStatus ||
+      (isInvOverdue
+        ? `${invDueDays}d Overdue`
+        : isDueToday
+          ? "Due Today"
+          : "Current");
+
+    const agingColor =
+      invoice.agingColor ||
+      (isInvOverdue ? "#DC2626" : isDueToday ? "#D97706" : "#16A34A");
 
     return {
       ...invoice,
@@ -710,7 +743,12 @@ export function ClientOutstandingInvoices({
       invVerifiedTds,
       invRestDue,
       creditDays,
+      dueDays: invDueDays,
+      agingDays: invDueDays,
+      agingStatus,
+      agingColor,
       isInvOverdue,
+      isDueToday,
     };
   });
 
@@ -779,6 +817,143 @@ export function ClientOutstandingInvoices({
 
   const hasAnyOverdue = processedInvoices.some((inv) => inv.isInvOverdue);
 
+  // Smart truncation threshold: If a client has more than 8 invoices (e.g. 60+),
+  // show the top priority overdue invoices and a summary of the remaining bills to prevent email clipping
+  const MAX_INVOICES_LIMIT = maxInvoicesToShow || 8;
+  const isTruncated = processedInvoices.length > MAX_INVOICES_LIMIT;
+
+  // Compute Aging Buckets across all invoices for executive clarity
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const agingBuckets = {
+    days90Plus: {
+      count: 0,
+      amount: 0,
+      label: "90+ Days Overdue",
+      shortLabel: "90+ Days",
+      color: "#DC2626",
+      bg: "#FEF2F2",
+      border: "#FCA5A5",
+    },
+    days61to90: {
+      count: 0,
+      amount: 0,
+      label: "61–90 Days",
+      shortLabel: "61–90d",
+      color: "#EA580C",
+      bg: "#FFF7ED",
+      border: "#FDBA74",
+    },
+    days31to60: {
+      count: 0,
+      amount: 0,
+      label: "31–60 Days",
+      shortLabel: "31–60d",
+      color: "#D97706",
+      bg: "#FFFBEB",
+      border: "#FCD34D",
+    },
+    days1to30: {
+      count: 0,
+      amount: 0,
+      label: "1–30 Days",
+      shortLabel: "1–30d",
+      color: "#2563EB",
+      bg: "#EFF6FF",
+      border: "#BFDBFE",
+    },
+    notDue: {
+      count: 0,
+      amount: 0,
+      label: "Current / Not Due",
+      shortLabel: "Current",
+      color: "#166534",
+      bg: "#F0FDF4",
+      border: "#BBF7D0",
+    },
+  };
+
+  processedInvoices.forEach((inv) => {
+    const dueAmount = inv.invRestDue;
+    if (dueAmount <= 0) return;
+
+    const dueD = inv.dueDate ? new Date(inv.dueDate) : null;
+    if (dueD) dueD.setHours(0, 0, 0, 0);
+
+    const dueDays =
+      inv.dueDays !== undefined && inv.dueDays !== null && !isNaN(Number(inv.dueDays))
+        ? Number(inv.dueDays)
+        : inv.agingDays !== undefined && inv.agingDays !== null && !isNaN(Number(inv.agingDays))
+          ? Number(inv.agingDays)
+          : dueD && dueD < now
+            ? Math.round((now.getTime() - dueD.getTime()) / (1000 * 60 * 60 * 24))
+            : 0;
+
+    if (dueDays > 90) {
+      agingBuckets.days90Plus.count += 1;
+      agingBuckets.days90Plus.amount += dueAmount;
+    } else if (dueDays > 60) {
+      agingBuckets.days61to90.count += 1;
+      agingBuckets.days61to90.amount += dueAmount;
+    } else if (dueDays > 30) {
+      agingBuckets.days31to60.count += 1;
+      agingBuckets.days31to60.amount += dueAmount;
+    } else if (dueDays > 0) {
+      agingBuckets.days1to30.count += 1;
+      agingBuckets.days1to30.amount += dueAmount;
+    } else {
+      agingBuckets.notDue.count += 1;
+      agingBuckets.notDue.amount += dueAmount;
+    }
+  });
+
+  const activeAgingBuckets = Object.values(agingBuckets).filter(
+    (b) => b.count > 0 || b.amount > 0,
+  );
+
+  // When truncated, sort by urgency: oldest overdue days first, then earliest due date, then highest balance
+  const sortedInvoices = [...processedInvoices].sort((a, b) => {
+    if (a.isInvOverdue && !b.isInvOverdue) return -1;
+    if (!a.isInvOverdue && b.isInvOverdue) return 1;
+
+    const aDays = Number(a.dueDays || a.agingDays || 0);
+    const bDays = Number(b.dueDays || b.agingDays || 0);
+    if (aDays !== bDays) return bDays - aDays;
+
+    if (a.dueDate && b.dueDate) {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    }
+
+    return (b.invRestDue || 0) - (a.invRestDue || 0);
+  });
+
+  const displayedInvoices = isTruncated
+    ? sortedInvoices.slice(0, MAX_INVOICES_LIMIT)
+    : sortedInvoices;
+
+  const remainingInvoices = isTruncated
+    ? sortedInvoices.slice(MAX_INVOICES_LIMIT)
+    : [];
+
+  const remainingTotals = remainingInvoices.reduce(
+    (acc, inv) => {
+      acc.count += 1;
+      acc.invoiceAmount += inv.invOverall;
+      acc.paidAmount += inv.invDeduction;
+      acc.outstandingAmount += inv.invRestDue;
+      if (inv.isInvOverdue) acc.overdueCount += 1;
+      return acc;
+    },
+    {
+      count: 0,
+      invoiceAmount: 0,
+      paidAmount: 0,
+      outstandingAmount: 0,
+      overdueCount: 0,
+    },
+  );
+
   if (!invoiceList.length) {
     return (
       <div style={{ margin: "20px 0" }}>
@@ -827,9 +1002,92 @@ export function ClientOutstandingInvoices({
           isOverdue={hasAnyOverdue}
         />
       )}
+
+      {/* Aging Breakdown Summary Bar (renders when account has multiple bills) */}
+      {processedInvoices.length > 5 && activeAgingBuckets.length > 0 && (
+        <div
+          style={{
+            margin: "0 0 16px 0",
+            padding: "12px 14px",
+            backgroundColor: "#F8FAFC",
+            border: "1px solid #E2E8F0",
+            borderRadius: "8px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 700,
+              color: "#475569",
+              marginBottom: "8px",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Aging Breakdown ({processedInvoices.length} Total Bills)
+          </div>
+          <table
+            width="100%"
+            cellPadding="0"
+            cellSpacing="0"
+            border="0"
+            style={{ borderCollapse: "separate", borderSpacing: "6px 0" }}
+          >
+            <tbody>
+              <tr>
+                {activeAgingBuckets.map((bucket, bIdx) => (
+                  <td
+                    key={bIdx}
+                    style={{
+                      background: bucket.bg,
+                      border: `1px solid ${bucket.border}`,
+                      borderRadius: "6px",
+                      padding: "8px 10px",
+                      textAlign: "center",
+                      verticalAlign: "top",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        color: bucket.color,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {bucket.shortLabel || bucket.label}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        color: bucket.color,
+                        marginTop: "2px",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {formatCurrency(bucket.amount)}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "10px",
+                        color: "#64748B",
+                        marginTop: "2px",
+                      }}
+                    >
+                      {bucket.count} bill{bucket.count > 1 ? "s" : ""}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <div
         style={{
-          marginBottom: "8px",
+          marginBottom: "6px",
           fontSize: "15px",
           fontWeight: 700,
           color: "#0F172A",
@@ -970,7 +1228,7 @@ export function ClientOutstandingInvoices({
             </tr>
           </thead>
           <tbody>
-            {processedInvoices.map((invoice, index) => {
+            {displayedInvoices.map((invoice, index) => {
               const rowBg = index % 2 === 1 ? "#F8FAFC" : "#FFFFFF";
 
               return (
@@ -1057,7 +1315,7 @@ export function ClientOutstandingInvoices({
                       fontWeight: 600,
                       color:
                         invoice.agingColor ||
-                        (invoice.isInvOverdue ? "#DC2626" : "#334155"),
+                        (invoice.isInvOverdue ? "#DC2626" : "#16A34A"),
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -1081,6 +1339,80 @@ export function ClientOutstandingInvoices({
                 </tr>
               );
             })}
+
+            {/* Omitted Invoices Summary Row when list is truncated */}
+            {isTruncated && (
+              <tr
+                style={{
+                  backgroundColor: "#FEF2F2",
+                  borderTop: "2px dashed #FCA5A5",
+                  borderBottom: "1px solid #FECACA",
+                }}
+              >
+                <td
+                  colSpan={3}
+                  style={{
+                    padding: "10px 10px",
+                    color: "#991B1B",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                  }}
+                >
+                  <div style={{ color: "#991B1B", fontWeight: 700 }}>
+                    + {remainingTotals.count} other overdue & pending invoices
+                  </div>
+                </td>
+                <td
+                  style={{
+                    padding: "10px 10px",
+                    color: "#334155",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    textAlign: "right",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {formatCurrency(remainingTotals.invoiceAmount)}
+                </td>
+                <td
+                  style={{
+                    padding: "10px 10px",
+                    color: "#16A34A",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    textAlign: "right",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {formatCurrency(remainingTotals.paidAmount)}
+                </td>
+                <td
+                  style={{
+                    padding: "10px 10px",
+                    color: "#DC2626",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    textAlign: "right",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {formatCurrency(remainingTotals.outstandingAmount)}
+                </td>
+                <td
+                  colSpan={2}
+                  style={{
+                    padding: "10px 8px",
+                    color: "#991B1B",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {remainingTotals.overdueCount > 0
+                    ? `${remainingTotals.overdueCount} Overdue Bills`
+                    : "Pending"}
+                </td>
+              </tr>
+            )}
 
             {/* Total Row: Handles unallocated/on-account amounts when present */}
             {resolvedUnallocated > 0 ? (
@@ -3156,7 +3488,7 @@ export function ClientPaymentSettlementTable({
         >
           {hasPendingTds ? (
             <>
-              <strong>⚠️ TDS Deduction:</strong> TDS of{" "}
+              <strong>⚠️ Notice on TDS Deduction:</strong> TDS of{" "}
               <strong>{formatCurrency(effectivePendingTds)}</strong> is pending
               verification (Form 16A / 26AS). Until verified by accounts, this
               amount remains included in the Rest Due Amount.

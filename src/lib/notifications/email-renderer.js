@@ -411,14 +411,41 @@ export function ClientStatementEmailTemplate({
             ? Number(inv.outstandingAmount)
             : Math.max(0, remainingDue);
 
+    let dueDays = Number(inv.dueDays ?? inv.agingDays ?? 0);
+    if (!dueDays && inv.dueDate) {
+      const dueD = new Date(inv.dueDate);
+      if (!isNaN(dueD.getTime())) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dueD.setHours(0, 0, 0, 0);
+        const diff = Math.floor(
+          (today.getTime() - dueD.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        if (diff > 0) dueDays = diff;
+      }
+    }
+
     const isOverdue = Boolean(
       inv.isOverdue ||
-      (inv.agingDays && inv.agingDays > 0) ||
-      (inv.dueDays && inv.dueDays > 0) ||
+      dueDays > 0 ||
       inv.agingStatus?.toLowerCase().includes("overdue"),
     );
 
-    const dueDays = inv.dueDays || inv.agingDays || 0;
+    const isDueToday = Boolean(
+      inv.isDueToday || (inv.dueDate && !isOverdue && dueDays === 0),
+    );
+
+    const agingStatus =
+      inv.agingStatus ||
+      (isOverdue
+        ? `${dueDays}d Overdue`
+        : isDueToday
+          ? "Due Today"
+          : "Current");
+
+    const agingColor =
+      inv.agingColor ||
+      (isOverdue ? "#DC2626" : isDueToday ? "#D97706" : "#16A34A");
 
     return {
       ...inv,
@@ -434,17 +461,11 @@ export function ClientStatementEmailTemplate({
       totalSettled: paidAmount,
       outstandingAmount,
       isOverdue,
+      isDueToday,
       dueDays,
-      agingStatus:
-        inv.agingStatus ||
-        (isOverdue
-          ? `${dueDays}d Overdue`
-          : inv.isDueToday
-            ? "Due Today"
-            : "Current"),
-      agingColor:
-        inv.agingColor ||
-        (isOverdue ? "#DC2626" : inv.isDueToday ? "#D97706" : "#16A34A"),
+      agingDays: dueDays,
+      agingStatus,
+      agingColor,
     };
   });
 
@@ -740,11 +761,8 @@ export function ClientStatementEmailTemplate({
           onAccountAmount={resolvedOnAccount}
           unallocatedAmount={resolvedOnAccount}
           clientSummary={clientSummary}
+          actionUrl={actionUrl}
         />
-      )}
-
-      {actionUrl && (
-        <EmailButton text="View Account Statement Online" url={actionUrl} />
       )}
 
       {!isSettlement && <BankDetails company={company} />}
