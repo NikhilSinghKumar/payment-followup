@@ -7,7 +7,7 @@ import {
   creditNotes,
   creditNoteAllocations,
 } from "@/db/schema";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/auth";
 
@@ -403,5 +403,356 @@ export async function voidCreditNote(_prevState, formData) {
   } catch (error) {
     console.error("Void Credit Note Error:", error);
     return { success: false, message: "Failed to void the credit note. Please try again." };
+  }
+}
+
+
+/**
+ * Returns invoices eligible for allocation to this credit note.
+ * Capacity is reduced by allocations from other issued, non-void credit notes.
+ * The current credit note is excluded so its existing allocation can be edited.
+ */
+export async function getCreditNoteAllocationData(id) {
+  const { companyId } = await getAuthorizedCompany();
+  const creditNoteId = Number(id);
+  if (!Number.isInteger(creditNoteId) || creditNoteId <= 0) return null;
+
+  const [note] = await db
+    .select({
+      id: creditNotes.id,
+      companyId: creditNotes.companyId,
+      clientId: creditNotes.clientId,
+      totalAmount: creditNotes.totalAmount,
+      status: creditNotes.status,
+    })
+    .from(creditNotes)
+    .where(and(
+      eq(creditNotes.id, creditNoteId),
+      eq(creditNotes.companyId, companyId),
+      isNull(creditNotes.deletedAt),
+    ))
+    .limit(1);
+
+  if (!note || note.status === "void") return null;
+
+  const [invoiceRows, otherAllocationRows] = await Promise.all([
+    db
+      .select({
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        financialYear: invoices.financialYear,
+        invoiceDate: invoices.invoiceDate,
+        outstandingAmount: invoices.outstandingAmount,
+      })
+      .from(invoices)
+      .where(and(
+        eq(invoices.companyId, companyId),
+        eq(invoices.clientId, note.clientId),
+        isNull(invoices.deletedAt),
+      ))
+      .orderBy(desc(invoices.invoiceDate), desc(invoices.id)),
+    db
+      .select({
+        invoiceId: creditNoteAllocations.invoiceId,
+        allocatedAmount: creditNoteAllocations.allocatedAmount,
+      })
+      .from(creditNoteAllocations)
+      .innerJoin(creditNotes, eq(creditNoteAllocations.creditNoteId, creditNotes.id))
+      .where(and(
+        eq(creditNotes.companyId, companyId),
+        ne(creditNotes.id, creditNoteId),
+        ne(creditNotes.status, "draft"),
+        ne(creditNotes.status, "void"),
+        isNull(creditNotes.deletedAt),
+        isNull(creditNoteAllocations.deletedAt),
+      )),
+  ]);
+
+  const allocatedByInvoice = new Map();
+  for (const row of otherAllocationRows) {
+    allocatedByInvoice.set(
+      row.invoiceId,
+      (allocatedByInvoice.get(row.invoiceId) || 0) + Number(row.allocatedAmount || 0),
+    );
+  }
+
+  return {
+    note: {
+      id: note.id,
+      totalAmount: String(note.totalAmount ?? "0"),
+      status: note.status,
+    },
+    invoices: invoiceRows.map((invoice) => {
+      const outstanding = Math.max(0, Number(invoice.outstandingAmount || 0));
+      const allocatedByOthers = allocatedByInvoice.get(invoice.id) || 0;
+      return {
+        ...invoice,
+        outstandingAmount: outstanding.toFixed(2),
+        availableForCredit: Math.max(0, outstanding - allocatedByOthers).toFixed(2),
+      };
+    }),
+  };
+}
+
+async function refreshCreditNoteStatus(tx, creditNoteId, companyId) {
+  const [note] = await tx
+    .select({
+      id: creditNotes.id,
+      totalAmount: creditNotes.totalAmount,
+      status: creditNotes.status,
+    })
+    .from(creditNotes)
+    .where(and(
+      eq(creditNotes.id, creditNoteId),
+      eq(creditNotes.companyId, companyId),
+      isNull(creditNotes.deletedAt),
+    ))
+    .limit(1);
+
+  if (!note || note.status === "draft" || note.status === "void") return;
+
+  const rows = await tx
+    .select({ allocatedAmount: creditNoteAllocations.allocatedAmount })
+    .from(creditNoteAllocations)
+    .where(and(
+      eq(creditNoteAllocations.creditNoteId, creditNoteId),
+      isNull(creditNoteAllocations.deletedAt),
+    ));
+
+  const allocated = rows.reduce((sum, row) => sum + Number(row.allocatedAmount || 0), 0);
+  const total = Number(note.totalAmount || 0);
+  const status = allocated <= 0
+    ? "issued"
+    : allocated + 0.005 >= total
+      ? "applied"
+      : "partially_applied";
+
+  await tx.update(creditNotes)
+    .set({ status, updatedAt: new Date() })
+    .where(and(
+      eq(creditNotes.id, creditNoteId),
+      eq(creditNotes.companyId, companyId),
+    ));
+}
+
+/**
+ * Add or update one invoice allocation. Amount is explicit: the action rejects
+ * amounts beyond the note's remaining amount or invoice's available capacity.
+ */
+export async function saveCreditNoteAllocation(_prevState, formData) {
+  let auth;
+  try {
+    auth = await getAuthorizedCompany();
+  } catch {
+    return { success: false, message: "Unauthorized. Please sign in again." };
+  }
+
+  const creditNoteId = Number(formData.get("creditNoteId"));
+  const invoiceId = Number(formData.get("invoiceId"));
+  const allocatedAmount = Number(formData.get("allocatedAmount"));
+  const allocationNotes = String(formData.get("allocationNotes") || "").trim() || null;
+
+  if (!Number.isInteger(creditNoteId) || creditNoteId <= 0 ||
+      !Number.isInteger(invoiceId) || invoiceId <= 0) {
+    return { success: false, message: "Select a valid credit note and invoice." };
+  }
+  if (!Number.isFinite(allocatedAmount) || allocatedAmount <= 0 ||
+      Math.round(allocatedAmount * 100) !== allocatedAmount * 100) {
+    return { success: false, message: "Allocation must be greater than zero and have no more than two decimal places." };
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      const [note] = await tx
+        .select({
+          id: creditNotes.id,
+          clientId: creditNotes.clientId,
+          totalAmount: creditNotes.totalAmount,
+          status: creditNotes.status,
+        })
+        .from(creditNotes)
+        .where(and(
+          eq(creditNotes.id, creditNoteId),
+          eq(creditNotes.companyId, auth.companyId),
+          isNull(creditNotes.deletedAt),
+        ))
+        .limit(1);
+
+      if (!note) throw new Error("NOTE_NOT_FOUND");
+      if (note.status === "void") throw new Error("NOTE_VOID");
+
+      const [invoice] = await tx
+        .select({
+          id: invoices.id,
+          clientId: invoices.clientId,
+          companyId: invoices.companyId,
+          outstandingAmount: invoices.outstandingAmount,
+        })
+        .from(invoices)
+        .where(and(
+          eq(invoices.id, invoiceId),
+          eq(invoices.clientId, note.clientId),
+          eq(invoices.companyId, auth.companyId),
+          isNull(invoices.deletedAt),
+        ))
+        .limit(1);
+
+      if (!invoice) throw new Error("INVOICE_INVALID");
+
+      const allNoteAllocations = await tx
+        .select({
+          invoiceId: creditNoteAllocations.invoiceId,
+          allocatedAmount: creditNoteAllocations.allocatedAmount,
+        })
+        .from(creditNoteAllocations)
+        .where(and(
+          eq(creditNoteAllocations.creditNoteId, creditNoteId),
+          isNull(creditNoteAllocations.deletedAt),
+        ));
+
+      const otherNoteAllocated = allNoteAllocations
+        .filter((row) => row.invoiceId !== invoiceId)
+        .reduce((sum, row) => sum + Number(row.allocatedAmount || 0), 0);
+
+      const existingRows = await tx
+        .select({
+          id: creditNoteAllocations.id,
+          allocatedAmount: creditNoteAllocations.allocatedAmount,
+          deletedAt: creditNoteAllocations.deletedAt,
+        })
+        .from(creditNoteAllocations)
+        .where(and(
+          eq(creditNoteAllocations.creditNoteId, creditNoteId),
+          eq(creditNoteAllocations.invoiceId, invoiceId),
+        ))
+        .limit(1);
+      const existing = existingRows[0];
+
+      const noteRemaining = Math.max(0, Number(note.totalAmount || 0) - otherNoteAllocated);
+      if (allocatedAmount > noteRemaining + 0.005) throw new Error("NOTE_CAPACITY");
+
+      const [otherInvoiceAllocationRows] = await tx
+        .select({ total: sql`coalesce(sum(${creditNoteAllocations.allocatedAmount}), 0)` })
+        .from(creditNoteAllocations)
+        .innerJoin(creditNotes, eq(creditNoteAllocations.creditNoteId, creditNotes.id))
+        .where(and(
+          eq(creditNoteAllocations.invoiceId, invoiceId),
+          ne(creditNotes.id, creditNoteId),
+          eq(creditNotes.companyId, auth.companyId),
+          ne(creditNotes.status, "draft"),
+          ne(creditNotes.status, "void"),
+          isNull(creditNotes.deletedAt),
+          isNull(creditNoteAllocations.deletedAt),
+        ));
+
+      const invoiceCapacity = Math.max(
+        0,
+        Number(invoice.outstandingAmount || 0) - Number(otherInvoiceAllocationRows?.total || 0),
+      );
+      if (allocatedAmount > invoiceCapacity + 0.005) throw new Error("INVOICE_CAPACITY");
+
+      const values = {
+        allocatedAmount: allocatedAmount.toFixed(2),
+        notes: allocationNotes,
+        createdBy: auth.user.id,
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+
+      if (existing) {
+        await tx.update(creditNoteAllocations)
+          .set(values)
+          .where(eq(creditNoteAllocations.id, existing.id));
+      } else {
+        await tx.insert(creditNoteAllocations).values({
+          creditNoteId,
+          invoiceId,
+          ...values,
+        });
+      }
+
+      await refreshCreditNoteStatus(tx, creditNoteId, auth.companyId);
+    });
+
+    revalidatePath(`/credit-notes/${creditNoteId}`);
+    revalidatePath("/credit-notes");
+    revalidatePath("/invoices");
+    revalidatePath("/clients");
+    return { success: true, message: "Credit note allocation saved." };
+  } catch (error) {
+    const messages = {
+      NOTE_NOT_FOUND: "Credit note not found in your company.",
+      NOTE_VOID: "A void credit note cannot be allocated.",
+      INVOICE_INVALID: "Choose an invoice belonging to the same client and company.",
+      NOTE_CAPACITY: "This amount exceeds the credit note's remaining unapplied amount.",
+      INVOICE_CAPACITY: "This amount exceeds the invoice's available outstanding after other issued credit allocations.",
+    };
+    if (messages[error?.message]) return { success: false, message: messages[error.message] };
+    console.error("Save Credit Note Allocation Error:", error);
+    return { success: false, message: "Failed to save the allocation. Please try again." };
+  }
+}
+
+export async function removeCreditNoteAllocation(_prevState, formData) {
+  let auth;
+  try {
+    auth = await getAuthorizedCompany();
+  } catch {
+    return { success: false, message: "Unauthorized. Please sign in again." };
+  }
+
+  const creditNoteId = Number(formData.get("creditNoteId"));
+  const invoiceId = Number(formData.get("invoiceId"));
+  if (!Number.isInteger(creditNoteId) || creditNoteId <= 0 ||
+      !Number.isInteger(invoiceId) || invoiceId <= 0) {
+    return { success: false, message: "Invalid allocation." };
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      const [note] = await tx
+        .select({ id: creditNotes.id, status: creditNotes.status })
+        .from(creditNotes)
+        .where(and(
+          eq(creditNotes.id, creditNoteId),
+          eq(creditNotes.companyId, auth.companyId),
+          isNull(creditNotes.deletedAt),
+        ))
+        .limit(1);
+      if (!note) throw new Error("NOTE_NOT_FOUND");
+      if (note.status === "void") throw new Error("NOTE_VOID");
+
+      const [allocation] = await tx
+        .select({ id: creditNoteAllocations.id })
+        .from(creditNoteAllocations)
+        .where(and(
+          eq(creditNoteAllocations.creditNoteId, creditNoteId),
+          eq(creditNoteAllocations.invoiceId, invoiceId),
+          isNull(creditNoteAllocations.deletedAt),
+        ))
+        .limit(1);
+      if (!allocation) throw new Error("ALLOCATION_NOT_FOUND");
+
+      await tx.update(creditNoteAllocations)
+        .set({ deletedAt: new Date(), updatedAt: new Date() })
+        .where(eq(creditNoteAllocations.id, allocation.id));
+
+      await refreshCreditNoteStatus(tx, creditNoteId, auth.companyId);
+    });
+
+    revalidatePath(`/credit-notes/${creditNoteId}`);
+    revalidatePath("/credit-notes");
+    revalidatePath("/invoices");
+    revalidatePath("/clients");
+    return { success: true, message: "Invoice allocation removed. The credit remains on the client account as unapplied credit." };
+  } catch (error) {
+    const messages = {
+      NOTE_NOT_FOUND: "Credit note not found in your company.",
+      NOTE_VOID: "A void credit note cannot be changed.",
+      ALLOCATION_NOT_FOUND: "This invoice allocation no longer exists.",
+    };
+    if (messages[error?.message]) return { success: false, message: messages[error.message] };
+    console.error("Remove Credit Note Allocation Error:", error);
+    return { success: false, message: "Failed to remove the allocation. Please try again." };
   }
 }

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, FileText, CalendarDays, UserRound, ReceiptText } from "lucide-react";
-import { getCreditNoteById } from "@/app/actions/creditNote";
+import { getCreditNoteById, getCreditNoteAllocationData } from "@/app/actions/creditNote";
 import CreditNoteActions from "@/app/components/credit-note/CreditNoteActions";
+import CreditNoteAllocationManager from "@/app/components/credit-note/CreditNoteAllocationManager";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function CreditNoteDetailsPage({ params }) {
   const { id } = await params;
   const note = await getCreditNoteById(id);
   if (!note) notFound();
+  const allocationData = note.status === "void" ? null : await getCreditNoteAllocationData(note.id);
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
@@ -67,6 +69,16 @@ export default async function CreditNoteDetailsPage({ params }) {
           <p className="text-xs leading-5 text-zinc-500">Allocation details are shown for audit and reconciliation. This screen does not change original invoice amounts.</p>
         </section>
       </div>
+
+      {note.status !== "void" && allocationData && (
+        <CreditNoteAllocationManager
+          creditNoteId={note.id}
+          status={note.status}
+          totalAmount={note.totalAmount}
+          allocations={note.allocations}
+          invoices={allocationData.invoices}
+        />
+      )}
 
       {note.status === "void" ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">This credit note is void. It must not be included in receivable calculations.</div>
