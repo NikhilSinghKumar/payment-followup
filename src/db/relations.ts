@@ -9,6 +9,8 @@ import {
   invoices,
   payments,
   paymentAllocations,
+  creditNotes,
+  creditNoteAllocations,
   clientSubClients,
   followups,
   followupInvoices,
@@ -44,6 +46,7 @@ export const companiesRelations = relations(companies, ({ one, many }) => ({
   invoices: many(invoices),
   payments: many(payments),
   followups: many(followups),
+  creditNotes: many(creditNotes),
   notifications: many(notifications),
   notificationLogs: many(notificationLogs),
   notificationSettings: one(notificationSettings),
@@ -78,6 +81,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   invoices: many(invoices),
   payments: many(payments),
   followups: many(followups),
+  creditNotes: many(creditNotes),
   subClients: many(clientSubClients),
   notifications: many(notifications),
   notificationLogs: many(notificationLogs),
@@ -173,6 +177,7 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   }),
 
   payments: many(payments),
+  creditNoteAllocations: many(creditNoteAllocations),
   followupInvoices: many(followupInvoices),
   awbs: many(invoiceAwbs),
   notifications: many(notifications),
@@ -216,6 +221,44 @@ export const paymentAllocationsRelations = relations(
     invoice: one(invoices, {
       fields: [paymentAllocations.invoiceId],
       references: [invoices.id],
+    }),
+  }),
+);
+
+export const creditNotesRelations = relations(creditNotes, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [creditNotes.companyId],
+    references: [companies.id],
+  }),
+  client: one(clients, {
+    fields: [creditNotes.clientId],
+    references: [clients.id],
+  }),
+  subClient: one(clientSubClients, {
+    fields: [creditNotes.subClientId],
+    references: [clientSubClients.id],
+  }),
+  createdByUser: one(users, {
+    fields: [creditNotes.createdBy],
+    references: [users.id],
+  }),
+  allocations: many(creditNoteAllocations),
+}));
+
+export const creditNoteAllocationsRelations = relations(
+  creditNoteAllocations,
+  ({ one }) => ({
+    creditNote: one(creditNotes, {
+      fields: [creditNoteAllocations.creditNoteId],
+      references: [creditNotes.id],
+    }),
+    invoice: one(invoices, {
+      fields: [creditNoteAllocations.invoiceId],
+      references: [invoices.id],
+    }),
+    createdByUser: one(users, {
+      fields: [creditNoteAllocations.createdBy],
+      references: [users.id],
     }),
   }),
 );

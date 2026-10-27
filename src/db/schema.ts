@@ -1045,6 +1045,98 @@ export const invoices = pgTable(
 );
 
 // =========================
+// CREDIT NOTES
+// =========================
+
+export const creditNotes = pgTable(
+  "credit_notes",
+  {
+    id: serial("id").primaryKey(),
+
+    companyId: integer("company_id")
+      .notNull()
+      .references(() => companies.id),
+
+    clientId: integer("client_id")
+      .notNull()
+      .references(() => clients.id),
+
+    subClientId: integer("sub_client_id").references(() => clientSubClients.id, {
+      onDelete: "set null",
+    }),
+
+    creditNoteNumber: text("credit_note_number").notNull(),
+    creditNoteDate: date("credit_note_date").notNull(),
+
+    // Full credit note value. This is not a payment or cash collection.
+    totalAmount: numeric("total_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+
+    reason: text("reason").notNull(),
+    notes: text("notes"),
+
+    status: text("status").$type<
+      "draft" | "issued" | "partially_applied" | "applied" | "void"
+    >().notNull().default("draft"),
+
+    createdBy: integer("created_by").references(() => users.id),
+    issuedAt: timestamp("issued_at", { withTimezone: true }),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidReason: text("void_reason"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => ({
+    uniqueCreditNoteNumber: uniqueIndex("credit_notes_company_number_uidx").on(
+      table.companyId,
+      table.creditNoteNumber,
+    ),
+    clientIdx: index("credit_notes_client_idx").on(table.clientId),
+    companyIdx: index("credit_notes_company_idx").on(table.companyId),
+    dateIdx: index("credit_notes_date_idx").on(table.creditNoteDate),
+    statusIdx: index("credit_notes_status_idx").on(table.status),
+  }),
+);
+
+export const creditNoteAllocations = pgTable(
+  "credit_note_allocations",
+  {
+    id: serial("id").primaryKey(),
+
+    creditNoteId: integer("credit_note_id")
+      .notNull()
+      .references(() => creditNotes.id),
+
+    invoiceId: integer("invoice_id")
+      .notNull()
+      .references(() => invoices.id),
+
+    allocatedAmount: numeric("allocated_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+
+    notes: text("notes"),
+    createdBy: integer("created_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => ({
+    uniqueCreditNoteInvoice: uniqueIndex("credit_note_allocations_note_invoice_uidx").on(
+      table.creditNoteId,
+      table.invoiceId,
+    ),
+    creditNoteIdx: index("credit_note_allocations_note_idx").on(table.creditNoteId),
+    invoiceIdx: index("credit_note_allocations_invoice_idx").on(table.invoiceId),
+  }),
+);
+
+// =========================
 // INVOICE AWBS
 // =========================
 export const invoiceAwbs = pgTable(
