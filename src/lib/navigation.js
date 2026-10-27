@@ -3,6 +3,7 @@ import {
   Building2,
   Users,
   FileText,
+  ReceiptText,
   IndianRupee,
   BellRing,
   Megaphone,
@@ -34,6 +35,12 @@ export const SIDEBAR_NAVIGATION = [
         title: "Invoices",
         href: "/invoices",
         icon: FileText,
+      },
+
+      {
+        title: "Credit Notes",
+        href: "/credit-notes",
+        icon: ReceiptText,
       },
 
       {

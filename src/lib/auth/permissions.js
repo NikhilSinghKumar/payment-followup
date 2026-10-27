@@ -69,6 +69,12 @@ export const PERMISSIONS = [
   },
 
   {
+    key: "credit_notes",
+    module: "Credit Notes",
+    actions: ["view", "create", "issue", "allocate", "void"],
+  },
+
+  {
     key: "payments",
     module: "Payments",
     actions: ["view", "create", "edit", "delete", "export"],
