@@ -7,9 +7,6 @@ import {
   CalendarDays,
   ShieldCheck,
   Clock,
-  BadgePercent,
-  Link2,
-  WalletCards,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/formatCurrency";
 import KPICard from "./KPICard";
@@ -17,7 +14,7 @@ import KPICard from "./KPICard";
 export default function DashboardStats({ summary }) {
   return (
     <div className="overflow-x-auto [scrollbar-width:none]">
-      <div className="grid grid-cols-11 min-w-[1480px] gap-1.5 sm:gap-2">
+      <div className="grid grid-cols-8 min-w-[1060px] gap-1.5 sm:gap-2">
         {/* GROSS INVOICED */}
         <KPICard
           title="Gross Invoiced"
@@ -38,40 +35,6 @@ export default function DashboardStats({ summary }) {
               ? "text-rose-600 dark:text-rose-400"
               : "text-emerald-600 dark:text-emerald-400"
           }
-        />
-
-        {/* NET RECEIVABLE AFTER VALID CREDIT NOTES */}
-        <KPICard
-          title="Net Receivable"
-          value={formatCurrency(summary.netReceivable ?? summary.outstanding ?? 0)}
-          icon={WalletCards}
-          iconBg="text-violet-600 dark:text-violet-400"
-          cardBg="border-violet-200/80 bg-violet-50/40 dark:border-violet-950 dark:bg-violet-950/20"
-          titleColor="text-violet-800 dark:text-violet-300"
-          valueColor={(summary.netReceivable ?? summary.outstanding ?? 0) > 0
-            ? "text-violet-700 dark:text-violet-300"
-            : "text-emerald-600 dark:text-emerald-400"}
-          tooltip={`Current Outstanding: ${formatCurrency(summary.outstanding)} - Issued Credit Notes: ${formatCurrency(summary.totalCreditNotes)} = Net Receivable: ${formatCurrency(summary.netReceivable)}`}
-        />
-
-        {/* INVOICE-LINKED CREDIT NOTES */}
-        <KPICard
-          title="Invoice-Linked Credits"
-          value={formatCurrency(summary.invoiceLinkedCredits ?? 0)}
-          icon={Link2}
-          iconBg="text-cyan-600 dark:text-cyan-400"
-          valueColor="text-cyan-700 dark:text-cyan-300"
-          tooltip="Issued credit-note amounts allocated to invoices. These are included in total credit notes and are not cash collection."
-        />
-
-        {/* UNALLOCATED CLIENT CREDITS */}
-        <KPICard
-          title="Unallocated Credits"
-          value={formatCurrency(summary.unallocatedClientCredits ?? 0)}
-          icon={BadgePercent}
-          iconBg="text-amber-600 dark:text-amber-400"
-          valueColor="text-amber-700 dark:text-amber-300"
-          tooltip="Remaining balance of issued credit notes not allocated to invoices, including partially unapplied notes."
         />
 
         {/* 90+ DAYS */}

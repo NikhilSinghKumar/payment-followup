@@ -1,15 +1,9 @@
 "use server";
 
 import { db } from "@/db";
-import {
-  invoices,
-  payments,
-  paymentAllocations,
-  creditNotes,
-  creditNoteAllocations,
-} from "@/db/schema";
+import { invoices, payments, paymentAllocations } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/auth";
-import { and, eq, isNull, gt, sql, not, ilike, inArray } from "drizzle-orm";
+import { and, eq, isNull, gt, sql, not, ilike } from "drizzle-orm";
 
 const TIME_ZONE = "Asia/Kolkata";
 
@@ -370,103 +364,6 @@ export async function getDashboardData({
     );
 
   // ==========================================
-  // CREDIT NOTES (CURRENT SNAPSHOT)
-  // Only issued, non-void, non-deleted credit notes affect receivables.
-  // The existing invoice outstanding already includes verified-TDS logic.
-  // ==========================================
-
-  const eligibleCreditNoteStatuses = ["issued", "partially_applied", "applied"];
-
-  const [creditNoteTotalResult] = await db
-    .select({
-      total: sql`COALESCE(SUM(${creditNotes.totalAmount}), 0)`,
-    })
-    .from(creditNotes)
-    .where(
-      and(
-        eq(creditNotes.companyId, companyId),
-        isNull(creditNotes.deletedAt),
-        inArray(creditNotes.status, eligibleCreditNoteStatuses),
-      ),
-    );
-
-  const [invoiceLinkedCreditResult] = await db
-    .select({
-      total: sql`COALESCE(SUM(${creditNoteAllocations.allocatedAmount}), 0)`,
-    })
-    .from(creditNoteAllocations)
-    .innerJoin(creditNotes, eq(creditNoteAllocations.creditNoteId, creditNotes.id))
-    .where(
-      and(
-        eq(creditNotes.companyId, companyId),
-        isNull(creditNotes.deletedAt),
-        inArray(creditNotes.status, eligibleCreditNoteStatuses),
-        isNull(creditNoteAllocations.deletedAt),
-      ),
-    );
-
-  // Unallocated credit is the unallocated remainder of each eligible note.
-  // This includes a note with no invoice allocation and any partial remainder.
-// Calculate active allocations for each eligible credit note.
-const allocationRows = await db
-  .select({
-    creditNoteId: creditNoteAllocations.creditNoteId,
-    allocatedAmount: sql`
-      COALESCE(SUM(${creditNoteAllocations.allocatedAmount}), 0)
-    `,
-  })
-  .from(creditNoteAllocations)
-  .innerJoin(
-    creditNotes,
-    eq(creditNoteAllocations.creditNoteId, creditNotes.id)
-  )
-  .where(
-    and(
-      eq(creditNotes.companyId, companyId),
-      isNull(creditNotes.deletedAt),
-      inArray(creditNotes.status, eligibleCreditNoteStatuses),
-      isNull(creditNoteAllocations.deletedAt),
-    ),
-  )
-  .groupBy(creditNoteAllocations.creditNoteId);
-
-// Calculate the unallocated remainder of each eligible credit note.
-const unallocatedCreditRows = await db
-  .select({
-    id: creditNotes.id,
-    totalAmount: creditNotes.totalAmount,
-  })
-  .from(creditNotes)
-  .where(
-    and(
-      eq(creditNotes.companyId, companyId),
-      isNull(creditNotes.deletedAt),
-      inArray(creditNotes.status, eligibleCreditNoteStatuses),
-    ),
-  );
-
-const allocatedByCreditNote = new Map(
-  allocationRows.map((row) => [
-    row.creditNoteId,
-    Number(row.allocatedAmount || 0),
-  ]),
-);
-
-const unallocatedClientCredits = Number(
-  unallocatedCreditRows
-    .reduce((total, note) => {
-      const noteAmount = Number(note.totalAmount || 0);
-      const allocatedAmount = allocatedByCreditNote.get(note.id) || 0;
-
-      return total + Math.max(noteAmount - allocatedAmount, 0);
-    }, 0)
-    .toFixed(2),
-);
-
-const totalCreditNotes = Number(creditNoteTotalResult?.total || 0);
-const invoiceLinkedCredits = Number(invoiceLinkedCreditResult?.total || 0);
-
-  // ==========================================
   // 3. 90+ DAYS OUTSTANDING (REMAINING UNPAID BALANCE)
   // CURRENT SNAPSHOT OF 90+ DAYS OVERDUE INVOICES
   // ==========================================
@@ -764,14 +661,6 @@ const invoiceLinkedCredits = Number(invoiceLinkedCreditResult?.total || 0);
       grossInvoiced: Number(grossInvoicedResult?.total || 0),
 
       outstanding: Number(outstandingResult.total || 0),
-
-      // Credit-note values are separate from cash collection and do not alter invoices.
-      totalCreditNotes,
-      invoiceLinkedCredits,
-      unallocatedClientCredits,
-      netReceivable: Number(
-        (Number(outstandingResult?.total || 0) - totalCreditNotes).toFixed(2),
-      ),
 
       outstanding90Days: Number(outstanding90Result.total || 0),
 
