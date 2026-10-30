@@ -4,9 +4,9 @@ export default function KPICard({
   subtitle,
   icon: Icon,
   iconBg,
-  valueColor = "text-zinc-900 dark:text-zinc-100",
-  cardBg = "border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900",
-  titleColor = "text-zinc-500 dark:text-zinc-400",
+  valueColor = "text-zinc-900",
+  cardBg = "border-zinc-200/90 bg-white",
+  titleColor = "text-zinc-500",
   tooltip,
 }) {
   return (
@@ -25,10 +25,7 @@ export default function KPICard({
           {title}
         </p>
         {Icon && (
-          <Icon
-            size={12}
-            className={`shrink-0 ${iconBg || "text-zinc-400 dark:text-zinc-500"}`}
-          />
+          <Icon size={12} className={`shrink-0 ${iconBg || "text-zinc-400"}`} />
         )}
       </div>
 
@@ -40,7 +37,7 @@ export default function KPICard({
           {value}
         </p>
         {subtitle && (
-          <p className="text-[9px] text-zinc-400 dark:text-zinc-500 truncate leading-tight">
+          <p className="text-[9px] text-zinc-400 truncate leading-tight">
             {subtitle}
           </p>
         )}

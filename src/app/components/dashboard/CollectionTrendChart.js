@@ -66,25 +66,23 @@ export default function CollectionTrendChart({
   );
 
   return (
-    <div className="flex flex-col rounded-xl border border-zinc-200/90 bg-white p-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-4">
+    <div className="flex flex-col rounded-xl border border-zinc-200/90 bg-white p-3.5 shadow-xs sm:p-4">
       {/* HEADER */}
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
             Collection Trend
           </h2>
           {periodLabel && (
-            <span className="hidden sm:inline-block text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
+            <span className="hidden sm:inline-block text-[11px] font-medium text-zinc-400">
               ({periodLabel})
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-0.5 dark:bg-emerald-950/40">
-          <span className="text-[11px] text-emerald-700 dark:text-emerald-400">
-            Period Total:
-          </span>
-          <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+        <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-0.5">
+          <span className="text-[11px] text-emerald-700">Period Total:</span>
+          <span className="text-xs font-bold text-emerald-800">
             {formatCurrency(totalCollected)}
           </span>
         </div>

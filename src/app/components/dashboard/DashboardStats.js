@@ -20,8 +20,8 @@ export default function DashboardStats({ summary }) {
           title="Gross Invoiced"
           value={formatCurrency(summary.grossInvoiced ?? 0)}
           icon={FileText}
-          iconBg="text-zinc-400 dark:text-zinc-500"
-          valueColor="text-zinc-900 dark:text-zinc-100"
+          iconBg="text-zinc-400"
+          valueColor="text-zinc-900"
         />
 
         {/* OUTSTANDING */}
@@ -29,11 +29,9 @@ export default function DashboardStats({ summary }) {
           title="Total Outstanding"
           value={formatCurrency(summary.outstanding)}
           icon={Wallet}
-          iconBg="text-blue-500 dark:text-blue-400"
+          iconBg="text-blue-500"
           valueColor={
-            summary.outstanding > 0
-              ? "text-rose-600 dark:text-rose-400"
-              : "text-emerald-600 dark:text-emerald-400"
+            summary.outstanding > 0 ? "text-rose-600" : "text-emerald-600"
           }
         />
 
@@ -42,11 +40,9 @@ export default function DashboardStats({ summary }) {
           title="90+ Days Due"
           value={formatCurrency(summary.outstanding90Days)}
           icon={TriangleAlert}
-          iconBg="text-rose-500 dark:text-rose-400"
+          iconBg="text-rose-500"
           valueColor={
-            summary.outstanding90Days > 0
-              ? "text-rose-600 dark:text-rose-400"
-              : "text-zinc-900 dark:text-zinc-100"
+            summary.outstanding90Days > 0 ? "text-rose-600" : "text-zinc-900"
           }
         />
 
@@ -55,8 +51,8 @@ export default function DashboardStats({ summary }) {
           title="Today's Collection"
           value={formatCurrency(summary.todayCollection)}
           icon={IndianRupee}
-          iconBg="text-emerald-500 dark:text-emerald-400"
-          valueColor="text-emerald-600 dark:text-emerald-400"
+          iconBg="text-emerald-500"
+          valueColor="text-emerald-600"
         />
 
         {/* MONTH */}
@@ -64,8 +60,8 @@ export default function DashboardStats({ summary }) {
           title="Month Collection"
           value={formatCurrency(summary.monthCollection)}
           icon={CalendarDays}
-          iconBg="text-violet-500 dark:text-violet-400"
-          valueColor="text-violet-600 dark:text-violet-400"
+          iconBg="text-violet-500"
+          valueColor="text-violet-600"
         />
 
         {/* TOTAL RECONCILED (EXACT MATCH TO TDS MANAGEMENT) */}
@@ -75,10 +71,10 @@ export default function DashboardStats({ summary }) {
             summary.totalReconciled ?? summary.paymentReceived,
           )}
           icon={HandCoins}
-          iconBg="text-blue-600 dark:text-blue-400"
-          cardBg="border-blue-200/80 bg-blue-50/40 dark:border-blue-950 dark:bg-blue-950/20"
-          titleColor="text-blue-800 dark:text-blue-300"
-          valueColor="text-blue-700 dark:text-blue-300"
+          iconBg="text-blue-600"
+          cardBg="border-blue-200/80 bg-blue-50/40"
+          titleColor="text-blue-800"
+          valueColor="text-blue-700"
           tooltip={`Total Reconciled: ${formatCurrency(summary.totalReconciled)} (Payments: ${formatCurrency(summary.paymentReceived)} + Verified TDS: ${formatCurrency(summary.verifiedTds)}) | Total Bank Collection: ${formatCurrency(summary.totalCollection)} (includes ${formatCurrency(summary.unallocatedPayments)} unallocated advance)`}
         />
 
@@ -87,10 +83,10 @@ export default function DashboardStats({ summary }) {
           title="Verified TDS"
           value={formatCurrency(summary.verifiedTds)}
           icon={ShieldCheck}
-          iconBg="text-emerald-600 dark:text-emerald-400"
-          cardBg="border-emerald-200/80 bg-emerald-50/40 dark:border-emerald-950 dark:bg-emerald-950/20"
-          titleColor="text-emerald-800 dark:text-emerald-300"
-          valueColor="text-emerald-700 dark:text-emerald-300"
+          iconBg="text-emerald-600"
+          cardBg="border-emerald-200/80 bg-emerald-50/40"
+          titleColor="text-emerald-800"
+          valueColor="text-emerald-700"
         />
 
         {/* PENDING TDS */}
@@ -98,10 +94,10 @@ export default function DashboardStats({ summary }) {
           title="Pending TDS"
           value={formatCurrency(summary.pendingTds)}
           icon={Clock}
-          iconBg="text-amber-600 dark:text-amber-400"
-          cardBg="border-amber-200/80 bg-amber-50/40 dark:border-amber-950 dark:bg-amber-950/20"
-          titleColor="text-amber-800 dark:text-amber-300"
-          valueColor="text-amber-700 dark:text-amber-300"
+          iconBg="text-amber-600"
+          cardBg="border-amber-200/80 bg-amber-50/40"
+          titleColor="text-amber-800"
+          valueColor="text-amber-700"
         />
       </div>
     </div>

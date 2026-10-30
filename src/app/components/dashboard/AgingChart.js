@@ -62,20 +62,18 @@ export default function AgingChart({ data = [] }) {
   );
 
   return (
-    <div className="flex flex-col rounded-xl border border-zinc-200/90 bg-white p-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-4">
+    <div className="flex flex-col rounded-xl border border-zinc-200/90 bg-white p-3.5 shadow-xs sm:p-4">
       {/* HEADER */}
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
             Bill Aging
           </h2>
         </div>
 
-        <div className="flex items-center gap-1.5 rounded-md bg-zinc-50 px-2 py-0.5 dark:bg-zinc-800">
-          <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-            Outstanding:
-          </span>
-          <span className="text-xs font-bold text-zinc-900 dark:text-white">
+        <div className="flex items-center gap-1.5 rounded-md bg-zinc-50 px-2 py-0.5">
+          <span className="text-[11px] text-zinc-500">Outstanding:</span>
+          <span className="text-xs font-bold text-zinc-900">
             {formatCurrency(totalOutstanding)}
           </span>
         </div>

@@ -23,7 +23,7 @@ export default async function DashboardPage({ searchParams }) {
       {/* HEADER & FILTERS BAR */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-base font-bold tracking-tight text-zinc-900 dark:text-white sm:text-lg">
+          <h1 className="text-base font-bold tracking-tight text-zinc-900 sm:text-lg">
             Dashboard
           </h1>
         </div>
