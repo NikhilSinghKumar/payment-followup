@@ -34,20 +34,20 @@ export default function CompanyForm({ mode = "create", initialData = {} }) {
   }, [state.success, router]);
 
   return (
-    <div className="mx-auto max-w-3xl mt-4 rounded-2xl border border-slate-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="mx-auto max-w-3xl mt-4 rounded-2xl border border-slate-200 bg-white shadow-xs">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-zinc-800">
+      <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
             <Building2 size={18} />
           </div>
           <div>
-            <h2 className="text-base font-bold text-slate-800 dark:text-zinc-100">
+            <h2 className="text-base font-bold text-slate-800">
               {isEdit
                 ? `Edit Company: ${initialData.companyName || ""}`
                 : "Create New Company"}
             </h2>
-            <p className="text-xs text-slate-500 dark:text-zinc-400">
+            <p className="text-xs text-slate-500">
               {isEdit
                 ? "Update company credentials, contact details, and bank account."
                 : "Register a new company entity in the system."}
@@ -57,7 +57,7 @@ export default function CompanyForm({ mode = "create", initialData = {} }) {
 
         <Link
           href="/companies"
-          className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+          className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800"
         >
           <ArrowLeft size={14} />
           <span>Back to List</span>
@@ -71,8 +71,8 @@ export default function CompanyForm({ mode = "create", initialData = {} }) {
           <div
             className={`flex items-center gap-2 rounded-xl p-3.5 text-xs font-semibold ${
               state.success
-                ? "bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-200"
-                : "bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/60 dark:text-red-200"
+                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                : "bg-red-50 text-red-800 border border-red-200"
             }`}
           >
             {state.success ? <Check size={16} /> : <AlertCircle size={16} />}
@@ -87,12 +87,12 @@ export default function CompanyForm({ mode = "create", initialData = {} }) {
 
         {/* SECTION 1: BASIC DETAILS */}
         <div>
-          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">
             Company Credentials
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 Company Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -100,12 +100,12 @@ export default function CompanyForm({ mode = "create", initialData = {} }) {
                 required
                 defaultValue={initialData.companyName || ""}
                 placeholder="e.g. PAFEX"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 Company Code <span className="text-red-500">*</span>
               </label>
               <input
@@ -113,24 +113,24 @@ export default function CompanyForm({ mode = "create", initialData = {} }) {
                 required
                 defaultValue={initialData.companyCode || ""}
                 placeholder="e.g. PAFEX"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs font-mono uppercase text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs font-mono uppercase text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 GST Number
               </label>
               <input
                 name="gstNumber"
                 defaultValue={initialData.gstNumber || ""}
                 placeholder="27AAACP1234A1Z5"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs font-mono uppercase text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs font-mono uppercase text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 Email
               </label>
               <input
@@ -138,150 +138,150 @@ export default function CompanyForm({ mode = "create", initialData = {} }) {
                 name="email"
                 defaultValue={initialData.email || ""}
                 placeholder="billing@company.com"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 Phone / Mobile
               </label>
               <input
                 name="phone"
                 defaultValue={initialData.phone || ""}
                 placeholder="+91 98765 43210"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
           </div>
         </div>
 
         {/* SECTION 2: ADDRESS & LOCATION */}
-        <div className="border-t border-slate-100 pt-4 dark:border-zinc-800">
-          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+        <div className="border-t border-slate-100 pt-4">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">
             Address & Location
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 Registered Address
               </label>
               <input
                 name="address"
                 defaultValue={initialData.address || ""}
                 placeholder="Building, Street, Area"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 City
               </label>
               <input
                 name="city"
                 defaultValue={initialData.city || ""}
                 placeholder="e.g. Mumbai"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 State
               </label>
               <input
                 name="state"
                 defaultValue={initialData.state || ""}
                 placeholder="e.g. Maharashtra"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 Pincode
               </label>
               <input
                 name="pincode"
                 defaultValue={initialData.pincode || ""}
                 placeholder="400001"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 Country
               </label>
               <input
                 name="country"
                 defaultValue={initialData.country || "India"}
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
           </div>
         </div>
 
         {/* SECTION 3: BANK DETAILS FOR INVOICES & REMINDERS */}
-        <div className="border-t border-slate-100 pt-4 dark:border-zinc-800">
-          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+        <div className="border-t border-slate-100 pt-4">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">
             Bank Account & Settlement Coordinates (For Payment Reminders)
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 Bank Name
               </label>
               <input
                 name="bankName"
                 defaultValue={initialData.bankName || ""}
                 placeholder="e.g. HDFC Bank"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 Account Number
               </label>
               <input
                 name="bankAccountNumber"
                 defaultValue={initialData.bankAccountNumber || ""}
                 placeholder="e.g. 50200012345678"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs font-mono text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs font-mono text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 IFSC Code
               </label>
               <input
                 name="bankIfsc"
                 defaultValue={initialData.bankIfsc || ""}
                 placeholder="HDFC0000123"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs font-mono uppercase text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs font-mono uppercase text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
                 Branch / UPI ID
               </label>
               <input
                 name="bankUpi"
                 defaultValue={initialData.bankUpi || ""}
                 placeholder="company@hdfcbank"
-                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8.5 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 shadow-2xs outline-none focus:border-blue-500"
               />
             </div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between border-t border-slate-100 pt-4 dark:border-zinc-800">
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-zinc-300">
+        <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
             <input
               type="checkbox"
               name="isActive"
@@ -294,7 +294,7 @@ export default function CompanyForm({ mode = "create", initialData = {} }) {
           <div className="flex items-center gap-2">
             <Link
               href="/companies"
-              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
             >
               Cancel
             </Link>

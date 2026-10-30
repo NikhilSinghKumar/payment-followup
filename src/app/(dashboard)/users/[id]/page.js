@@ -62,7 +62,7 @@ export default async function UserDetailPage({ params }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/users"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 transition dark:text-zinc-400 dark:hover:text-zinc-100"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 transition"
         >
           <ArrowLeft size={14} />
           <span>Back to Users Directory</span>
@@ -80,8 +80,8 @@ export default async function UserDetailPage({ params }) {
       </div>
 
       {/* Main Profile Summary Card */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="border-b border-zinc-100 bg-gradient-to-r from-blue-50/50 via-purple-50/30 to-white p-6 dark:border-zinc-800 dark:from-zinc-800/40 dark:via-zinc-800/20 dark:to-zinc-900">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs">
+        <div className="border-b border-zinc-100 bg-gradient-to-r from-blue-50/50 via-purple-50/30 to-white p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-bold text-white shadow-md">
@@ -89,14 +89,14 @@ export default async function UserDetailPage({ params }) {
               </div>
               <div>
                 <div className="flex items-center gap-2.5">
-                  <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                  <h1 className="text-xl font-bold text-zinc-900">
                     {user.firstName} {user.lastName || ""}
                   </h1>
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
                       user.isActive
-                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                        : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-red-100 text-red-800"
                     }`}
                   >
                     {user.isActive ? (
@@ -112,14 +112,14 @@ export default async function UserDetailPage({ params }) {
                     )}
                   </span>
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500 font-medium dark:text-zinc-400">
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500 font-medium">
                   <span>{user.designation || "Team Member"}</span>
                   <span>•</span>
                   <span>{user.companyName || "No Company Assigned"}</span>
                   {user.departmentName && (
                     <>
                       <span>•</span>
-                      <span className="inline-flex items-center gap-1 font-semibold text-indigo-600 dark:text-indigo-400">
+                      <span className="inline-flex items-center gap-1 font-semibold text-indigo-600">
                         <Building2 size={12} />
                         {user.departmentName}
                       </span>
@@ -133,7 +133,7 @@ export default async function UserDetailPage({ params }) {
             <div className="flex flex-wrap gap-2">
               <a
                 href={`mailto:${user.email}`}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-mono text-zinc-700 hover:border-blue-300 transition dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-mono text-zinc-700 hover:border-blue-300 transition"
               >
                 <Mail size={13} className="text-blue-500" />
                 <span>{user.email}</span>
@@ -141,7 +141,7 @@ export default async function UserDetailPage({ params }) {
               {user.mobile && (
                 <a
                   href={`tel:${user.mobile}`}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-mono text-zinc-700 hover:border-blue-300 transition dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-mono text-zinc-700 hover:border-blue-300 transition"
                 >
                   <Phone size={13} className="text-emerald-500" />
                   <span>{user.mobile}</span>
@@ -152,22 +152,22 @@ export default async function UserDetailPage({ params }) {
         </div>
 
         {/* 4-Column Info Grid */}
-        <div className="grid grid-cols-1 divide-y border-zinc-100 sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0 dark:border-zinc-800 dark:divide-zinc-800">
+        <div className="grid grid-cols-1 divide-y border-zinc-100 sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
           {/* Card 1: Company Affiliation */}
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                   <Building2 size={15} />
                 </div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
                   Company Entity
                 </h3>
               </div>
               {user.companyId && (
                 <Link
                   href={`/companies/${user.companyId}`}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline dark:text-blue-400"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline"
                 >
                   <span>View</span>
                   <ExternalLink size={11} />
@@ -176,23 +176,19 @@ export default async function UserDetailPage({ params }) {
             </div>
 
             <div className="space-y-1.5 text-xs">
-              <div className="font-bold text-zinc-900 dark:text-zinc-100">
+              <div className="font-bold text-zinc-900">
                 {user.companyName || "—"}
               </div>
               {user.companyCode && (
                 <div className="font-mono text-xs text-zinc-500">
                   Code:{" "}
-                  <strong className="text-zinc-700 dark:text-zinc-300">
-                    {user.companyCode}
-                  </strong>
+                  <strong className="text-zinc-700">{user.companyCode}</strong>
                 </div>
               )}
               {user.designation && (
                 <div className="text-zinc-500">
                   Designation:{" "}
-                  <span className="text-zinc-700 dark:text-zinc-300">
-                    {user.designation}
-                  </span>
+                  <span className="text-zinc-700">{user.designation}</span>
                 </div>
               )}
             </div>
@@ -202,23 +198,23 @@ export default async function UserDetailPage({ params }) {
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
                   <Layers size={15} />
                 </div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
                   Department
                 </h3>
               </div>
             </div>
 
             <div className="space-y-1.5 text-xs">
-              <div className="font-bold text-indigo-700 dark:text-indigo-400">
+              <div className="font-bold text-indigo-700">
                 {user.departmentName || "Unassigned"}
               </div>
               {user.departmentCode && (
                 <div className="font-mono text-[11px] text-zinc-500">
                   Dept Code:{" "}
-                  <strong className="text-zinc-700 dark:text-zinc-300">
+                  <strong className="text-zinc-700">
                     {user.departmentCode}
                   </strong>
                 </div>
@@ -234,17 +230,17 @@ export default async function UserDetailPage({ params }) {
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
                   <Shield size={15} />
                 </div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
                   Security Role
                 </h3>
               </div>
               {user.roleId && (
                 <Link
                   href={`/roles/${user.roleId}/edit`}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-600 hover:underline dark:text-purple-400"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-600 hover:underline"
                 >
                   <span>Edit Role</span>
                   <ExternalLink size={11} />
@@ -254,11 +250,11 @@ export default async function UserDetailPage({ params }) {
 
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center rounded-md bg-purple-100 px-2 py-0.5 text-xs font-bold text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                <span className="inline-flex items-center rounded-md bg-purple-100 px-2 py-0.5 text-xs font-bold text-purple-800">
                   {user.roleName || "No Role Assigned"}
                 </span>
                 {user.isSystemRole && (
-                  <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                  <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-600">
                     System
                   </span>
                 )}
@@ -276,10 +272,10 @@ export default async function UserDetailPage({ params }) {
           {/* Card 4: Account Timestamps */}
           <div className="p-5">
             <div className="flex items-center gap-2 mb-3">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
                 <Calendar size={15} />
               </div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
                 Account Timeline
               </h3>
             </div>
@@ -287,19 +283,19 @@ export default async function UserDetailPage({ params }) {
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-zinc-500">Registered:</span>
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                <span className="font-medium text-zinc-800">
                   {formatDate(user.createdAt)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-500">Last Updated:</span>
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                <span className="font-medium text-zinc-800">
                   {formatDate(user.updatedAt)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-500">Last Active:</span>
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                <span className="font-medium text-zinc-800">
                   {formatDate(user.lastLoginAt)}
                 </span>
               </div>
@@ -309,20 +305,20 @@ export default async function UserDetailPage({ params }) {
       </div>
 
       {/* Permissions Breakdown Matrix */}
-      <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mb-4 flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs">
+        <div className="mb-4 flex items-center justify-between border-b border-zinc-100 pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
               <KeyRound size={16} />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-sm font-bold text-zinc-900">
                 Granted Role Permissions
               </h2>
               <p className="text-xs text-zinc-500">
                 Capabilities authorized for this user through their assigned
                 role (
-                <strong className="text-purple-600 dark:text-purple-400">
+                <strong className="text-purple-600">
                   {user.roleName || "None"}
                 </strong>
                 ).
@@ -330,13 +326,13 @@ export default async function UserDetailPage({ params }) {
             </div>
           </div>
 
-          <span className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+          <span className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700">
             {user.permissions?.length || 0} Authorized
           </span>
         </div>
 
         {Object.keys(permissionsByModule).length === 0 ? (
-          <div className="rounded-xl border border-zinc-100 bg-zinc-50 p-8 text-center text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/40">
+          <div className="rounded-xl border border-zinc-100 bg-zinc-50 p-8 text-center text-xs text-zinc-500">
             No permissions are assigned to this role yet.
           </div>
         ) : (
@@ -344,10 +340,10 @@ export default async function UserDetailPage({ params }) {
             {Object.entries(permissionsByModule).map(([moduleName, perms]) => (
               <div
                 key={moduleName}
-                className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-800/30"
+                className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-3"
               >
-                <div className="mb-2 flex items-center justify-between border-b border-zinc-200/60 pb-1.5 dark:border-zinc-700">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+                <div className="mb-2 flex items-center justify-between border-b border-zinc-200/60 pb-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-700">
                     {moduleName}
                   </span>
                   <span className="text-[10px] font-bold text-zinc-400">
@@ -359,12 +355,12 @@ export default async function UserDetailPage({ params }) {
                   {perms.map((p) => (
                     <div
                       key={p.id}
-                      className="flex items-center justify-between rounded-lg bg-white p-1.5 text-xs dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700/60"
+                      className="flex items-center justify-between rounded-lg bg-white p-1.5 text-xs"
                     >
-                      <span className="font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
+                      <span className="font-mono text-[11px] text-zinc-700">
                         {p.permissionKey}
                       </span>
-                      <span className="rounded bg-purple-50 px-1.5 py-0.2 text-[10px] font-bold uppercase text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                      <span className="rounded bg-purple-50 px-1.5 py-0.2 text-[10px] font-bold uppercase text-purple-700">
                         {p.action}
                       </span>
                     </div>

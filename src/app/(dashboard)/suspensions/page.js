@@ -19,14 +19,14 @@ export default async function SuspensionPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-12">
       {/* Header */}
-      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-xs">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-600">
                 <ShieldAlert size={18} />
               </span>
-              <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+              <h1 className="text-2xl font-bold text-zinc-900">
                 Service Suspension Control Center
               </h1>
             </div>
@@ -41,7 +41,7 @@ export default async function SuspensionPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/settings?tab=notifications"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-2xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-2xs hover:bg-zinc-50"
             >
               <Sliders size={14} />
               <span>Reminder Settings</span>
@@ -49,7 +49,7 @@ export default async function SuspensionPage() {
 
             <Link
               href="/settings?tab=logs"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-2xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-2xs hover:bg-zinc-50"
             >
               <History size={14} />
               <span>Audit Logs</span>

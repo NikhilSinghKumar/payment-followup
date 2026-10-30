@@ -35,13 +35,13 @@ export default function ImportResultDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[calc(100%-1.5rem)] sm:w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 bg-white text-zinc-900 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+      <DialogContent className="max-w-5xl w-[calc(100%-1.5rem)] sm:w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 bg-white text-zinc-900 shadow-2xl">
         <DialogHeader className="space-y-1">
           <DialogTitle className="text-xl sm:text-2xl font-bold">
             {title}
           </DialogTitle>
 
-          <DialogDescription className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+          <DialogDescription className="text-xs sm:text-sm text-zinc-500">
             Import completed. Review the summary below and fix any failed rows
             before importing again.
           </DialogDescription>

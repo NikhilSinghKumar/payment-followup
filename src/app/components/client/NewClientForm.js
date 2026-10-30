@@ -246,9 +246,9 @@ export default function NewClientForm() {
             </div>
 
             {/* Opening Balance (Optional) */}
-            <div className="rounded-xl border border-purple-100 bg-purple-50/40 p-4 space-y-3 dark:border-purple-900/40 dark:bg-purple-950/20">
+            <div className="rounded-xl border border-purple-100 bg-purple-50/40 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-300">
+                <span className="text-xs font-semibold uppercase tracking-wider text-purple-700">
                   Opening Balance (Optional)
                 </span>
                 <span className="text-[11px] text-zinc-400">

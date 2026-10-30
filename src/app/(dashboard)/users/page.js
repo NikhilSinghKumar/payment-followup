@@ -20,9 +20,7 @@ export default async function UsersPage() {
       {/* Top Header & Compact Metrics */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-            User Management
-          </h1>
+          <h1 className="text-xl font-bold text-zinc-900">User Management</h1>
         </div>
 
         <div className="flex items-center gap-2.5">

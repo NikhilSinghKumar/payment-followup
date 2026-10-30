@@ -108,24 +108,24 @@ export default function OpeningBalanceModal({
       <button
         type="button"
         onClick={handleOpen}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50/80 px-3.5 py-1.5 text-xs font-semibold text-purple-700 shadow-2xs transition hover:bg-purple-100 hover:border-purple-300 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300 dark:hover:bg-purple-900/50 cursor-pointer"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50/80 px-3.5 py-1.5 text-xs font-semibold text-purple-700 shadow-2xs transition hover:bg-purple-100 hover:border-purple-300 cursor-pointer"
         title="Manage opening balance"
       >
-        <Coins className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+        <Coins className="h-3.5 w-3.5 text-purple-600" />
         <span>{hasExisting ? "Edit Opening" : "Set Opening Balance"}</span>
       </button>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="relative w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="relative w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl">
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-100 text-purple-600">
                   <Coins className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  <h3 className="text-base font-semibold text-zinc-900">
                     Opening Balance
                   </h3>
                   <p className="text-xs text-zinc-500 line-clamp-1">
@@ -136,7 +136,7 @@ export default function OpeningBalanceModal({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800"
+                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -144,19 +144,19 @@ export default function OpeningBalanceModal({
 
             {/* Error / Success feedback */}
             {error && (
-              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
                 {error}
               </div>
             )}
             {success && (
-              <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700">
                 <Check className="h-4 w-4" />
                 <span>{success}</span>
               </div>
             )}
 
             {paidAmount > 0 && (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-800">
                 {balanceType === "CREDIT"
                   ? `Allocations of ${formatCurrency(paidAmount)} have already been applied from this opening credit. Minimum allowed balance is ${formatCurrency(paidAmount)}.`
                   : `Payments of ${formatCurrency(paidAmount)} have already been allocated towards this opening balance. Minimum allowed balance is ${formatCurrency(paidAmount)}.`}
@@ -167,10 +167,10 @@ export default function OpeningBalanceModal({
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               {/* Type Switcher: Debit vs Credit */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-1.5">
                   Balance Type *
                 </label>
-                <div className="grid grid-cols-2 gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-800/60">
+                <div className="grid grid-cols-2 gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -179,8 +179,8 @@ export default function OpeningBalanceModal({
                     }}
                     className={`flex flex-col items-center justify-center rounded-lg py-2 px-3 text-xs font-semibold transition ${
                       balanceType === "DEBIT"
-                        ? "bg-white text-purple-700 shadow-xs dark:bg-zinc-900 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60"
-                        : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                        ? "bg-white text-purple-700 shadow-xs border border-purple-200/60"
+                        : "text-zinc-600 hover:text-zinc-900"
                     }`}
                   >
                     <span className="font-bold text-sm">Debit (Dr)</span>
@@ -201,8 +201,8 @@ export default function OpeningBalanceModal({
                     }}
                     className={`flex flex-col items-center justify-center rounded-lg py-2 px-3 text-xs font-semibold transition ${
                       balanceType === "CREDIT"
-                        ? "bg-white text-emerald-700 shadow-xs dark:bg-zinc-900 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60"
-                        : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                        ? "bg-white text-emerald-700 shadow-xs border border-emerald-200/60"
+                        : "text-zinc-600 hover:text-zinc-900"
                     }`}
                   >
                     <span className="font-bold text-sm">Credit (Cr)</span>
@@ -214,7 +214,7 @@ export default function OpeningBalanceModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-1">
                   {balanceType === "CREDIT"
                     ? "Initial Credit / Advance Amount (₹) *"
                     : "Opening Balance Amount (₹) *"}
@@ -231,7 +231,7 @@ export default function OpeningBalanceModal({
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
                     required
-                    className="h-10 w-full rounded-xl border border-zinc-300 bg-white pl-8 pr-3 text-sm font-semibold text-zinc-800 shadow-2xs outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                    className="h-10 w-full rounded-xl border border-zinc-300 bg-white pl-8 pr-3 text-sm font-semibold text-zinc-800 shadow-2xs outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-zinc-500">
@@ -242,7 +242,7 @@ export default function OpeningBalanceModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-1">
                   As of Date *
                 </label>
                 <div className="relative">
@@ -251,13 +251,13 @@ export default function OpeningBalanceModal({
                     value={asOfDate}
                     onChange={(e) => setAsOfDate(e.target.value)}
                     required
-                    className="h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-800 shadow-2xs outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                    className="h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-800 shadow-2xs outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-1">
                   Notes / Reference
                 </label>
                 <textarea
@@ -269,7 +269,7 @@ export default function OpeningBalanceModal({
                       ? "e.g. Previous period advance balance"
                       : "e.g. Previous financial year closing balance"
                   }
-                  className="w-full rounded-xl border border-zinc-300 bg-white p-2.5 text-xs text-zinc-800 shadow-2xs outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  className="w-full rounded-xl border border-zinc-300 bg-white p-2.5 text-xs text-zinc-800 shadow-2xs outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
                 />
               </div>
 
@@ -279,7 +279,7 @@ export default function OpeningBalanceModal({
                   type="button"
                   onClick={() => setIsOpen(false)}
                   disabled={isPending}
-                  className="h-9 rounded-xl border border-zinc-200 px-4 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  className="h-9 rounded-xl border border-zinc-200 px-4 text-xs font-semibold text-zinc-700 hover:bg-zinc-100"
                 >
                   Cancel
                 </button>

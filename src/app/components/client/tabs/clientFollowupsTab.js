@@ -167,7 +167,7 @@ export default function ClientFollowupsTab({ clientId, followups = [] }) {
       {/* ========================================= */}
 
       <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
-        <DialogContent className="max-w-lg bg-white text-zinc-900 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+        <DialogContent className="max-w-lg bg-white text-zinc-900 shadow-2xl">
           <DialogHeader>
             <DialogTitle>Follow-up Remarks</DialogTitle>
           </DialogHeader>
@@ -182,22 +182,17 @@ export default function ClientFollowupsTab({ clientId, followups = [] }) {
                   return (
                     <div
                       key={idx}
-                      className="rounded-lg border border-zinc-100 bg-zinc-50 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/50"
+                      className="rounded-lg border border-zinc-100 bg-zinc-50 p-2.5"
                     >
-                      <span className="inline-block rounded bg-blue-100 px-1.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/60 dark:text-blue-300">
+                      <span className="inline-block rounded bg-blue-100 px-1.5 py-0.5 text-xs font-semibold text-blue-700">
                         {prefix}
                       </span>
-                      <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
-                        {rest}
-                      </p>
+                      <p className="mt-1 text-sm text-zinc-700">{rest}</p>
                     </div>
                   );
                 }
                 return (
-                  <p
-                    key={idx}
-                    className="text-sm text-zinc-700 dark:text-zinc-200"
-                  >
+                  <p key={idx} className="text-sm text-zinc-700">
                     {line}
                   </p>
                 );

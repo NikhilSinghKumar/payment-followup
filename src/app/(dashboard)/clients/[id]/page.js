@@ -103,13 +103,13 @@ export default async function ClientDetailPage({ params, searchParams }) {
         {/* HEADER */}
         {/* ===================================== */}
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             {/* LEFT */}
             <div>
               <div className="flex items-center gap-3">
                 <div>
-                  <h1 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-100">
+                  <h1 className="text-2xl font-semibold text-zinc-800">
                     {client.companyName}
                   </h1>
 
@@ -126,7 +126,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
                     {client.tdsApplicable && (
                       <>
                         <span className="text-pink-500 text-md">•</span>
-                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200/60 dark:border-blue-900/40 dark:bg-blue-950/40 dark:text-blue-300">
+                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200/60">
                           TDS {Number(client.tdsRate || 2.0)}%
                         </span>
                       </>
@@ -157,7 +157,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
                 href={`/api/client-ledger-pdf?clientId=${client.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:border-emerald-500 hover:bg-emerald-50/40 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:border-emerald-500 hover:bg-emerald-50/40 hover:text-emerald-700"
                 title="Download or view Ledger Account Statement PDF"
               >
                 <FileText className="h-3.5 w-3.5 text-emerald-600" />
@@ -165,7 +165,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
               </a>
               <Link
                 href={`/clients/${client.id}/edit`}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-50"
               >
                 <span>Edit Client</span>
               </Link>
@@ -180,20 +180,20 @@ export default async function ClientDetailPage({ params, searchParams }) {
         <div className="overflow-x-auto [scrollbar-width:none]">
           <div className="grid grid-cols-9 min-w-[760px] gap-1.5 sm:gap-2">
             {/* 1. Total Invoices */}
-            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs min-w-0 flex flex-col justify-between">
               <p
                 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
                 title="Total Invoices"
               >
                 Total Invoices
               </p>
-              <h2 className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-zinc-800 dark:text-zinc-100 truncate">
+              <h2 className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-zinc-800 truncate">
                 {totalInvoices}
               </h2>
             </div>
 
             {/* 2. Invoice Amount */}
-            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs min-w-0 flex flex-col justify-between">
               <p
                 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
                 title="Invoice Amount"
@@ -201,7 +201,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
                 Invoice Amount
               </p>
               <h2
-                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-zinc-800 dark:text-zinc-100 truncate"
+                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-zinc-800 truncate"
                 title={formatCurrency(totalAmount)}
               >
                 {formatCurrency(totalAmount)}
@@ -209,7 +209,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </div>
 
             {/* 3. Net Receivable */}
-            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs min-w-0 flex flex-col justify-between">
               <p
                 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
                 title="Net Receivable"
@@ -217,7 +217,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
                 Net Receivable
               </p>
               <h2
-                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-blue-600 dark:text-blue-400 truncate"
+                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-blue-600 truncate"
                 title={formatCurrency(totalNetPayable)}
               >
                 {formatCurrency(totalNetPayable)}
@@ -225,7 +225,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </div>
 
             {/* 4. Payments Received */}
-            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs min-w-0 flex flex-col justify-between">
               <p
                 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
                 title="Received"
@@ -233,7 +233,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
                 Received
               </p>
               <h2
-                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-emerald-600 dark:text-emerald-400 truncate"
+                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-emerald-600 truncate"
                 title={formatCurrency(paymentsReceived)}
               >
                 {formatCurrency(paymentsReceived)}
@@ -241,7 +241,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </div>
 
             {/* 5. Verified TDS */}
-            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs min-w-0 flex flex-col justify-between">
               <p
                 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
                 title="Verified TDS"
@@ -249,7 +249,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
                 Verified TDS
               </p>
               <h2
-                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-emerald-700 dark:text-emerald-300 truncate"
+                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-emerald-700 truncate"
                 title={formatCurrency(totalVerifiedTds || 0)}
               >
                 {formatCurrency(totalVerifiedTds || 0)}
@@ -257,7 +257,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </div>
 
             {/* 6. Pending TDS */}
-            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs min-w-0 flex flex-col justify-between">
               <p
                 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
                 title="Pending TDS"
@@ -265,7 +265,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
                 Pending TDS
               </p>
               <h2
-                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-amber-600 dark:text-amber-400 truncate"
+                className="mt-1 text-xs sm:text-sm font-bold tracking-tight text-amber-600 truncate"
                 title={formatCurrency(totalPendingTds || 0)}
               >
                 {formatCurrency(totalPendingTds || 0)}
@@ -273,7 +273,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </div>
 
             {/* 7. Net Outstanding */}
-            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs min-w-0 flex flex-col justify-between">
               <p
                 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
                 title="Outstanding"
@@ -282,9 +282,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
               </p>
               <h2
                 className={`mt-1 text-xs sm:text-sm font-bold tracking-tight truncate ${
-                  netOutstanding > 0
-                    ? "text-orange-600 dark:text-orange-400"
-                    : "text-emerald-600 dark:text-emerald-400"
+                  netOutstanding > 0 ? "text-orange-600" : "text-emerald-600"
                 }`}
                 title={formatCurrency(netOutstanding)}
               >
@@ -293,7 +291,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </div>
 
             {/* 8. Credit Balance */}
-            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs flex flex-col justify-between">
               <p
                 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
                 title="Credit Balance"
@@ -302,9 +300,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
               </p>
               <h2
                 className={`mt-1 text-xs sm:text-sm font-bold tracking-tight truncate ${
-                  creditBalance > 0
-                    ? "text-violet-600 dark:text-violet-400"
-                    : "text-zinc-500 dark:text-zinc-400"
+                  creditBalance > 0 ? "text-violet-600" : "text-zinc-500"
                 }`}
                 title={formatCurrency(creditBalance)}
               >
@@ -313,7 +309,7 @@ export default async function ClientDetailPage({ params, searchParams }) {
             </div>
 
             {/* 9. Overdue */}
-            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900 min-w-0 flex flex-col justify-between">
+            <div className="rounded-xl border border-zinc-200/90 bg-white p-2 sm:p-2.5 shadow-2xs min-w-0 flex flex-col justify-between">
               <p
                 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500 truncate"
                 title="Overdue"

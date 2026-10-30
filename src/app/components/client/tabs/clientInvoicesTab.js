@@ -8,7 +8,7 @@ import { formatDateDisplay } from "@/lib/date-parser";
 export default function ClientInvoicesTab({ clientId, invoices = [] }) {
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
         <div className="overflow-x-auto [scrollbar-width:thin]">
           <table className="w-full min-w-[760px] table-auto border-collapse">
             {/* TABLE HEADER */}
@@ -79,7 +79,7 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                         >
                           <span>{invoice.invoiceNumber}</span>
                           {invoice.isOpeningBalance && (
-                            <span className="inline-flex items-center rounded-md bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                            <span className="inline-flex items-center rounded-md bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700">
                               Opening Bal
                             </span>
                           )}
@@ -134,14 +134,14 @@ export default function ClientInvoicesTab({ clientId, invoices = [] }) {
                         >
                           {tdsVal > 0 ? (
                             <div className="flex flex-col items-end">
-                              <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                              <span className="font-medium text-zinc-800">
                                 {formatCurrency(tdsVal)}
                               </span>
                               <span
                                 className={`inline-block rounded px-1.5 py-0.2 text-[9px] font-bold ${
                                   isVerified
-                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                                    : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-amber-100 text-amber-700"
                                 }`}
                               >
                                 {isVerified ? "Verified" : "Pending"}

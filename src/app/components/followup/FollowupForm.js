@@ -103,10 +103,10 @@ export default function FollowupForm({ clients = [] }) {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-2.5">
       {/* Top Header */}
-      <div className="flex items-center justify-between border-b border-zinc-200 pb-2 dark:border-zinc-800">
+      <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
         <div className="flex items-center gap-2.5">
           <div>
-            <h1 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+            <h1 className="text-base font-semibold text-zinc-900">
               New Follow-up
             </h1>
           </div>
@@ -137,11 +137,11 @@ export default function FollowupForm({ clients = [] }) {
         ))}
 
         {/* Top Control Bar: Client Selection & Dates */}
-        <div className="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs  ">
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-12 sm:items-center">
             {/* Client Selector */}
             <div className="sm:col-span-5">
-              <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-zinc-700">
                 Select Client <span className="text-red-500">*</span>
               </label>
               <ClientCombobox
@@ -154,7 +154,7 @@ export default function FollowupForm({ clients = [] }) {
 
             {/* Follow-up Date */}
             <div className="sm:col-span-3">
-              <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              <label className="mb-1 block text-xs font-semibold text-zinc-700">
                 Follow-up Date <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -167,7 +167,7 @@ export default function FollowupForm({ clients = [] }) {
                   value={followupDate}
                   onChange={(e) => setFollowupDate(e.target.value)}
                   required
-                  className="h-8.5 w-full rounded-lg border border-zinc-200 bg-white pl-8 pr-2.5 text-xs text-zinc-800 shadow-2xs outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                  className="h-8.5 w-full rounded-lg border border-zinc-200 bg-white pl-8 pr-2.5 text-xs text-zinc-800 shadow-2xs outline-none transition focus:border-blue-500"
                 />
               </div>
             </div>
@@ -175,28 +175,28 @@ export default function FollowupForm({ clients = [] }) {
             {/* Next Follow-up Date */}
             <div className="sm:col-span-4">
               <div className="mb-1 flex items-center justify-between">
-                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                <label className="text-xs font-semibold text-zinc-700">
                   Next Follow-up
                 </label>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setNextDatePreset(3)}
-                    className="rounded bg-zinc-100 px-1.5 py-0.2 text-[10px] font-medium text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                    className="rounded bg-zinc-100 px-1.5 py-0.2 text-[10px] font-medium text-zinc-600 hover:bg-zinc-200"
                   >
                     +3d
                   </button>
                   <button
                     type="button"
                     onClick={() => setNextDatePreset(7)}
-                    className="rounded bg-zinc-100 px-1.5 py-0.2 text-[10px] font-medium text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                    className="rounded bg-zinc-100 px-1.5 py-0.2 text-[10px] font-medium text-zinc-600 hover:bg-zinc-200"
                   >
                     +7d
                   </button>
                   <button
                     type="button"
                     onClick={() => setNextDatePreset(15)}
-                    className="rounded bg-zinc-100 px-1.5 py-0.2 text-[10px] font-medium text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                    className="rounded bg-zinc-100 px-1.5 py-0.2 text-[10px] font-medium text-zinc-600 hover:bg-zinc-200"
                   >
                     +15d
                   </button>
@@ -204,7 +204,7 @@ export default function FollowupForm({ clients = [] }) {
                     <button
                       type="button"
                       onClick={() => setNextFollowupDate("")}
-                      className="text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                      className="text-[10px] text-zinc-400 hover:text-zinc-600"
                       title="Clear next date"
                     >
                       ✕
@@ -221,7 +221,7 @@ export default function FollowupForm({ clients = [] }) {
                   type="date"
                   value={nextFollowupDate}
                   onChange={(e) => setNextFollowupDate(e.target.value)}
-                  className="h-8.5 w-full rounded-lg border border-zinc-200 bg-white pl-8 pr-2.5 text-xs text-zinc-800 shadow-2xs outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                  className="h-8.5 w-full rounded-lg border border-zinc-200 bg-white pl-8 pr-2.5 text-xs text-zinc-800 shadow-2xs outline-none transition focus:border-blue-500"
                 />
               </div>
             </div>
@@ -229,17 +229,17 @@ export default function FollowupForm({ clients = [] }) {
 
           {/* Client Financial Stats Strip */}
           {selectedClient && clientSummary && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-2 text-xs dark:border-zinc-800">
+            <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-2 text-xs ">
               <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
                 Client Stats:
               </span>
-              <div className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+              <div className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-700">
                 <span>Invoices:</span>
-                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                <span className="font-semibold text-zinc-900">
                   {clientSummary.totalInvoices}
                 </span>
               </div>
-              <div className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+              <div className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
                 <span>Total Due:</span>
                 <span className="font-semibold">
                   ₹
@@ -249,7 +249,7 @@ export default function FollowupForm({ clients = [] }) {
                 </span>
               </div>
               {Number(clientSummary.overdueAmount || 0) > 0 && (
-                <div className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                <div className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                   <span>Overdue:</span>
                   <span className="font-semibold">
                     ₹
@@ -261,7 +261,7 @@ export default function FollowupForm({ clients = [] }) {
                 </div>
               )}
               {selectedInvoiceIds.length > 0 && (
-                <div className="ml-auto inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                <div className="ml-auto inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                   <Check size={12} />
                   <span>
                     Selected: {selectedInvoiceIds.length} inv (₹
@@ -274,15 +274,15 @@ export default function FollowupForm({ clients = [] }) {
         </div>
 
         {/* Invoices & Remarks Section */}
-        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs  ">
           {/* Card Header */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50/80 px-3.5 py-2 dark:border-zinc-800 dark:bg-zinc-800/50">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50/80 px-3.5 py-2">
             <div className="flex items-center gap-2">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-200">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-700 ">
                 Outstanding Invoices & Remarks
               </h2>
               {invoices.length > 0 && (
-                <span className="rounded-full bg-zinc-200 px-2 py-0.2 text-[10px] font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                <span className="rounded-full bg-zinc-200 px-2 py-0.2 text-[10px] font-semibold text-zinc-700">
                   {invoices.length}
                 </span>
               )}
@@ -293,15 +293,15 @@ export default function FollowupForm({ clients = [] }) {
                 <button
                   type="button"
                   onClick={selectAllInvoices}
-                  className="font-medium text-blue-600 transition hover:text-blue-700 dark:text-blue-400"
+                  className="font-medium text-blue-600 transition hover:text-blue-700"
                 >
                   Select All
                 </button>
-                <span className="text-zinc-300 dark:text-zinc-700">|</span>
+                <span className="text-zinc-300">|</span>
                 <button
                   type="button"
                   onClick={clearInvoices}
-                  className="font-medium text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                  className="font-medium text-zinc-500 transition hover:text-zinc-700"
                 >
                   Deselect All
                 </button>
@@ -312,27 +312,27 @@ export default function FollowupForm({ clients = [] }) {
           {/* Body Content */}
           {!selectedClient ? (
             <div className="flex flex-col items-center justify-center p-8 text-center sm:p-10">
-              <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              <p className="text-xs font-semibold text-zinc-700">
                 No Client Selected
               </p>
             </div>
           ) : loadingInvoices ? (
             <div className="flex items-center justify-center p-8 text-center">
-              <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+              <div className="flex items-center gap-2 text-xs text-zinc-500">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
                 <span>Loading outstanding invoices...</span>
               </div>
             </div>
           ) : invoices.length === 0 ? (
             <div className="space-y-2.5 p-5 text-center">
-              <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+              <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                 <Check size={16} />
               </div>
               <div>
-                <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                <p className="text-xs font-semibold text-zinc-800 ">
                   No Outstanding Invoices Found
                 </p>
-                <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">
+                <p className="mt-0.5 text-[11px] text-zinc-400 ">
                   All invoices for this client are settled. You can record a
                   general follow-up note below.
                 </p>
@@ -343,12 +343,12 @@ export default function FollowupForm({ clients = [] }) {
                   value={generalNote}
                   onChange={(e) => setGeneralNote(e.target.value)}
                   placeholder="General follow-up note (e.g. general discussion, query)..."
-                  className="h-8 w-full rounded-lg border border-zinc-300 bg-white px-2.5 text-xs text-zinc-800 outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                  className="h-8 w-full rounded-lg border border-zinc-300 bg-white px-2.5 text-xs text-zinc-800 outline-none transition focus:border-blue-500"
                 />
               </div>
             </div>
           ) : (
-            <div className="max-h-[calc(100vh-330px)] min-h-[140px] overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800">
+            <div className="max-h-[calc(100vh-330px)] min-h-[140px] overflow-y-auto divide-y divide-zinc-100">
               {invoices.map((invoice) => {
                 const isSelected = selectedInvoiceIds.includes(invoice.id);
                 const currentRemark = invoiceRemarks[invoice.id] || "";
@@ -358,8 +358,8 @@ export default function FollowupForm({ clients = [] }) {
                     key={invoice.id}
                     className={`flex items-center gap-3 px-3.5 py-2 transition ${
                       isSelected
-                        ? "bg-blue-50/25 dark:bg-blue-950/15"
-                        : "bg-white hover:bg-zinc-50/60 dark:bg-zinc-900 dark:hover:bg-zinc-800/40"
+                        ? "bg-blue-50/25"
+                        : "bg-white hover:bg-zinc-50/60"
                     }`}
                   >
                     {/* Hidden inputs to pass along invoiceNumber & specific remark */}
@@ -378,7 +378,7 @@ export default function FollowupForm({ clients = [] }) {
                     <button
                       type="button"
                       onClick={() => toggleInvoice(invoice.id)}
-                      className="text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200 shrink-0"
+                      className="text-zinc-400 transition hover:text-zinc-700 shrink-0"
                       title={isSelected ? "Deselect invoice" : "Select invoice"}
                     >
                       {isSelected ? (
@@ -386,18 +386,18 @@ export default function FollowupForm({ clients = [] }) {
                           <Check size={11} />
                         </div>
                       ) : (
-                        <div className="h-4 w-4 rounded border border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-600 dark:bg-zinc-800" />
+                        <div className="h-4 w-4 rounded border border-zinc-300 bg-white hover:border-zinc-400" />
                       )}
                     </button>
 
                     {/* Invoice Number & Overdue Status */}
                     <div className="w-[190px] shrink-0 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                        <span className="truncate text-xs font-semibold text-zinc-900">
                           {invoice.invoiceNumber}
                         </span>
                         {invoice.isOverdue && (
-                          <span className="shrink-0 rounded bg-red-100 px-1 py-0.2 text-[9px] font-bold uppercase text-red-700 dark:bg-red-950/70 dark:text-red-300">
+                          <span className="shrink-0 rounded bg-red-100 px-1 py-0.2 text-[9px] font-bold uppercase text-red-700">
                             Overdue
                           </span>
                         )}
@@ -417,7 +417,7 @@ export default function FollowupForm({ clients = [] }) {
 
                     {/* Due Amount */}
                     <div className="w-[110px] shrink-0 text-right">
-                      <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                      <div className="text-xs font-bold text-zinc-900">
                         ₹{Number(invoice.due || 0).toLocaleString("en-IN")}
                       </div>
                       <div className="text-[10px] text-zinc-400">
@@ -438,8 +438,8 @@ export default function FollowupForm({ clients = [] }) {
                         }
                         className={`h-7.5 w-full rounded-md border px-2.5 text-xs outline-none transition ${
                           isSelected
-                            ? "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-400 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-                            : "border-zinc-200 bg-zinc-50/70 text-zinc-500 placeholder-zinc-400 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800/40 dark:text-zinc-400"
+                            ? "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+                            : "border-zinc-200 bg-zinc-50/70 text-zinc-500 placeholder-zinc-400 focus:bg-white"
                         }`}
                       />
                     </div>
@@ -450,10 +450,10 @@ export default function FollowupForm({ clients = [] }) {
           )}
 
           {/* Clean Bottom Action Bar */}
-          <div className="flex items-center justify-end gap-2 border-t border-zinc-200 bg-zinc-50/90 px-4 py-2 dark:border-zinc-800 dark:bg-zinc-800/60">
+          <div className="flex items-center justify-end gap-2 border-t border-zinc-200 bg-zinc-50/90 px-4 py-2">
             <Link
               href="/followups"
-              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3.5 text-xs font-medium text-zinc-700 shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3.5 text-xs font-medium text-zinc-700 shadow-2xs transition hover:bg-zinc-50"
             >
               Cancel
             </Link>

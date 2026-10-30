@@ -19,21 +19,19 @@ export default async function PermissionsPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-            Permissions
-          </h1>
+          <h1 className="text-xl font-bold text-zinc-900">Permissions</h1>
         </div>
 
         <div className="flex items-center gap-2.5">
           {/* Quick Metrics */}
           <div className="hidden items-center gap-2 sm:flex">
-            <div className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+            <div className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-700">
               <KeyRound size={13} className="text-purple-500" />
               <span>
                 Total: <strong>{totalPerms}</strong>
               </span>
             </div>
-            <div className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+            <div className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-700">
               <Layers size={13} className="text-blue-500" />
               <span>
                 Modules: <strong>{modulesCount}</strong>

@@ -27,7 +27,7 @@ export default function FilterDropdown() {
     <select
       value={currentStatus}
       onChange={handleChange}
-      className="h-[40px] px-3 rounded-lg border border-zinc-300 text-sm bg-white dark:text-zinc-500"
+      className="h-[40px] px-3 rounded-lg border border-zinc-300 text-sm bg-white"
     >
       <option value="">Status</option>
       <option value="pending">Pending</option>

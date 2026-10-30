@@ -20,9 +20,9 @@ export default function OverviewTab({ invoice }) {
         {/* Left : Invoice Information */}
         {/* ============================== */}
 
-        <section className="lg:col-span-2 rounded-xl border border-zinc-200 bg-white shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="border-b border-zinc-200 bg-zinc-50/80 px-3.5 py-2 dark:border-zinc-800 dark:bg-zinc-800/50">
-            <h3 className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        <section className="lg:col-span-2 rounded-xl border border-zinc-200 bg-white shadow-2xs">
+          <div className="border-b border-zinc-200 bg-zinc-50/80 px-3.5 py-2">
+            <h3 className="text-xs sm:text-sm font-semibold text-zinc-900">
               Invoice Information
             </h3>
           </div>
@@ -65,9 +65,9 @@ export default function OverviewTab({ invoice }) {
         {/* Right : Amount Summary */}
         {/* ============================== */}
 
-        <section className="rounded-xl border border-zinc-200 bg-zinc-50/70 h-fit shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/60">
-          <div className="border-b border-zinc-200 bg-zinc-100/80 px-3.5 py-2 dark:border-zinc-800 dark:bg-zinc-800/60">
-            <h3 className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        <section className="rounded-xl border border-zinc-200 bg-zinc-50/70 h-fit shadow-2xs">
+          <div className="border-b border-zinc-200 bg-zinc-100/80 px-3.5 py-2">
+            <h3 className="text-xs sm:text-sm font-semibold text-zinc-900">
               Invoice Amount Breakdown
             </h3>
           </div>
@@ -137,12 +137,12 @@ export default function OverviewTab({ invoice }) {
 
 function InfoItem({ label, value }) {
   return (
-    <div className="rounded-lg border border-zinc-100 bg-zinc-50/60 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-800/30">
-      <div className="text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 font-medium">
+    <div className="rounded-lg border border-zinc-100 bg-zinc-50/60 px-2.5 py-1.5">
+      <div className="text-[10px] uppercase tracking-wide text-zinc-500 font-medium">
         {label}
       </div>
 
-      <div className="mt-0.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+      <div className="mt-0.5 text-xs font-semibold text-zinc-800 truncate">
         {value || "-"}
       </div>
     </div>
@@ -156,17 +156,17 @@ function AmountRow({ label, value, positive, negative, total }) {
         total ? "text-sm font-semibold pt-1" : "text-xs"
       }`}
     >
-      <span className="text-zinc-600 dark:text-zinc-400">{label}</span>
+      <span className="text-zinc-600">{label}</span>
 
       <span
         className={
           total
-            ? "font-bold text-blue-600 dark:text-blue-400"
+            ? "font-bold text-blue-600"
             : positive
-              ? "text-emerald-600 dark:text-emerald-400 font-medium"
+              ? "text-emerald-600 font-medium"
               : negative
-                ? "text-rose-600 dark:text-rose-400 font-medium"
-                : "text-zinc-800 dark:text-zinc-200 font-medium"
+                ? "text-rose-600 font-medium"
+                : "text-zinc-800 font-medium"
         }
       >
         {positive}
