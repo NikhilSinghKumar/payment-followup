@@ -179,11 +179,11 @@ export default function ImportPayments() {
 
   return (
     <>
-      <div className="inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-2 shadow-xs dark:border-zinc-700 dark:bg-zinc-900 transition shrink-0">
+      <div className="inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-2 shadow-xs transition shrink-0">
         {/* File Picker */}
-        <label className="flex cursor-pointer items-center gap-1 text-xs text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100">
+        <label className="flex cursor-pointer items-center gap-1 text-xs text-zinc-600 transition hover:text-zinc-900">
           {file ? (
-            <FileSpreadsheet className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+            <FileSpreadsheet className="h-3.5 w-3.5 text-blue-600 shrink-0" />
           ) : (
             <Upload className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
           )}
@@ -209,7 +209,7 @@ export default function ImportPayments() {
           <button
             type="button"
             onClick={handleClearFile}
-            className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
             title="Remove selected file"
           >
             <X className="h-3 w-3" />
@@ -217,7 +217,7 @@ export default function ImportPayments() {
         )}
 
         {/* Divider */}
-        <div className="mx-1.5 h-3.5 w-px bg-zinc-200 dark:bg-zinc-700" />
+        <div className="mx-1.5 h-3.5 w-px bg-zinc-200" />
 
         {/* Import Button */}
         <button
@@ -226,8 +226,8 @@ export default function ImportPayments() {
           disabled={loading || !file}
           className={`inline-flex items-center text-xs font-semibold transition ${
             file
-              ? "text-blue-600 hover:text-blue-700 dark:text-blue-400 cursor-pointer"
-              : "text-zinc-400 cursor-not-allowed dark:text-zinc-500"
+              ? "text-blue-600 hover:text-blue-700 cursor-pointer"
+              : "text-zinc-400 cursor-not-allowed"
           }`}
         >
           {loading ? (
