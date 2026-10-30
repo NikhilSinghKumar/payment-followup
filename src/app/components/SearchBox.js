@@ -102,7 +102,7 @@ export default function SearchBox({
         }}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="h-9 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-8 text-xs text-zinc-800 placeholder-zinc-400 shadow-2xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder-zinc-500"
+        className="h-9 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-8 text-xs text-zinc-800 placeholder-zinc-400 shadow-2xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
       />
 
       {query && (
@@ -110,7 +110,7 @@ export default function SearchBox({
           type="button"
           onClick={handleClear}
           title="Clear search"
-          className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+          className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-zinc-400 hover:text-zinc-600"
         >
           <X className="h-3.5 w-3.5" />
         </button>

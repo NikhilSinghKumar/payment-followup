@@ -35,7 +35,7 @@ export default async function ClientsPage({ searchParams }) {
             href="/api/import-client-sample"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 shadow-2xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 shadow-2xs hover:bg-zinc-50"
           >
             Sample (CSV)
           </a>
@@ -44,7 +44,7 @@ export default async function ClientsPage({ searchParams }) {
             href="/api/export-clients"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 shadow-2xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 shadow-2xs hover:bg-zinc-50"
           >
             Export Clients
           </a>
@@ -59,11 +59,11 @@ export default async function ClientsPage({ searchParams }) {
       </div>
 
       {/* Table Container */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs">
         <div className="overflow-x-auto [scrollbar-width:thin]">
           <div className="min-w-[880px]">
             {/* Header */}
-            <div className="grid grid-cols-[50px_3fr_110px_160px_80px_100px_150px] items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300">
+            <div className="grid grid-cols-[50px_3fr_110px_160px_80px_100px_150px] items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs font-semibold text-zinc-600">
               <div>S.N.</div>
               <div>Company</div>
               <div>Code</div>
@@ -78,32 +78,28 @@ export default async function ClientsPage({ searchParams }) {
               data.map((c, index) => (
                 <div
                   key={c.id}
-                  className="grid grid-cols-[50px_3fr_110px_160px_80px_100px_150px] items-center border-b border-zinc-100 px-4 py-2 text-xs transition-colors hover:bg-zinc-50/80 dark:border-zinc-800/60 dark:hover:bg-zinc-800/40"
+                  className="grid grid-cols-[50px_3fr_110px_160px_80px_100px_150px] items-center border-b border-zinc-100 px-4 py-2 text-xs transition-colors hover:bg-zinc-50/80"
                 >
                   {/* S.N */}
-                  <div className="font-medium text-zinc-600 dark:text-zinc-400">
-                    {index + 1}
-                  </div>
+                  <div className="font-medium text-zinc-600">{index + 1}</div>
 
                   {/* Company */}
-                  <div className="font-medium text-zinc-800 truncate pr-3 dark:text-zinc-200">
+                  <div className="font-medium text-zinc-800 truncate pr-3">
                     {c.companyName}
                   </div>
 
                   {/* Code */}
-                  <div className="font-mono text-zinc-500 dark:text-zinc-400">
-                    {c.companyCode}
-                  </div>
+                  <div className="font-mono text-zinc-500">{c.companyCode}</div>
 
                   {/* GST */}
-                  <div className="text-center font-mono text-zinc-500 dark:text-zinc-400">
+                  <div className="text-center font-mono text-zinc-500">
                     {c.gstNumber || "—"}
                   </div>
 
                   {/* TDS */}
-                  <div className="text-center text-zinc-600 dark:text-zinc-400">
+                  <div className="text-center text-zinc-600">
                     {c.tdsApplicable ? (
-                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                      <span className="font-semibold text-blue-600">
                         {Number(c.tdsRate || 2)}%
                       </span>
                     ) : (
@@ -116,8 +112,8 @@ export default async function ClientsPage({ searchParams }) {
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                         c.isActive
-                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                          : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-red-100 text-red-700"
                       }`}
                     >
                       {c.isActive ? "Active" : "Inactive"}
@@ -128,14 +124,14 @@ export default async function ClientsPage({ searchParams }) {
                   <div className="flex items-center justify-center gap-1.5">
                     <Link
                       href={`/clients/${c.id}`}
-                      className="h-7 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900"
+                      className="h-7 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
                     >
                       View
                     </Link>
 
                     <Link
                       href={`/clients/${c.id}/edit`}
-                      className="h-7 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                      className="h-7 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition"
                     >
                       Edit
                     </Link>

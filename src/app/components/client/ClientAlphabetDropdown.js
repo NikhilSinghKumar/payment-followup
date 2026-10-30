@@ -28,7 +28,7 @@ export default function ClientAlphabetDropdown() {
     <select
       value={currentLetter}
       onChange={handleChange}
-      className="h-9 px-3 rounded-lg border border-zinc-200 bg-white text-xs font-medium text-zinc-700 shadow-2xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+      className="h-9 px-3 rounded-lg border border-zinc-200 bg-white text-xs font-medium text-zinc-700 shadow-2xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
     >
       <option value="">A-Z (All)</option>
       {ALPHABETS.map((char) => (
