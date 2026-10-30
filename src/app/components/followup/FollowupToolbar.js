@@ -158,7 +158,7 @@ export default function FollowupToolbar({ totalCount = 0 }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search company name, company code..."
-            className="h-10 w-full rounded-lg border border-zinc-300 bg-white pl-9 pr-8 text-sm text-zinc-800 placeholder-zinc-400 shadow-xs transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500"
+            className="h-10 w-full rounded-lg border border-zinc-300 bg-white pl-9 pr-8 text-sm text-zinc-800 placeholder-zinc-400 shadow-xs transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
           />
           {query && (
             <button
@@ -171,7 +171,7 @@ export default function FollowupToolbar({ totalCount = 0 }) {
                   router.push(`${pathname}?${params.toString()}`);
                 });
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
             >
               <X className="h-4 w-4" />
             </button>
@@ -185,11 +185,11 @@ export default function FollowupToolbar({ totalCount = 0 }) {
             onClick={() => setIsDateOpen((prev) => !prev)}
             className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium shadow-xs transition ${
               hasActiveDateRange
-                ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300"
-                : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                ? "border-blue-300 bg-blue-50 text-blue-700"
+                : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
             }`}
           >
-            <Calendar className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+            <Calendar className="h-4 w-4 text-zinc-500" />
             <span className="max-w-[210px] truncate">{dateLabel}</span>
             {hasActiveDateRange && (
               <span
@@ -198,7 +198,7 @@ export default function FollowupToolbar({ totalCount = 0 }) {
                   e.stopPropagation();
                   handleQuickRange("clear");
                 }}
-                className="ml-1 rounded-full p-0.5 hover:bg-blue-200/60 dark:hover:bg-blue-900/60"
+                className="ml-1 rounded-full p-0.5 hover:bg-blue-200/60"
               >
                 <X className="h-3.5 w-3.5" />
               </span>
@@ -207,15 +207,15 @@ export default function FollowupToolbar({ totalCount = 0 }) {
 
           {/* Date Range Popover */}
           {isDateOpen && (
-            <div className="absolute left-0 top-full z-50 mt-1.5 w-76 rounded-xl border border-zinc-200 bg-white p-3.5 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 sm:left-auto sm:right-0">
-              <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5 dark:border-zinc-800">
-                <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+            <div className="absolute left-0 top-full z-50 mt-1.5 w-76 rounded-xl border border-zinc-200 bg-white p-3.5 shadow-xl sm:left-auto sm:right-0">
+              <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5">
+                <span className="text-xs font-semibold text-zinc-800">
                   Filter by Date Range
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsDateOpen(false)}
-                  className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                  className="text-zinc-400 hover:text-zinc-60"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -226,28 +226,28 @@ export default function FollowupToolbar({ totalCount = 0 }) {
                 <button
                   type="button"
                   onClick={() => handleQuickRange("today")}
-                  className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
                 >
                   Today
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickRange("next_7_days")}
-                  className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
                 >
                   Next 7 Days
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickRange("past_30_days")}
-                  className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
                 >
                   Past 30 Days
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickRange("this_month")}
-                  className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
                 >
                   This Month
                 </button>
@@ -256,35 +256,35 @@ export default function FollowupToolbar({ totalCount = 0 }) {
               {/* Date Range Inputs */}
               <div className="mt-3.5 grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                  <label className="text-[11px] font-medium text-zinc-500">
                     From Date
                   </label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800 outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                    className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800 outline-none transition focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                  <label className="text-[11px] font-medium text-zinc-500">
                     To Date
                   </label>
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800 outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                    className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800 outline-none transition focus:border-blue-500"
                   />
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="mt-3.5 flex items-center justify-between border-t border-zinc-100 pt-2.5 dark:border-zinc-800">
+              <div className="mt-3.5 flex items-center justify-between border-t border-zinc-100 pt-2.5">
                 <button
                   type="button"
                   onClick={() => handleQuickRange("clear")}
-                  className="text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                  className="text-xs font-medium text-zinc-500 hover:text-zinc-700"
                 >
                   Clear
                 </button>
@@ -306,7 +306,7 @@ export default function FollowupToolbar({ totalCount = 0 }) {
           <button
             type="button"
             onClick={clearAllFilters}
-            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 text-xs font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 text-xs font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
             title="Reset search & date range"
           >
             <RotateCcw className="h-3.5 w-3.5" />

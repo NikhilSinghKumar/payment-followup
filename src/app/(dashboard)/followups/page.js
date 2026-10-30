@@ -26,7 +26,7 @@ export default async function FollowupsPage({ searchParams }) {
       <FollowupToolbar totalCount={followups.length} />
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
         <FollowupTable followups={followups} hasFilter={hasFilter} />
       </div>
     </div>
