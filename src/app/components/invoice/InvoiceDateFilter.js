@@ -180,12 +180,12 @@ export default function InvoiceDateFilter() {
         title={hasActiveDate ? dateLabel : "Filter by Date"}
         className={`inline-flex h-9 w-full items-center justify-between rounded-lg border px-2.5 text-xs font-medium shadow-xs transition ${
           hasActiveDate
-            ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300"
-            : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            ? "border-blue-300 bg-blue-50 text-blue-700"
+            : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
         }`}
       >
         <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-          <Calendar className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+          <Calendar className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
           <span className="truncate text-left">{dateLabel}</span>
         </div>
         {hasActiveDate && (
@@ -195,7 +195,7 @@ export default function InvoiceDateFilter() {
               e.stopPropagation();
               handleQuickDate("clear");
             }}
-            className="ml-1 shrink-0 rounded-full p-0.5 text-blue-600 hover:bg-blue-200/60 dark:text-blue-300 dark:hover:bg-blue-900/60"
+            className="ml-1 shrink-0 rounded-full p-0.5 text-blue-600 hover:bg-blue-200/60"
             title="Clear date filter"
           >
             <X className="h-3 w-3" />
@@ -205,15 +205,15 @@ export default function InvoiceDateFilter() {
 
       {/* Date Filter Popover */}
       {isOpen && (
-        <div className="absolute left-0 top-full z-50 mt-1.5 w-72 sm:w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900 animate-in fade-in zoom-in-95 duration-100">
-          <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5 dark:border-zinc-800">
-            <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-72 sm:w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100">
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5">
+            <span className="text-xs font-semibold text-zinc-800">
               Filter by Invoice Date
             </span>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              className="text-zinc-400 hover:text-zinc-600"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -224,28 +224,28 @@ export default function InvoiceDateFilter() {
             <button
               type="button"
               onClick={() => handleQuickDate("today")}
-              className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
             >
               Today
             </button>
             <button
               type="button"
               onClick={() => handleQuickDate("yesterday")}
-              className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
             >
               Yesterday
             </button>
             <button
               type="button"
               onClick={() => handleQuickDate("this_month")}
-              className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
             >
               This Month
             </button>
             <button
               type="button"
               onClick={() => handleQuickDate("last_month")}
-              className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
             >
               Last Month
             </button>
@@ -253,7 +253,7 @@ export default function InvoiceDateFilter() {
 
           {/* Specific Date Picker */}
           <div className="mt-3 space-y-1">
-            <label className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+            <label className="text-[11px] font-medium text-zinc-500">
               Specific Date
             </label>
             <div className="flex items-center gap-1.5">
@@ -267,7 +267,7 @@ export default function InvoiceDateFilter() {
                     handleSingleDateApply();
                   }
                 }}
-                className="h-8 flex-1 min-w-0 rounded-md border border-zinc-300 bg-white px-2.5 text-xs text-zinc-800 outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8 flex-1 min-w-0 rounded-md border border-zinc-300 bg-white px-2.5 text-xs text-zinc-800 outline-none transition focus:border-blue-500"
               />
               <button
                 type="button"
@@ -282,9 +282,9 @@ export default function InvoiceDateFilter() {
 
           <div className="relative my-2.5 text-center">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+              <div className="w-full border-t border-zinc-200" />
             </div>
-            <span className="relative bg-white px-2 text-[10px] uppercase text-zinc-400 dark:bg-zinc-900">
+            <span className="relative bg-white px-2 text-[10px] uppercase text-zinc-400">
               Or Date Range
             </span>
           </div>
@@ -292,35 +292,35 @@ export default function InvoiceDateFilter() {
           {/* Date Range Inputs */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+              <label className="text-[10px] font-medium text-zinc-500">
                 From
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800 outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800 outline-none transition focus:border-blue-500"
               />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+              <label className="text-[10px] font-medium text-zinc-500">
                 To
               </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800 outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800 outline-none transition focus:border-blue-500"
               />
             </div>
           </div>
 
           {/* Actions */}
-          <div className="mt-3 flex items-center justify-between border-t border-zinc-100 pt-2.5 dark:border-zinc-800">
+          <div className="mt-3 flex items-center justify-between border-t border-zinc-100 pt-2.5">
             <button
               type="button"
               onClick={() => handleQuickDate("clear")}
-              className="text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+              className="text-xs font-medium text-zinc-500 hover:text-zinc-700"
             >
               Clear
             </button>

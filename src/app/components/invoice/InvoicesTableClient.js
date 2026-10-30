@@ -79,7 +79,7 @@ export default function InvoicesTableClient({ invoices = [] }) {
             <button
               type="button"
               onClick={selectAllOverdue}
-              className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300"
+              className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 font-medium text-amber-800 transition hover:bg-amber-100"
             >
               <AlertTriangle size={11} />
               <span>Select All Overdue ({overdueInvoices.length})</span>
@@ -91,19 +91,19 @@ export default function InvoicesTableClient({ invoices = [] }) {
           <button
             type="button"
             onClick={clearSelection}
-            className="text-xs text-zinc-400 underline hover:text-zinc-600 dark:hover:text-zinc-200"
+            className="text-xs text-zinc-400 underline hover:text-zinc-600"
           >
             Clear selection ({selectedIds.length})
           </button>
         )}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs">
         <div className="overflow-x-auto [scrollbar-width:thin]">
           <table className="w-full table-auto border-collapse text-left text-xs">
             {/* Table Header */}
             <thead>
-              <tr className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300">
+              <tr className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-600">
                 <th className="w-8 px-2.5 py-2.5 text-center">
                   <input
                     type="checkbox"
@@ -140,14 +140,14 @@ export default function InvoicesTableClient({ invoices = [] }) {
                 <th className="whitespace-nowrap px-2.5 py-2.5 text-center font-semibold">
                   Status
                 </th>
-                <th className="whitespace-nowrap px-3 py-2.5 text-center font-semibold sticky right-0 z-20 bg-zinc-50 dark:bg-zinc-800 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                <th className="whitespace-nowrap px-3 py-2.5 text-center font-semibold sticky right-0 z-20 bg-zinc-50 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                   Actions
                 </th>
               </tr>
             </thead>
 
             {/* Table Body */}
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+            <tbody className="divide-y divide-zinc-100">
               {invoices.length > 0 ? (
                 invoices.map((inv, index) => {
                   let isOverdue = false;
@@ -172,9 +172,7 @@ export default function InvoicesTableClient({ invoices = [] }) {
                         if (isPendingDue) toggleSelectInvoice(inv.id);
                       }}
                       className={`group text-xs transition-colors ${
-                        isSelected
-                          ? "bg-blue-50/70 dark:bg-blue-950/40"
-                          : "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
+                        isSelected ? "bg-blue-50/70" : "hover:bg-zinc-50/80"
                       } ${isPendingDue ? "cursor-pointer" : ""}`}
                     >
                       {/* Checkbox */}
@@ -187,19 +185,17 @@ export default function InvoicesTableClient({ invoices = [] }) {
                             className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                           />
                         ) : (
-                          <span className="text-[10px] text-zinc-300 dark:text-zinc-600">
-                            —
-                          </span>
+                          <span className="text-[10px] text-zinc-300">—</span>
                         )}
                       </td>
 
                       {/* S.N. */}
-                      <td className="px-2 py-2 text-center font-medium text-zinc-500 dark:text-zinc-400">
+                      <td className="px-2 py-2 text-center font-medium text-zinc-500">
                         {index + 1}
                       </td>
 
                       {/* Company */}
-                      <td className="px-3 py-2 font-medium text-zinc-800 dark:text-zinc-200 max-w-[200px]">
+                      <td className="px-3 py-2 font-medium text-zinc-800 max-w-[200px]">
                         <div
                           className="truncate"
                           title={inv.companyName || "Unknown"}
@@ -214,17 +210,17 @@ export default function InvoicesTableClient({ invoices = [] }) {
                       </td>
 
                       {/* Invoice Number */}
-                      <td className="whitespace-nowrap px-2.5 py-2 text-center font-medium text-zinc-800 dark:text-zinc-200">
+                      <td className="whitespace-nowrap px-2.5 py-2 text-center font-medium text-zinc-800">
                         {inv.invoiceNumber ?? "—"}
                       </td>
 
                       {/* Amount */}
-                      <td className="whitespace-nowrap px-2.5 py-2 text-right font-medium text-zinc-800 dark:text-zinc-200">
+                      <td className="whitespace-nowrap px-2.5 py-2 text-right font-medium text-zinc-800">
                         {formatCurrency(inv.invoiceAmount)}
                       </td>
 
                       {/* Paid */}
-                      <td className="whitespace-nowrap px-2.5 py-2 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                      <td className="whitespace-nowrap px-2.5 py-2 text-right font-medium text-emerald-600">
                         {formatCurrency(inv.paidAmount || 0)}
                       </td>
 
@@ -237,7 +233,7 @@ export default function InvoicesTableClient({ invoices = [] }) {
                             0,
                         ) > 0 ? (
                           <div className="inline-flex flex-col items-center">
-                            <span className="text-zinc-800 dark:text-zinc-200">
+                            <span className="text-zinc-800">
                               {formatCurrency(
                                 inv.tdsDeducted ||
                                   inv.tdsDeductedAmount ||
@@ -247,8 +243,8 @@ export default function InvoicesTableClient({ invoices = [] }) {
                             <span
                               className={`rounded px-1.5 py-0.2 text-[9px] font-bold ${
                                 inv.isTdsVerified
-                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                                  : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : "bg-amber-100 text-amber-700"
                               }`}
                             >
                               {inv.isTdsVerified ? "Verified" : "Pending"}
@@ -260,12 +256,12 @@ export default function InvoicesTableClient({ invoices = [] }) {
                       </td>
 
                       {/* Outstanding */}
-                      <td className="whitespace-nowrap px-2.5 py-2 text-right font-semibold text-rose-600 dark:text-rose-400">
+                      <td className="whitespace-nowrap px-2.5 py-2 text-right font-semibold text-rose-600">
                         {formatCurrency(inv.outstandingAmount || 0)}
                       </td>
 
                       {/* Due Date */}
-                      <td className="whitespace-nowrap px-2.5 py-2 text-center text-zinc-700 dark:text-zinc-300">
+                      <td className="whitespace-nowrap px-2.5 py-2 text-center text-zinc-700">
                         {formattedDate}
                       </td>
 
@@ -275,12 +271,12 @@ export default function InvoicesTableClient({ invoices = [] }) {
                           <span
                             className={`inline-flex items-center justify-center min-w-[70px] px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
                               inv.status === "paid"
-                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                                ? "bg-emerald-100 text-emerald-700"
                                 : inv.status === "partial"
-                                  ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                                  ? "bg-amber-100 text-amber-700"
                                   : inv.status === "overdue"
-                                    ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
-                                    : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-blue-100 text-blue-700"
                             }`}
                           >
                             {inv.status}
@@ -303,20 +299,20 @@ export default function InvoicesTableClient({ invoices = [] }) {
                       <td
                         className={`whitespace-nowrap px-3 py-2 text-center sticky right-0 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)] transition-colors ${
                           isSelected
-                            ? "bg-blue-50 dark:bg-blue-950"
-                            : "bg-white group-hover:bg-zinc-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800"
+                            ? "bg-blue-50"
+                            : "bg-white group-hover:bg-zinc-50"
                         }`}
                       >
                         <div className="flex items-center justify-center gap-1.5">
                           <Link
                             href={`/invoices/${inv.id}`}
-                            className="h-6.5 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900 shadow-2xs"
+                            className="h-6.5 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition shadow-2xs"
                           >
                             View
                           </Link>
                           <Link
                             href={`/invoices/${inv.id}/edit`}
-                            className="h-6.5 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 shadow-2xs"
+                            className="h-6.5 px-2.5 inline-flex items-center justify-center rounded-md text-[11px] font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition shadow-2xs"
                           >
                             Edit
                           </Link>
