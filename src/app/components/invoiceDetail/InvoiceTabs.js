@@ -42,9 +42,9 @@ export default function InvoiceTabs({
   ];
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="rounded-xl border border-zinc-200 bg-white shadow-2xs">
       {/* TAB HEADER */}
-      <div className="flex gap-1.5 border-b border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
+      <div className="flex gap-1.5 border-b border-zinc-200 px-3 py-1.5">
         {tabs.map((item) => (
           <button
             key={item.key}
@@ -52,7 +52,7 @@ export default function InvoiceTabs({
             className={`rounded-lg px-2.5 py-1 text-xs font-semibold cursor-pointer transition ${
               tab === item.key
                 ? "bg-blue-600 text-white shadow-2xs"
-                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                : "text-zinc-600 hover:bg-zinc-100"
             }`}
           >
             {item.label}

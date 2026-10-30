@@ -68,7 +68,7 @@ export default function UserTable({ users = [] }) {
             placeholder="Search by name, email, department, or company..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8.5 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-3 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+            className="h-8.5 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-3 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500"
           />
         </div>
 
@@ -78,7 +78,7 @@ export default function UserTable({ users = [] }) {
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="h-8.5 rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              className="h-8.5 rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 shadow-2xs outline-none focus:border-blue-500"
             >
               <option value="ALL">All Departments</option>
               {departmentsList.map((d) => (
@@ -94,7 +94,7 @@ export default function UserTable({ users = [] }) {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="h-8.5 rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              className="h-8.5 rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 shadow-2xs outline-none focus:border-blue-500"
             >
               <option value="ALL">All Roles</option>
               {rolesList.map((r) => (
@@ -109,7 +109,7 @@ export default function UserTable({ users = [] }) {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-8.5 rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+            className="h-8.5 rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 shadow-2xs outline-none focus:border-blue-500"
           >
             <option value="ALL">All Status</option>
             <option value="ACTIVE">Active</option>
@@ -119,38 +119,38 @@ export default function UserTable({ users = [] }) {
       </div>
 
       {/* Compact Table */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs">
         <div className="overflow-x-auto [scrollbar-width:thin]">
           <table className="w-full min-w-[850px] text-left text-xs">
-            <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/60">
+            <thead className="border-b border-zinc-200 bg-zinc-50">
               <tr>
-                <th className="py-2.5 pl-4 pr-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                <th className="py-2.5 pl-4 pr-3 font-semibold text-zinc-600">
                   User
                 </th>
-                <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                <th className="py-2.5 px-3 font-semibold text-zinc-600">
                   Company
                 </th>
-                <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                <th className="py-2.5 px-3 font-semibold text-zinc-600">
                   Department
                 </th>
-                <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                <th className="py-2.5 px-3 font-semibold text-zinc-600">
                   Role
                 </th>
-                <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                <th className="py-2.5 px-3 font-semibold text-zinc-600">
                   Designation
                 </th>
-                <th className="py-2.5 px-3 font-semibold text-zinc-600 dark:text-zinc-400">
+                <th className="py-2.5 px-3 font-semibold text-zinc-600">
                   Mobile
                 </th>
-                <th className="py-2.5 px-3 text-center font-semibold text-zinc-600 dark:text-zinc-400">
+                <th className="py-2.5 px-3 text-center font-semibold text-zinc-600">
                   Status
                 </th>
-                <th className="py-2.5 pr-4 pl-3 text-right font-semibold text-zinc-600 dark:text-zinc-400">
+                <th className="py-2.5 pr-4 pl-3 text-right font-semibold text-zinc-600">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+            <tbody className="divide-y divide-zinc-100">
               {filteredUsers.length === 0 ? (
                 <tr>
                   <td
@@ -167,21 +167,18 @@ export default function UserTable({ users = [] }) {
                     "U";
 
                   return (
-                    <tr
-                      key={u.id}
-                      className="transition hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40"
-                    >
+                    <tr key={u.id} className="transition hover:bg-zinc-50/70">
                       {/* User & Email */}
                       <td className="py-2 pl-4 pr-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">
                             {initials}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-semibold text-zinc-900 truncate dark:text-zinc-100">
+                            <div className="font-semibold text-zinc-900 truncate">
                               {u.firstName} {u.lastName || ""}
                             </div>
-                            <div className="text-[11px] text-zinc-500 font-mono truncate dark:text-zinc-400">
+                            <div className="text-[11px] text-zinc-500 font-mono truncate">
                               {u.email}
                             </div>
                           </div>
@@ -189,7 +186,7 @@ export default function UserTable({ users = [] }) {
                       </td>
 
                       {/* Company */}
-                      <td className="py-2 px-3 text-zinc-700 dark:text-zinc-300">
+                      <td className="py-2 px-3 text-zinc-700">
                         <span className="font-medium">
                           {u.companyName || "—"}
                         </span>
@@ -198,7 +195,7 @@ export default function UserTable({ users = [] }) {
                       {/* Department */}
                       <td className="py-2 px-3">
                         {u.departmentName ? (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
                             <Building2 size={11} className="text-indigo-500" />
                             <span>{u.departmentName}</span>
                           </span>
@@ -212,7 +209,7 @@ export default function UserTable({ users = [] }) {
                       {/* Role */}
                       <td className="py-2 px-3">
                         {u.roleName ? (
-                          <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-100 dark:border-purple-900">
+                          <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-700">
                             {u.roleName}
                           </span>
                         ) : (
@@ -221,12 +218,12 @@ export default function UserTable({ users = [] }) {
                       </td>
 
                       {/* Designation */}
-                      <td className="py-2 px-3 text-zinc-600 dark:text-zinc-400">
+                      <td className="py-2 px-3 text-zinc-600">
                         {u.designation || "—"}
                       </td>
 
                       {/* Mobile */}
-                      <td className="py-2 px-3 text-zinc-600 font-mono text-[11px] dark:text-zinc-400">
+                      <td className="py-2 px-3 text-zinc-600 font-mono text-[11px]">
                         {u.mobile || "—"}
                       </td>
 
@@ -235,8 +232,8 @@ export default function UserTable({ users = [] }) {
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
                             u.isActive
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                              : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-red-100 text-red-800"
                           }`}
                         >
                           {u.isActive ? "Active" : "Inactive"}
@@ -248,7 +245,7 @@ export default function UserTable({ users = [] }) {
                         <div className="flex items-center justify-end gap-1.5">
                           <Link
                             href={`/users/${u.id}`}
-                            className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-[11px] font-medium text-zinc-600 transition hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                            className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-[11px] font-medium text-zinc-600 transition hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600"
                             title="View user details"
                           >
                             <Eye size={12} />
@@ -256,7 +253,7 @@ export default function UserTable({ users = [] }) {
                           </Link>
                           <Link
                             href={`/users/${u.id}/edit`}
-                            className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-[11px] font-medium text-amber-600 transition hover:border-amber-500 hover:bg-amber-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                            className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-[11px] font-medium text-amber-600 transition hover:border-amber-500 hover:bg-amber-50"
                             title="Edit user"
                           >
                             <Edit2 size={12} />
@@ -273,7 +270,7 @@ export default function UserTable({ users = [] }) {
         </div>
 
         {/* Compact Footer */}
-        <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50/60 px-4 py-2 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/40">
+        <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50/60 px-4 py-2 text-xs text-zinc-500">
           <span>
             Total: <strong>{filteredUsers.length}</strong>{" "}
             {filteredUsers.length === 1 ? "user" : "users"}

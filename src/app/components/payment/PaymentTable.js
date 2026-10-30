@@ -227,7 +227,7 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                           className="h-7 px-2.5 inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white text-[11px] font-medium text-zinc-700 shadow-2xs transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
                           title="Edit payment details"
                         >
-                          <Pencil className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                          <Pencil className="h-3 w-3 text-amber-600" />
                           <span>Edit</span>
                         </button>
                         {Number(payment.unallocatedAmount || 0) > 0 && (

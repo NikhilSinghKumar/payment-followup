@@ -63,28 +63,25 @@ export default function TdsVerifyButton({ invoice }) {
         onClick={handleOpen}
         className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold shadow-2xs transition ${
           isVerified
-            ? "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+            ? "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
             : currentTds <= 0
-              ? "border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-              : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+              ? "border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100"
+              : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
         }`}
         title="Verify or update TDS deduction"
       >
         {isVerified ? (
           <>
-            <ShieldCheck
-              size={14}
-              className="text-emerald-600 dark:text-emerald-400"
-            />
+            <ShieldCheck size={14} className="text-emerald-600" />
             <span>TDS Verified (₹{currentTds.toLocaleString("en-IN")})</span>
           </>
         ) : currentTds <= 0 ? (
           <>
-            <span className="text-zinc-600 dark:text-zinc-400">TDS N/A</span>
+            <span className="text-zinc-600">TDS N/A</span>
           </>
         ) : (
           <>
-            <Clock size={14} className="text-amber-600 dark:text-amber-400" />
+            <Clock size={14} className="text-amber-600" />
             <span>TDS Pending</span>
           </>
         )}
@@ -93,44 +90,41 @@ export default function TdsVerifyButton({ invoice }) {
       {/* Modal Dialog */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
+          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
               <div className="flex items-center gap-2">
-                <ShieldCheck
-                  size={18}
-                  className="text-blue-600 dark:text-blue-400"
-                />
-                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                <ShieldCheck size={18} className="text-blue-600" />
+                <h3 className="text-sm font-bold text-zinc-900">
                   TDS Management & Verification
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
               >
                 <X size={16} />
               </button>
             </div>
 
             {errorMessage && (
-              <div className="mt-3 rounded-lg bg-red-50 p-2.5 text-xs text-red-700 dark:bg-red-950/50 dark:text-red-300">
+              <div className="mt-3 rounded-lg bg-red-50 p-2.5 text-xs text-red-700">
                 {errorMessage}
               </div>
             )}
 
             <div className="mt-4 space-y-3.5 text-xs">
-              <div className="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
+              <div className="rounded-xl bg-zinc-50 p-3">
+                <div className="flex justify-between text-zinc-600">
                   <span>Invoice Total:</span>
-                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                  <span className="font-semibold text-zinc-900">
                     ₹
                     {Number(invoice.invoiceAmount || 0).toLocaleString("en-IN")}
                   </span>
                 </div>
-                <div className="mt-1 flex justify-between text-zinc-600 dark:text-zinc-400">
+                <div className="mt-1 flex justify-between text-zinc-600">
                   <span>Actual Cash/Bank Received:</span>
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span className="font-semibold text-emerald-600">
                     ₹
                     {Number(
                       invoice.paid || invoice.paidAmount || 0,
@@ -141,7 +135,7 @@ export default function TdsVerifyButton({ invoice }) {
 
               {/* Editable TDS Deducted Amount Input */}
               <div>
-                <label className="mb-1 block font-semibold text-zinc-700 dark:text-zinc-300">
+                <label className="mb-1 block font-semibold text-zinc-700">
                   TDS Deducted Amount (₹){" "}
                   <span className="text-zinc-400 font-normal">
                     (Manual Override)
@@ -153,17 +147,17 @@ export default function TdsVerifyButton({ invoice }) {
                   min="0"
                   value={tdsAmount}
                   onChange={(e) => setTdsAmount(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 shadow-2xs focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 shadow-2xs focus:border-blue-500 focus:outline-none"
                   placeholder="Enter TDS amount deducted"
                 />
-                <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                <p className="mt-1 text-[11px] text-zinc-500">
                   Default calculated TDS: ₹
                   {Number(invoice.tdsAmount || 0).toLocaleString("en-IN")}
                 </p>
               </div>
 
               {/* Checkbox for TDS Verified */}
-              <div className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+              <div className="rounded-xl border border-zinc-200 p-3">
                 <label className="flex items-start gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
@@ -172,10 +166,10 @@ export default function TdsVerifyButton({ invoice }) {
                     className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
                   />
                   <div>
-                    <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                    <span className="font-bold text-zinc-900">
                       TDS Verified (Form 26AS Confirmed)
                     </span>
-                    <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                    <p className="mt-0.5 text-[11px] text-zinc-500">
                       Check this box when you confirm the client has deposited
                       the TDS and it reflects in Form 26AS.
                     </p>
@@ -185,7 +179,7 @@ export default function TdsVerifyButton({ invoice }) {
 
               {/* Notes */}
               <div>
-                <label className="mb-1 block font-medium text-zinc-700 dark:text-zinc-300">
+                <label className="mb-1 block font-medium text-zinc-700">
                   Remarks / Certificate No.{" "}
                   <span className="text-zinc-400">(Optional)</span>
                 </label>
@@ -194,12 +188,12 @@ export default function TdsVerifyButton({ invoice }) {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="e.g. Form 16A Q3 Ref / Verified via TRACES"
-                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-900 shadow-2xs focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-900 shadow-2xs focus:border-blue-500 focus:outline-none"
                 />
               </div>
 
               {/* Math preview */}
-              <div className="rounded-lg bg-blue-50/70 p-2.5 text-[11px] text-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
+              <div className="rounded-lg bg-blue-50/70 p-2.5 text-[11px] text-blue-900">
                 <div className="flex justify-between">
                   <span>Reconciliation equation:</span>
                   <b>
@@ -220,12 +214,12 @@ export default function TdsVerifyButton({ invoice }) {
               </div>
             </div>
 
-            <div className="mt-5 flex justify-end gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+            <div className="mt-5 flex justify-end gap-2 border-t border-zinc-100 pt-3">
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
                 disabled={isPending}
-                className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300"
+                className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
               >
                 Cancel
               </button>

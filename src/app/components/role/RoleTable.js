@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function RoleTable({ roles }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto [scrollbar-width:thin]">
         <table className="w-full min-w-[600px]">
           {/* ===================================== */}

@@ -53,7 +53,7 @@ export default function PaymentsTab({ invoiceId, payments }) {
                 gap-3 border-t border-zinc-100
                 px-4 py-3 text-sm items-center
                 text-xs font-semibold uppercase tracking-wide
-                text-zinc-600 dark:text-zinc-600
+                text-zinc-600
                 "
               >
                 <div>{payment.receiptNumber || "-"}</div>

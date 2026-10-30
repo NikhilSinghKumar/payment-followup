@@ -141,8 +141,8 @@ export default function PaymentTable({ payments = [], hasFilter = false }) {
                       <span
                         className={`text-sm font-medium ${
                           Number(payment.unallocatedAmount || 0) > 0
-                            ? "text-orange-600 dark:text-orange-400"
-                            : "text-zinc-500 dark:text-zinc-400"
+                            ? "text-orange-600"
+                            : "text-zinc-500"
                         }`}
                         title={
                           Number(payment.unallocatedAmount || 0) > 0

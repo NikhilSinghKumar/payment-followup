@@ -280,9 +280,9 @@ export default function AllocatePaymentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 bg-white text-zinc-900 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 bg-white text-zinc-900 shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="border-b border-zinc-200 bg-zinc-50/80 px-6 py-4 dark:border-zinc-800 dark:bg-zinc-800/50">
+        <div className="border-b border-zinc-200 bg-zinc-50/80 px-6 py-4">
           <DialogHeader className="space-y-1">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2.5">
@@ -290,10 +290,10 @@ export default function AllocatePaymentModal({
                   <Layers className="h-4 w-4" />
                 </div>
                 <div>
-                  <DialogTitle className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  <DialogTitle className="text-base font-semibold text-zinc-900">
                     Allocate Payment to Invoices
                   </DialogTitle>
-                  <DialogDescription className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <DialogDescription className="text-xs text-zinc-500">
                     Distribute on-account payment funds across outstanding
                     invoices manually or using auto-fill FIFO.
                   </DialogDescription>
@@ -302,7 +302,7 @@ export default function AllocatePaymentModal({
 
               {/* Payment Receipt / Reference Pill */}
               <div className="flex items-center gap-2 text-right">
-                <span className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-mono font-medium text-zinc-700 shadow-2xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                <span className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-mono font-medium text-zinc-700 shadow-2xs">
                   {payment?.receiptNumber
                     ? `Receipt #${payment.receiptNumber}`
                     : `Payment #${payment?.id}`}
@@ -312,10 +312,10 @@ export default function AllocatePaymentModal({
           </DialogHeader>
 
           {/* Payment Details Meta Strip */}
-          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-zinc-600">
             <div className="flex items-center gap-1.5">
               <Building2 className="h-3.5 w-3.5 text-zinc-400" />
-              <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+              <span className="font-semibold text-zinc-800">
                 {payment?.client?.companyName || "Client"}
               </span>
               {payment?.client?.companyCode && (
@@ -327,7 +327,7 @@ export default function AllocatePaymentModal({
 
             {payment?.subClient?.companyName && (
               <div className="flex items-center gap-1">
-                <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
                   Subclient: {payment.subClient.companyName}
                 </span>
               </div>
@@ -360,12 +360,12 @@ export default function AllocatePaymentModal({
         </div>
 
         {/* Balance Metrics Bar */}
-        <div className="grid grid-cols-2 gap-3 border-b border-zinc-200 bg-white px-6 py-3 sm:grid-cols-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="rounded-lg border border-zinc-100 bg-zinc-50/70 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/40">
-            <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+        <div className="grid grid-cols-2 gap-3 border-b border-zinc-200 bg-white px-6 py-3 sm:grid-cols-4">
+          <div className="rounded-lg border border-zinc-100 bg-zinc-50/70 p-2.5">
+            <p className="text-[11px] font-medium text-zinc-500">
               Total Payment
             </p>
-            <p className="mt-0.5 text-sm font-bold text-zinc-900 dark:text-zinc-100">
+            <p className="mt-0.5 text-sm font-bold text-zinc-900">
               ₹
               {Number(payment?.amount || 0).toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
@@ -373,11 +373,11 @@ export default function AllocatePaymentModal({
             </p>
           </div>
 
-          <div className="rounded-lg border border-zinc-100 bg-zinc-50/70 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/40">
-            <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+          <div className="rounded-lg border border-zinc-100 bg-zinc-50/70 p-2.5">
+            <p className="text-[11px] font-medium text-zinc-500">
               Already Allocated
             </p>
-            <p className="mt-0.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <p className="mt-0.5 text-sm font-semibold text-zinc-700">
               ₹
               {Number(payment?.allocatedAmount || 0).toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
@@ -385,11 +385,11 @@ export default function AllocatePaymentModal({
             </p>
           </div>
 
-          <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-2.5 dark:border-blue-900/50 dark:bg-blue-950/30">
-            <p className="text-[11px] font-medium text-blue-700 dark:text-blue-300">
+          <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-2.5">
+            <p className="text-[11px] font-medium text-blue-700">
               Available to Allocate
             </p>
-            <p className="mt-0.5 text-sm font-bold text-blue-700 dark:text-blue-300">
+            <p className="mt-0.5 text-sm font-bold text-blue-700">
               ₹
               {availableUnallocated.toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
@@ -400,19 +400,19 @@ export default function AllocatePaymentModal({
           <div
             className={`rounded-lg border p-2.5 ${
               isOverAllocated
-                ? "border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30"
+                ? "border-red-200 bg-red-50"
                 : remainingAvailable === 0
-                  ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/30"
-                  : "border-orange-200 bg-orange-50/60 dark:border-orange-900/50 dark:bg-orange-950/30"
+                  ? "border-emerald-200 bg-emerald-50"
+                  : "border-orange-200 bg-orange-50/60"
             }`}
           >
             <p
               className={`text-[11px] font-medium ${
                 isOverAllocated
-                  ? "text-red-700 dark:text-red-300"
+                  ? "text-red-700"
                   : remainingAvailable === 0
-                    ? "text-emerald-700 dark:text-emerald-300"
-                    : "text-orange-700 dark:text-orange-300"
+                    ? "text-emerald-700"
+                    : "text-orange-700"
               }`}
             >
               {isOverAllocated
@@ -424,10 +424,10 @@ export default function AllocatePaymentModal({
             <p
               className={`mt-0.5 text-sm font-bold ${
                 isOverAllocated
-                  ? "text-red-700 dark:text-red-300"
+                  ? "text-red-700"
                   : remainingAvailable === 0
-                    ? "text-emerald-700 dark:text-emerald-300"
-                    : "text-orange-700 dark:text-orange-300"
+                    ? "text-emerald-700"
+                    : "text-orange-700"
               }`}
             >
               {isOverAllocated
@@ -442,7 +442,7 @@ export default function AllocatePaymentModal({
         </div>
 
         {/* Toolbar: FIFO Button, Subclient Filter, Search, Clear */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-zinc-50/50 px-6 py-2.5 dark:border-zinc-800 dark:bg-zinc-850/40">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-zinc-50/50 px-6 py-2.5">
           <div className="flex items-center gap-2">
             {/* Auto-Fill FIFO Button */}
             <button
@@ -465,7 +465,7 @@ export default function AllocatePaymentModal({
               <button
                 type="button"
                 onClick={handleClearAll}
-                className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-600 shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-750"
+                className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-600 shadow-2xs transition hover:bg-zinc-50"
               >
                 <RotateCcw className="h-3 w-3 text-zinc-400" />
                 <span>Reset</span>
@@ -479,7 +479,7 @@ export default function AllocatePaymentModal({
               <select
                 value={filterSubClientId}
                 onChange={(e) => setFilterSubClientId(e.target.value)}
-                className="h-8 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 shadow-2xs focus:border-blue-500 focus:outline-hidden dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 shadow-2xs focus:border-blue-500 focus:outline-hidden"
               >
                 <option value="ALL">All Subclients ({invoices.length})</option>
                 {subClients.map((sub) => {
@@ -503,7 +503,7 @@ export default function AllocatePaymentModal({
                 placeholder="Search invoice #..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 w-44 rounded-lg border border-zinc-200 bg-white pl-8 pr-3 text-xs text-zinc-800 shadow-2xs placeholder:text-zinc-400 focus:border-blue-500 focus:outline-hidden dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                className="h-8 w-44 rounded-lg border border-zinc-200 bg-white pl-8 pr-3 text-xs text-zinc-800 shadow-2xs placeholder:text-zinc-400 focus:border-blue-500 focus:outline-hidden"
               />
             </div>
           </div>
@@ -514,10 +514,10 @@ export default function AllocatePaymentModal({
           <div
             className={`flex items-center gap-2 border-b px-6 py-2 text-xs font-medium ${
               feedback.type === "error"
-                ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
+                ? "border-red-200 bg-red-50 text-red-700"
                 : feedback.type === "success"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
-                  : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-blue-200 bg-blue-50 text-blue-700"
             }`}
           >
             {feedback.type === "error" ? (
@@ -530,30 +530,30 @@ export default function AllocatePaymentModal({
         )}
 
         {/* Invoices List / Table */}
-        <div className="flex-1 overflow-y-auto [scrollbar-width:thin] divide-y divide-zinc-100 dark:divide-zinc-800">
+        <div className="flex-1 overflow-y-auto [scrollbar-width:thin] divide-y divide-zinc-100">
           {loadingInvoices ? (
             <div className="flex flex-col items-center justify-center p-12 text-center">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-              <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mt-2 text-xs text-zinc-500">
                 Loading client outstanding invoices...
               </p>
             </div>
           ) : invoices.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                 <Check className="h-5 w-5" />
               </div>
-              <p className="mt-3 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+              <p className="mt-3 text-sm font-semibold text-zinc-800">
                 No Outstanding Invoices
               </p>
-              <p className="mt-1 max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mt-1 max-w-sm text-xs text-zinc-500">
                 All invoices for this client are currently settled. There are no
                 unsettled invoices to allocate this payment to.
               </p>
             </div>
           ) : displayedInvoices.length === 0 ? (
             <div className="p-8 text-center">
-              <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              <p className="text-xs font-medium text-zinc-600">
                 No invoices match your filter or search query.
               </p>
               <button
@@ -562,13 +562,13 @@ export default function AllocatePaymentModal({
                   setFilterSubClientId("ALL");
                   setSearchQuery("");
                 }}
-                className="mt-2 text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
+                className="mt-2 text-xs font-semibold text-blue-600 hover:underline"
               >
                 Clear filters ({invoices.length} total available)
               </button>
             </div>
           ) : (
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+            <div className="divide-y divide-zinc-100">
               {displayedInvoices.map((inv) => {
                 const due = Number(
                   inv.netPayableDue ?? inv.due ?? inv.outstandingAmount ?? 0,
@@ -586,8 +586,8 @@ export default function AllocatePaymentModal({
                     key={inv.id}
                     className={`flex flex-col gap-3 p-3.5 transition sm:flex-row sm:items-center sm:justify-between ${
                       isSettling
-                        ? "bg-blue-50/30 dark:bg-blue-950/20"
-                        : "bg-white hover:bg-zinc-50/60 dark:bg-zinc-900 dark:hover:bg-zinc-800/40"
+                        ? "bg-blue-50/30"
+                        : "bg-white hover:bg-zinc-50/60"
                     }`}
                   >
                     {/* Invoice Meta */}
@@ -597,7 +597,7 @@ export default function AllocatePaymentModal({
                           className={`flex h-6 w-6 items-center justify-center rounded-md border text-xs font-bold ${
                             isSettling
                               ? "border-blue-500 bg-blue-600 text-white"
-                              : "border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800"
+                              : "border-zinc-200 bg-zinc-50 text-zinc-500"
                           }`}
                         >
                           {isSettling ? (
@@ -610,33 +610,31 @@ export default function AllocatePaymentModal({
 
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                          <span className="text-xs font-bold text-zinc-900">
                             {inv.invoiceNumber}
                           </span>
 
                           {inv.isOpeningBalance && (
-                            <span className="rounded bg-purple-100 px-1.5 py-0.2 text-[9px] font-bold text-purple-700 dark:bg-purple-950/70 dark:text-purple-300">
+                            <span className="rounded bg-purple-100 px-1.5 py-0.2 text-[9px] font-bold text-purple-700">
                               Opening Bal
                             </span>
                           )}
 
                           {inv.isOverdue && !inv.isOpeningBalance && (
-                            <span className="rounded bg-red-100 px-1.5 py-0.2 text-[9px] font-bold uppercase text-red-700 dark:bg-red-950/70 dark:text-red-300">
+                            <span className="rounded bg-red-100 px-1.5 py-0.2 text-[9px] font-bold uppercase text-red-700">
                               Overdue
                             </span>
                           )}
                         </div>
 
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-zinc-500">
                           {inv.subClientName && (
-                            <span className="rounded bg-purple-50 px-1 py-0.2 font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                            <span className="rounded bg-purple-50 px-1 py-0.2 font-medium text-purple-700">
                               {inv.subClientName}
                             </span>
                           )}
                           <span>Due: {formatDate(inv.dueDate)}</span>
-                          <span className="text-zinc-300 dark:text-zinc-700">
-                            •
-                          </span>
+                          <span className="text-zinc-300">•</span>
                           <span>
                             Total:{" "}
                             {formatCurrency(
@@ -662,7 +660,7 @@ export default function AllocatePaymentModal({
                       <p className="text-[10px] uppercase font-semibold text-zinc-400">
                         Current Due
                       </p>
-                      <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                      <p className="text-xs font-bold text-zinc-900">
                         ₹
                         {due.toLocaleString("en-IN", {
                           minimumFractionDigits: 2,
@@ -694,8 +692,8 @@ export default function AllocatePaymentModal({
                             isExceeding
                               ? "border-red-400 bg-red-50 text-red-700 focus:border-red-500"
                               : isSettling
-                                ? "border-blue-400 bg-blue-50/50 text-blue-900 dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-200"
-                                : "border-zinc-200 bg-white text-zinc-800 focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                ? "border-blue-400 bg-blue-50/50 text-blue-900"
+                                : "border-zinc-200 bg-white text-zinc-800 focus:border-blue-500"
                           }`}
                         />
                       </div>
@@ -708,7 +706,7 @@ export default function AllocatePaymentModal({
                           due <= 0 ||
                           (remainingAvailable <= 0 && currentAlloc === 0)
                         }
-                        className="h-8 rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-[11px] font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-750"
+                        className="h-8 rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-[11px] font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                         title="Allocate maximum available for this invoice"
                       >
                         Full
@@ -719,7 +717,7 @@ export default function AllocatePaymentModal({
                         <button
                           type="button"
                           onClick={() => handleClearRow(inv.id)}
-                          className="h-8 rounded-lg px-1.5 text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                          className="h-8 rounded-lg px-1.5 text-xs text-zinc-400 hover:text-zinc-700"
                           title="Clear allocation"
                         >
                           ✕
@@ -730,16 +728,16 @@ export default function AllocatePaymentModal({
                     {/* Resulting Status Badge */}
                     <div className="shrink-0 text-right min-w-[110px]">
                       {isExceeding ? (
-                        <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:bg-red-950/70 dark:text-red-300">
+                        <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
                           Exceeds Due!
                         </span>
                       ) : isSettling ? (
                         remainingAfter === 0 ? (
-                          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                             <Check className="h-3 w-3" /> Fully Settled
                           </span>
                         ) : (
-                          <span className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                          <span className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
                             Leaves {formatCurrency(remainingAfter)}
                           </span>
                         )
@@ -757,19 +755,17 @@ export default function AllocatePaymentModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50/90 px-6 py-3 dark:border-zinc-800 dark:bg-zinc-850/60">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50/90 px-6 py-3">
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-zinc-500 dark:text-zinc-400">
-              Allocating:
-            </span>
-            <span className="font-bold text-zinc-900 dark:text-zinc-100">
+            <span className="text-zinc-500">Allocating:</span>
+            <span className="font-bold text-zinc-900">
               ₹
               {totalDraftAllocated.toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
               })}
             </span>
             <span className="text-zinc-400">/</span>
-            <span className="text-zinc-500 dark:text-zinc-400">
+            <span className="text-zinc-500">
               Available: ₹
               {availableUnallocated.toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
@@ -782,7 +778,7 @@ export default function AllocatePaymentModal({
               type="button"
               onClick={onClose}
               disabled={isPending}
-              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 shadow-2xs transition hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 shadow-2xs transition hover:bg-zinc-50 disabled:opacity-50"
             >
               Cancel
             </button>

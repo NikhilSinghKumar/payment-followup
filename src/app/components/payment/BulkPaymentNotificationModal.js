@@ -243,12 +243,12 @@ export default function BulkPaymentNotificationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[60vw] max-w-[60vw] sm:max-w-6xl max-h-[92vh] flex flex-col p-0 overflow-hidden bg-white text-zinc-900 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+      <DialogContent className="w-[60vw] max-w-[60vw] sm:max-w-6xl max-h-[92vh] flex flex-col p-0 overflow-hidden bg-white text-zinc-900 shadow-2xl">
         {/* Header */}
-        <div className="border-b border-zinc-100 bg-zinc-50/70 p-5 dark:border-zinc-800 dark:bg-zinc-800/40">
+        <div className="border-b border-zinc-100 bg-zinc-50/70 p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
                 <CreditCard className="h-5 w-5" />
               </div>
               <div>
@@ -264,8 +264,8 @@ export default function BulkPaymentNotificationModal({
           </div>
 
           {/* Filtering Controls Bar */}
-          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-zinc-200/60 pt-3 dark:border-zinc-700/60">
-            <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-zinc-200/60 pt-3 /60">
+            <span className="text-xs font-semibold text-zinc-600 flex items-center gap-1">
               <Filter className="h-3.5 w-3.5 text-zinc-400" />
               Target Scope:
             </span>
@@ -277,7 +277,7 @@ export default function BulkPaymentNotificationModal({
                 className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                   filterType === "date"
                     ? "bg-emerald-600 text-white shadow-xs"
-                    : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100   "
                 }`}
               >
                 Specific Date
@@ -289,7 +289,7 @@ export default function BulkPaymentNotificationModal({
                 className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                   filterType === "month"
                     ? "bg-emerald-600 text-white shadow-xs"
-                    : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100   "
                 }`}
               >
                 Whole Month
@@ -301,7 +301,7 @@ export default function BulkPaymentNotificationModal({
                 className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                   filterType === "all"
                     ? "bg-emerald-600 text-white shadow-xs"
-                    : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100   "
                 }`}
               >
                 All Recent Payments
@@ -314,7 +314,7 @@ export default function BulkPaymentNotificationModal({
                   className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                     filterType === "selected"
                       ? "bg-emerald-600 text-white shadow-xs"
-                      : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                      : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100   "
                   }`}
                 >
                   Imported Batch ({initialPaymentIds.length})
@@ -330,7 +330,7 @@ export default function BulkPaymentNotificationModal({
                   type="date"
                   value={specificDate}
                   onChange={(e) => setSpecificDate(e.target.value)}
-                  className="h-7 rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                  className="h-7 rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800 "
                 />
               </div>
             )}
@@ -342,7 +342,7 @@ export default function BulkPaymentNotificationModal({
                   type="month"
                   value={specificMonth}
                   onChange={(e) => setSpecificMonth(e.target.value)}
-                  className="h-7 rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                  className="h-7 rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800"
                 />
               </div>
             )}
@@ -356,8 +356,8 @@ export default function BulkPaymentNotificationModal({
             <div
               className={`flex items-start gap-2.5 rounded-xl p-3 text-xs ${
                 feedback.type === "success"
-                  ? "border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300"
-                  : "border border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"
+                  ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : "border border-red-200 bg-red-50 text-red-800"
               }`}
             >
               {feedback.type === "success" ? (
@@ -371,51 +371,51 @@ export default function BulkPaymentNotificationModal({
 
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-800/30">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-3  /30">
               <span className="text-[11px] font-medium text-zinc-500">
                 Matching Clients
               </span>
-              <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+              <p className="text-lg font-bold text-zinc-900">
                 {data.groups?.length || 0} Clients
               </p>
             </div>
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-800/30">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-3  /30">
               <span className="text-[11px] font-medium text-zinc-500">
                 Payment Transactions
               </span>
-              <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+              <p className="text-lg font-bold text-zinc-900">
                 {data.totalPayments || 0} Receipts
               </p>
             </div>
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-800/30">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-3  /30">
               <span className="text-[11px] font-medium text-zinc-500">
                 Selected Value
               </span>
-              <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+              <p className="text-lg font-bold text-emerald-600 ">
                 {formatCurrency(selectedPaymentsTotal)}
               </p>
             </div>
           </div>
 
           {/* Email Customization Options */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-3.5 space-y-3 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="rounded-xl border border-zinc-200 bg-white p-3.5 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
+              <span className="text-xs font-bold text-zinc-800 ">
                 Email Template & Dispatch Customization
               </span>
               <div className="flex items-center gap-4">
-                <label className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-xs text-zinc-600  cursor-pointer">
                   <input
                     type="checkbox"
                     checked={attachLedgerPdf}
                     onChange={(e) => setAttachLedgerPdf(e.target.checked)}
                     className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
                   />
-                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                  <span className="font-semibold text-emerald-700">
                     Attach Ledger Statement (PDF)
                   </span>
                 </label>
-                <label className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-xs text-zinc-600  cursor-pointer">
                   <input
                     type="checkbox"
                     checked={ccAccounts}
@@ -437,7 +437,7 @@ export default function BulkPaymentNotificationModal({
                   value={customSubject}
                   onChange={(e) => setCustomSubject(e.target.value)}
                   placeholder="e.g. Payment Receipt & Ledger Credit: {amount} - {clientName}"
-                  className="mt-1 h-8 w-full rounded-lg border border-zinc-300 bg-white px-2.5 text-xs text-zinc-800 outline-none transition focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                  className="mt-1 h-8 w-full rounded-lg border border-zinc-300 bg-white px-2.5 text-xs text-zinc-800 outline-none transition focus:border-emerald-500   "
                 />
               </div>
 
@@ -450,18 +450,18 @@ export default function BulkPaymentNotificationModal({
                   value={customNote}
                   onChange={(e) => setCustomNote(e.target.value)}
                   placeholder="e.g. We have credited your account ledger. Thank you for your business."
-                  className="mt-1 h-8 w-full rounded-lg border border-zinc-300 bg-white px-2.5 text-xs text-zinc-800 outline-none transition focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                  className="mt-1 h-8 w-full rounded-lg border border-zinc-300 bg-white px-2.5 text-xs text-zinc-800 outline-none transition focus:border-emerald-500   "
                 />
               </div>
             </div>
           </div>
 
           {/* Client Selection Header */}
-          <div className="flex items-center justify-between border-b border-zinc-200 pb-2 dark:border-zinc-800">
+          <div className="flex items-center justify-between border-b border-zinc-200 pb-2 ">
             <button
               type="button"
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-xs font-semibold text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+              className="flex items-center gap-2 text-xs font-semibold text-zinc-700 hover:text-zinc-900 "
             >
               {selectedClientIds.size === (data.groups || []).length &&
               (data.groups || []).length > 0 ? (
@@ -483,7 +483,7 @@ export default function BulkPaymentNotificationModal({
               <p>Gathering payment records & recipient contacts...</p>
             </div>
           ) : (data.groups || []).length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-xs text-zinc-500 dark:border-zinc-700">
+            <div className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-xs text-zinc-500">
               <CreditCard className="mx-auto h-8 w-8 text-zinc-300 mb-2" />
               No payment transactions found matching the selected criteria.
             </div>
@@ -499,8 +499,8 @@ export default function BulkPaymentNotificationModal({
                     key={group.clientId}
                     className={`rounded-xl border transition ${
                       isSelected
-                        ? "border-emerald-300 bg-emerald-50/20 dark:border-emerald-800 dark:bg-emerald-950/10"
-                        : "border-zinc-200 bg-white opacity-70 dark:border-zinc-800 dark:bg-zinc-900"
+                        ? "border-emerald-300 bg-emerald-50/20"
+                        : "border-zinc-200 bg-white opacity-70  "
                     }`}
                   >
                     {/* Header Row */}
@@ -520,11 +520,11 @@ export default function BulkPaymentNotificationModal({
 
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                            <span className="font-bold text-sm text-zinc-900">
                               {group.clientName}
                             </span>
                             {group.clientCode && (
-                              <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                              <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-600">
                                 {group.clientCode}
                               </span>
                             )}
@@ -543,7 +543,7 @@ export default function BulkPaymentNotificationModal({
                           href={`/api/client-ledger-pdf?clientId=${group.clientId}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-600 hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                          className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-600 hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700"
                           title="Preview in-memory Ledger Account Statement PDF"
                         >
                           <FileText className="h-3.5 w-3.5 text-emerald-600" />
@@ -553,7 +553,7 @@ export default function BulkPaymentNotificationModal({
                         <button
                           type="button"
                           onClick={() => toggleExpanded(group.clientId)}
-                          className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                          className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
                         >
                           <span>{group.payments.length} Payment(s)</span>
                           {isExpanded ? (
@@ -566,7 +566,7 @@ export default function BulkPaymentNotificationModal({
                     </div>
 
                     {/* Recipient Emails Selector */}
-                    <div className="border-t border-zinc-100 bg-zinc-50/50 px-3.5 py-2.5 dark:border-zinc-800 dark:bg-zinc-850/50">
+                    <div className="border-t border-zinc-100 bg-zinc-50/50 px-3.5 py-2.5">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-[11px] font-semibold text-zinc-500 flex items-center gap-1 mr-1">
                           <Mail className="h-3 w-3" />
@@ -585,7 +585,7 @@ export default function BulkPaymentNotificationModal({
                               className={`rounded-md px-2 py-0.5 text-[11px] font-medium transition ${
                                 active
                                   ? "bg-emerald-600 text-white"
-                                  : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300"
+                                  : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
                               }`}
                             >
                               {email}
@@ -607,14 +607,14 @@ export default function BulkPaymentNotificationModal({
                               e.currentTarget.value = "";
                             }
                           }}
-                          className="h-6 w-28 rounded border border-zinc-300 bg-white px-1.5 text-[11px] text-zinc-800 outline-none focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                          className="h-6 w-28 rounded border border-zinc-300 bg-white px-1.5 text-[11px] text-zinc-800 outline-none focus:border-emerald-500   "
                         />
                       </div>
                     </div>
 
                     {/* Expanded Transactions Breakdown */}
                     {isExpanded && (
-                      <div className="border-t border-zinc-100 p-3 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+                      <div className="border-t border-zinc-100 p-3 bg-white  ">
                         <table className="w-full text-left text-xs">
                           <thead className="text-[10px] uppercase text-zinc-400 border-b border-zinc-100 pb-1">
                             <tr>
@@ -625,10 +625,10 @@ export default function BulkPaymentNotificationModal({
                               <th className="py-1 text-right">Amount</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
+                          <tbody className="divide-y divide-zinc-50">
                             {group.payments.map((p) => (
                               <tr key={p.id}>
-                                <td className="py-1.5 font-medium text-zinc-800 dark:text-zinc-200">
+                                <td className="py-1.5 font-medium text-zinc-800 ">
                                   {p.receiptNumber || `PAY-${p.id}`}
                                   {p.reference && (
                                     <span className="text-[10px] text-zinc-400 block">
@@ -651,7 +651,7 @@ export default function BulkPaymentNotificationModal({
                                     p.allocations.map((a) => (
                                       <span
                                         key={a.id}
-                                        className="inline-block rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-700 mr-1 dark:bg-zinc-800 dark:text-zinc-300"
+                                        className="inline-block rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-700 mr-1  "
                                       >
                                         #{a.invoiceNumber}: ₹
                                         {a.allocatedAmount.toLocaleString(
@@ -660,7 +660,7 @@ export default function BulkPaymentNotificationModal({
                                       </span>
                                     ))
                                   ) : (
-                                    <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                                    <span className="text-[10px] font-medium text-amber-600">
                                       On Account
                                     </span>
                                   )}
@@ -682,12 +682,10 @@ export default function BulkPaymentNotificationModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-850">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50 p-4">
           <div className="text-xs text-zinc-500">
             Sending to{" "}
-            <span className="font-bold text-zinc-800 dark:text-zinc-200">
-              {selectedCount}
-            </span>{" "}
+            <span className="font-bold text-zinc-800 ">{selectedCount}</span>{" "}
             client(s) with a total of{" "}
             <span className="font-bold text-emerald-600">
               {formatCurrency(selectedPaymentsTotal)}
@@ -698,7 +696,7 @@ export default function BulkPaymentNotificationModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100   "
             >
               Cancel
             </button>

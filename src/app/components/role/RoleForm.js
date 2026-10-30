@@ -48,20 +48,20 @@ export default function RoleForm({
   }, {});
 
   return (
-    <div className="mx-auto max-w-4xl rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="mx-auto max-w-4xl rounded-2xl border border-zinc-200 bg-white shadow-xs">
       {/* Compact Header */}
-      <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3.5 dark:border-zinc-800">
+      <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3.5">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
             <Shield size={16} />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+            <h2 className="text-sm font-bold text-zinc-900">
               {isEdit
                 ? `Edit Role: ${initialData.roleName}`
                 : "Create New Role"}
             </h2>
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+            <p className="text-[11px] text-zinc-500">
               {isEdit
                 ? "Update role definition and permission matrix."
                 : "Create a customized role and assign module-level permissions."}
@@ -71,7 +71,7 @@ export default function RoleForm({
 
         <Link
           href="/roles"
-          className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+          className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-800"
         >
           <ArrowLeft size={13} />
           <span>Back to Roles</span>
@@ -85,8 +85,8 @@ export default function RoleForm({
           <div
             className={`flex items-center gap-2 rounded-xl p-3 text-xs font-semibold ${
               state.success
-                ? "bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-200"
-                : "bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/60 dark:text-red-200"
+                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                : "bg-red-50 text-red-800 border border-red-200"
             }`}
           >
             {state.success ? <Check size={15} /> : <AlertCircle size={15} />}
@@ -102,7 +102,7 @@ export default function RoleForm({
         {/* SECTION 1: ROLE INFO */}
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            <label className="mb-1 block text-xs font-semibold text-zinc-700">
               Role Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -110,19 +110,19 @@ export default function RoleForm({
               required
               defaultValue={initialData.roleName || ""}
               placeholder="e.g. Finance Officer, Collection Lead"
-              className="h-8.5 w-full rounded-xl border border-zinc-200 px-3 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              className="h-8.5 w-full rounded-xl border border-zinc-200 px-3 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            <label className="mb-1 block text-xs font-semibold text-zinc-700">
               Company <span className="text-red-500">*</span>
             </label>
             <select
               name="companyId"
               required
               defaultValue={initialData.companyId ?? ""}
-              className="h-8.5 w-full rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              className="h-8.5 w-full rounded-xl border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500"
             >
               <option value="">Select Company</option>
               {companies.map((company) => (
@@ -134,22 +134,22 @@ export default function RoleForm({
           </div>
 
           <div className="sm:col-span-2">
-            <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            <label className="mb-1 block text-xs font-semibold text-zinc-700">
               Description
             </label>
             <input
               name="description"
               defaultValue={initialData.description || ""}
               placeholder="Responsibilities and purpose of this role..."
-              className="h-8.5 w-full rounded-xl border border-zinc-200 px-3 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              className="h-8.5 w-full rounded-xl border border-zinc-200 px-3 text-xs text-zinc-800 shadow-2xs outline-none focus:border-blue-500"
             />
           </div>
         </div>
 
         {/* SECTION 2: PERMISSIONS SELECTION */}
-        <div className="border-t border-zinc-100 pt-3 dark:border-zinc-800">
+        <div className="border-t border-zinc-100 pt-3">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
               Module Permissions Matrix
             </h3>
             <span className="text-[11px] text-zinc-400">
@@ -161,16 +161,16 @@ export default function RoleForm({
             {Object.entries(groupedPermissions).map(([moduleName, perms]) => (
               <div
                 key={moduleName}
-                className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-800/40"
+                className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-3"
               >
-                <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+                <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-700">
                   {moduleName}
                 </h4>
                 <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
                   {perms.map((permission) => (
                     <label
                       key={permission.id}
-                      className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 text-xs text-zinc-700 hover:border-purple-300 transition cursor-pointer dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                      className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 text-xs text-zinc-700 hover:border-purple-300 transition cursor-pointer"
                     >
                       <input
                         type="checkbox"
@@ -194,8 +194,8 @@ export default function RoleForm({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-zinc-100 pt-4 dark:border-zinc-800">
-          <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+        <div className="flex items-center justify-between border-t border-zinc-100 pt-4">
+          <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700">
             <input
               type="checkbox"
               name="isActive"
@@ -208,7 +208,7 @@ export default function RoleForm({
           <div className="flex items-center gap-2">
             <Link
               href="/roles"
-              className="rounded-xl border border-zinc-200 px-3.5 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="rounded-xl border border-zinc-200 px-3.5 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
             >
               Cancel
             </Link>
