@@ -7,6 +7,7 @@ import {
   IndianRupee,
   BellRing,
   Megaphone,
+  Mail,
   Shield,
   KeyRound,
   BarChart3,
@@ -59,6 +60,12 @@ export const SIDEBAR_NAVIGATION = [
         title: "Followups",
         href: "/followups",
         icon: Megaphone,
+      },
+
+      {
+        title: "Custom Bulk Email",
+        href: "/communications/custom-email",
+        icon: Mail,
       },
 
       // {

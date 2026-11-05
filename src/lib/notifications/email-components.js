@@ -596,7 +596,7 @@ export function Signature({
       Warm Regards,
       <br />
       <br />
-      <strong>PAFEX Accounts & Collections Team</strong>
+      <strong>PAFEX Accounts</strong>
       <br />
       <strong>{senderCompany || "Prakash Air Freight India Pvt Ltd"}</strong>
       <br />
@@ -882,12 +882,18 @@ export function ClientOutstandingInvoices({
     if (dueD) dueD.setHours(0, 0, 0, 0);
 
     const dueDays =
-      inv.dueDays !== undefined && inv.dueDays !== null && !isNaN(Number(inv.dueDays))
+      inv.dueDays !== undefined &&
+      inv.dueDays !== null &&
+      !isNaN(Number(inv.dueDays))
         ? Number(inv.dueDays)
-        : inv.agingDays !== undefined && inv.agingDays !== null && !isNaN(Number(inv.agingDays))
+        : inv.agingDays !== undefined &&
+            inv.agingDays !== null &&
+            !isNaN(Number(inv.agingDays))
           ? Number(inv.agingDays)
           : dueD && dueD < now
-            ? Math.round((now.getTime() - dueD.getTime()) / (1000 * 60 * 60 * 24))
+            ? Math.round(
+                (now.getTime() - dueD.getTime()) / (1000 * 60 * 60 * 24),
+              )
             : 0;
 
     if (dueDays > 90) {

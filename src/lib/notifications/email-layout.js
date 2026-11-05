@@ -31,6 +31,7 @@ export function EmailLayout({
   senderCompany = "",
   senderEmail = "",
   senderPhone = "",
+  showSystemGeneratedNotice = true,
 }) {
   const displayCompanyName = senderCompany || companyName || "PAFEX";
 
@@ -93,7 +94,7 @@ export function EmailLayout({
               <td align="center">
                 <table
                   className="email-container-table"
-                  width="600"
+                  width="100%"
                   cellPadding="0"
                   cellSpacing="0"
                   border="0"
@@ -101,6 +102,7 @@ export function EmailLayout({
                   style={{
                     width: "100%",
                     maxWidth: "600px",
+                    boxSizing: "border-box",
                     background: "#ffffff",
                     borderRadius: "12px",
                     boxShadow: "0 4px 20px rgba(0,0,0,.08)",
@@ -158,6 +160,8 @@ export function EmailLayout({
                           color: "#334155",
                           fontSize: "15px",
                           lineHeight: "1.5",
+                          overflowWrap: "break-word",
+                          wordBreak: "break-word",
                         }}
                       >
                         {children ? (
@@ -170,31 +174,35 @@ export function EmailLayout({
                       </td>
                     </tr>
 
-                    {/* ====================================================== */}
-                    {/* Footer */}
-                    {/* ====================================================== */}
-                    <tr>
-                      <td
-                        className="email-footer-cell"
-                        style={{
-                          padding: "18px 24px",
-                          background: "#F8FAFC",
-                          borderTop: "1px solid #E2E8F0",
-                        }}
-                      >
-                        <div
-                          style={{
-                            marginTop: "12px",
-                            fontSize: "12px",
-                            color: "#94A3B8",
-                            lineHeight: "1.5",
-                          }}
-                        >
-                          This is system generated email. Please do not reply
-                          directly to this email.
-                        </div>
-                      </td>
-                    </tr>
+                    {showSystemGeneratedNotice ? (
+                      <>
+                        {/* ====================================================== */}
+                        {/* Footer */}
+                        {/* ====================================================== */}
+                        <tr>
+                          <td
+                            className="email-footer-cell"
+                            style={{
+                              padding: "18px 24px",
+                              background: "#F8FAFC",
+                              borderTop: "1px solid #E2E8F0",
+                            }}
+                          >
+                            <div
+                              style={{
+                                marginTop: "12px",
+                                fontSize: "12px",
+                                color: "#94A3B8",
+                                lineHeight: "1.5",
+                              }}
+                            >
+                              This is system generated email. Please do not
+                              reply directly to this email.
+                            </div>
+                          </td>
+                        </tr>
+                      </>
+                    ) : null}
                   </tbody>
                 </table>
               </td>
