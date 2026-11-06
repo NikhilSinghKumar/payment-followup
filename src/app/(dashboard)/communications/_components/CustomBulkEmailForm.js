@@ -109,7 +109,7 @@ export default function CustomBulkEmailForm() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl space-y-5">
+    <main className="mx-auto max-w-6xl space-y-5 bg-white text-slate-900">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">
@@ -162,7 +162,9 @@ export default function CustomBulkEmailForm() {
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 p-4">
             <div className="flex justify-between">
-              <h2 className="font-semibold">1. Select clients</h2>
+              <h2 className="font-semibold text-slate-900">
+                1. Select clients
+              </h2>
               <span className="text-xs text-slate-500">
                 {chosen.length} selected
               </span>
@@ -176,7 +178,7 @@ export default function CustomBulkEmailForm() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search clients..."
-                className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-400"
+                className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400"
               />
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -322,8 +324,10 @@ export default function CustomBulkEmailForm() {
         </section>
         <div className="space-y-5">
           <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="font-semibold">2. Compose email</h2>
-            <label className="mt-4 block text-sm font-medium">Subject</label>
+            <h2 className="font-semibold text-slate-900">2. Compose email</h2>
+            <label className="mt-4 block text-sm font-medium text-slate-800">
+              Subject
+            </label>
             <input
               value={subject}
               maxLength={250}
@@ -332,9 +336,11 @@ export default function CustomBulkEmailForm() {
                 setPreview(null);
               }}
               placeholder="Enter custom subject"
-              className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-400"
+              className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400"
             />
-            <label className="mt-4 block text-sm font-medium">Email body</label>
+            <label className="mt-4 block text-sm font-medium text-slate-800">
+              Email body
+            </label>
             <textarea
               value={body}
               onChange={(e) => {
@@ -345,7 +351,7 @@ export default function CustomBulkEmailForm() {
               placeholder={
                 "Dear Sir/Madam,\n\nWrite your message here...\n\nThank you."
               }
-              className="mt-1.5 w-full resize-y rounded-lg border border-slate-200 px-3 py-3 text-sm leading-6 outline-none focus:border-blue-400"
+              className="mt-1.5 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm leading-6 text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400"
             />
             <p className="mt-2 text-xs text-slate-500">
               The PAFEX signature is appended automatically. Write your greeting
@@ -356,7 +362,7 @@ export default function CustomBulkEmailForm() {
                 type="button"
                 onClick={makePreview}
                 disabled={previewing}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
               >
                 {previewing ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -369,7 +375,7 @@ export default function CustomBulkEmailForm() {
                 type="button"
                 onClick={send}
                 disabled={sending || !selected.length}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
               >
                 {sending ? (
                   <Loader2 size={16} className="animate-spin" />
